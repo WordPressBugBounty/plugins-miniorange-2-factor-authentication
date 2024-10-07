@@ -39,7 +39,7 @@ if ( ! class_exists( 'Mo2f_Advance_Settings_Handler' ) ) {
 		 */
 		public function mo2f_advance_settings_ajax() {
 
-			if ( ! check_ajax_referer( 'mo2f-advance-settings-nonce', 'nonce', false ) || ! current_user_can( 'manage_options' ) ) {
+			if ( ! check_ajax_referer( 'mo-two-factor-ajax-nonce', 'nonce', false ) || ! current_user_can( 'manage_options' ) ) {
 				wp_send_json_error( 'class-wpns-ajax' );
 			}
 			$GLOBALS['mo2f_is_ajax_request'] = true;
@@ -48,14 +48,8 @@ if ( ! class_exists( 'Mo2f_Advance_Settings_Handler' ) ) {
 				case 'mo_wpns_manual_clear':
 					$this->mo_wpns_manual_clear();
 					break;
-				case 'mo_wpns_manual_errorclear':
-					$this->mo_wpns_manual_errorclear();
-					break;
 				case 'mo2f_enable_transactions_report':
 					$this->mo2f_enable_transactions_report( $_POST );
-					break;
-				case 'mo2f_enable_error_report':
-					$this->mo2f_enable_error_report( $_POST );
 					break;
 
 			}
@@ -74,17 +68,6 @@ if ( ! class_exists( 'Mo2f_Advance_Settings_Handler' ) ) {
 		}
 
 		/**
-		 * Clears error report.
-		 *
-		 * @return void
-		 */
-		public function mo_wpns_manual_errorclear() {
-			global $wpns_db_queries;
-			$wpns_db_queries->mo_wpns_clear_error_report();
-			wp_send_json( 'success' );
-		}
-
-		/**
 		 * Enable/disables the login transactions report.
 		 *
 		 * @param array $post Post data.
@@ -98,19 +81,6 @@ if ( ! class_exists( 'Mo2f_Advance_Settings_Handler' ) ) {
 
 		}
 
-		/**
-		 * Enable/disables the error transactions report.
-		 *
-		 * @param array $post Post data.
-		 * @return void
-		 */
-		public function mo2f_enable_error_report( $post ) {
-
-			$is_transaction_report_enabled = isset( $post['mo2f_enable_error_report'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_enable_error_report'] ) ) : 0;
-			update_site_option( 'mo2f_enable_error_report', $is_transaction_report_enabled );
-			wp_send_json( $is_transaction_report_enabled );
-
-		}
 	}
 	new Mo2f_Advance_Settings_Handler();
 }

@@ -37,7 +37,7 @@ global $image_path;
 <div class="mo2fa-pricing-section">
 	<div class="mo2fa-mo2fa-twofa-pricing-div">
 		<h3 class="mo2fa-twofa-pricing-heading">STARTER
-		</h3> <sub class="mo2fa-sub-heading">2FA For 100 users</sub>
+		</h3> <sub class="mo2fa-sub-heading">2FA For Unlimited Users</sub>
 		<div class="mo2fa-one-row-price">
 			<div class="item-one">
 				<p class="mt"><span class="display-1"><span>$</span><span id="dollar_mo_basic_price" class="mo_premium_price">99</span><sub class="year">/year</sub><sup>*</sup></span></p>
@@ -354,7 +354,7 @@ global $image_path;
 				<div> &nbsp;&nbsp;Unlimited Users </div>
 				</td>
 				<td class="table-checks">
-				Upto 100 Users
+				<i class="fa fa-check"></i>
 				</td>
 				<td class="table-checks">
 				<i class="fa fa-check"></i>
@@ -422,7 +422,7 @@ global $image_path;
 									<td class="table-checks"> <i class="fa fa-check"></i></td>
 								</tr>
 								<tr class="table-row">
-									<td>&nbsp;&nbsp;<?php echo esc_html( MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OTP_OVER_SMS, 'cap_to_small' ) ); ?> (<a class="otp-over-sms-link" target="_blank" href="https://plugins.miniorange.com/sms-and-email-transaction-pricing-2fa">Check SMS Transactions Pricing <i class="fas fa-external-link-alt"></i></a>)</td>
+									<td>&nbsp;&nbsp;<?php echo esc_html( MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OTP_OVER_SMS, 'cap_to_small' ) ); ?> (<a class="mo2f-otp-over-sms-link" target="_blank" href="https://plugins.miniorange.com/sms-and-email-transaction-pricing-2fa">Check SMS Transactions Pricing <i class="fas fa-external-link-alt"></i></a>)</td>
 									<td class="table-checks"> <i class="fa fa-check"></i></td>
 									<td class="table-checks"> <i class="fa fa-check"></i></td>
 									<td class="table-checks"> <i class="fa fa-check"></i></td>

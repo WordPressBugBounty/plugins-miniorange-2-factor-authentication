@@ -219,17 +219,6 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		}
 
 		/**
-		 * Clears error report.
-		 *
-		 * @return void
-		 */
-		public function mo_wpns_clear_error_report() {
-			global $wpdb;
-			$wpdb->query( 'DELETE FROM ' . $wpdb->prefix . "mo2f_network_transactions WHERE Status='accessDenied'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery -- DB Direct Query is necessary here. 
-		}
-
-
-		/**
 		 * Returns if IP blocked
 		 *
 		 * @param string $entryid ip address.
