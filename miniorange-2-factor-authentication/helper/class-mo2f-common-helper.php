@@ -1043,7 +1043,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 										<td><br>';
 										$html .= '<input type="button" name="submit" value="Create Account" id="mo2f_register"
 									class="mo2f-save-settings-button" />';
-									$html     .= '&nbsp&nbsp&nbsp&nbsp<a href="#mo2f_account_exist"><button class="mo2f-save-settings-button">Already have an account?</button></a>
+									$html     .= '&nbsp&nbsp&nbsp&nbsp<a href="#mo2f_account_exist"><button class="mo2f-reset-settings-button">Already have an account?</button></a>
 									</tr>
 								</table>
 							</form>
@@ -1066,7 +1066,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 							<td>&nbsp;</td>
 							<td>';
 						$html                 .= '<br><input type="button" id="mo2f_login" class="mo2f-save-settings-button" value="' . esc_attr__( 'Sign In', 'miniorange-2-factor-authentication' ) . '" />';
-						$html                 .= '&nbsp&nbsp&nbsp&nbsp<input type="button" id="cancel_link" class="mo2f-save-settings-button" value="' . esc_attr__( 'Go Back to Registration', 'miniorange-2-factor-authentication' ) . '" />
+						$html                 .= '&nbsp&nbsp&nbsp&nbsp<input type="button" id="cancel_link" class="mo2f-reset-settings-button" value="' . esc_attr__( 'Go Back To Registration', 'miniorange-2-factor-authentication' ) . '" />
 						</tr>
 					</table>
 				</form>

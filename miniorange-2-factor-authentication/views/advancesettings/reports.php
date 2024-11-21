@@ -90,7 +90,6 @@ echo '	        </tbody>
 	jQuery("#reports").addClass("mo2f-subtab-active");
 	jQuery("#mo_2fa_advance_settings").addClass("side-nav-active");	
 </script>';
-?>
 
 
 

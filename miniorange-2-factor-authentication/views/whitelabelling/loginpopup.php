@@ -25,32 +25,35 @@ $crown                       = '<svg width="18" class="ml-mo-4 -mb-mo-0.5" heigh
 <div class="mo2f-settings-div <?php echo esc_attr( $overlay_on_premium_features ); ?>">
 
 	<div class="mo2f-settings-head">
-	<label class="mo2f_checkbox_container">
-		<input type="checkbox" id="mo2f_select_methods" <?php checked( MoWpnsUtility::get_mo2f_db_option( 'mo2f_enable_custom_poweredby', 'get_option' ) === '1' ); ?> onclick="mo2f_showSettings(this)"/><span class="mo2f-settings-checkmark"></span>
-	</label>
-		<span><?php esc_html_e( 'Use your own branding logo on 2FA login Popup', 'miniorange-2-factor-authentication' ); ?></span>	<?php echo $crown;//phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+		<span><?php esc_html_e( 'Use your own branding logo on 2FA Popup', 'miniorange-2-factor-authentication' ); ?></span>	<?php echo $crown;//phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
 	</div>
 	<br><br>
-	<div class="flex ml-mo-20">
-		<div class="mo2f-settings-div">
-		&nbsp;&nbsp;<button id="mo2f_enable2FA_save_button" class="mo2f-save-settings-button">Upload Image</button>
-			<div class="mo2f-progress-container">
-				<div class="progress-bar" id="progress-bar">0%</div>
-			</div>
-			<br>
-			<div class="justify-end <?php echo $enable_2fa ? 'flex' : 'hidden'; ?>">
-					<div class=" <?php echo esc_attr( $overlay_on_premium_features ); ?>">
-					<button id="mo2f_upload_logo_save_button"  class="mo2f-save-settings-button"><?php esc_html_e( 'Save', 'miniorange-2-factor-authentication' ); ?></button>
-					<button id="mo2f_upload_logo_reset_button"  class="mo2f-save-settings-button"><?php esc_html_e( 'Reset', 'miniorange-2-factor-authentication' ); ?></button>
+	<form name="mo2f_custom_logo_form_form" method="post" id="mo2f_custom_logo_form" action="" enctype="multipart/form-data">
+		<input type="hidden" name="option" value="mo2f_add_custom_logo"/>
+		<input type="hidden" name="mo2f_whitelabelling_nonce" value="<?php echo esc_attr( wp_create_nonce( 'mo2f-whitelabelling-nonce' ) ); ?>"/>
+		<div class="flex ml-mo-20">
+			<div class="mo2f-settings-div">
+			<input style="margin:2%" type="file" name="imgFile" accept="image/*">
+				<br><br>
+				<div class="justify-end">
+					<div class="<?php echo esc_attr( $overlay_on_premium_features ); ?>">
+						<button id="mo2f_upload_custom_logo"  class="mo2f-save-settings-button"><?php esc_html_e( 'Upload Logo', 'miniorange-2-factor-authentication' ); ?></button>
+						<button id="mo2f_upload_logo_reset_button"  class="mo2f-reset-settings-button"><?php esc_html_e( 'Reset', 'miniorange-2-factor-authentication' ); ?></button>
 					</div>
+				</div>
+			</div ><div class="ml-mo-16">
+			<div>	<span><b>Preview</b></span>	</div>
+			<div class="mo2f-settings-div">
+			<img class="mo2f-miniorange-logo" src="<?php echo esc_url( plugin_dir_url( dirname( dirname( __FILE__ ) ) ) . 'includes/images/' . get_site_option( 'mo2f_custom_logo', 'miniOrange2.png' ) ); ?>" alt="<?php esc_attr_e( 'miniOrange 2-factor Logo', 'miniorange-2-factor-authentication' ); ?>" >
 			</div>
-		</div ><div class="ml-mo-16">
-		<div>	<span><b>Preview</b></span>	</div>
-		<div class="mo2f-settings-div">
-		<img class="mo2f-miniorange-logo" src="<?php echo esc_url( plugin_dir_url( dirname( dirname( __FILE__ ) ) ) . 'includes/images/miniorange-new-logo.png' ); ?>" alt="<?php esc_attr_e( 'miniOrange 2-factor Logo', 'miniorange-2-factor-authentication' ); ?>" >
+			</div>
 		</div>
-		</div>
-	</div>
+		<br>
+	</form>
+	<form name="mo2f_upload_logo_reset_button_form" id="mo2f_upload_logo_reset_button_form" method="post" action="">
+			<input type="hidden" name="mo2f_whitelabelling_nonce" value="<?php echo esc_attr( wp_create_nonce( 'mo2f-whitelabelling-nonce' ) ); ?>"/>
+			<input type="hidden" name="option" value="mo2f_reset_custom_logo">
+	</form>
 </div>
 
 <div class="mo2f-settings-div <?php echo esc_attr( $overlay_on_premium_features ); ?>">
@@ -104,7 +107,7 @@ $crown                       = '<svg width="18" class="ml-mo-4 -mb-mo-0.5" heigh
 				<div class="justify-start <?php echo $enable_2fa ? 'flex' : 'hidden'; ?>">
 					<div class=" <?php echo esc_attr( $overlay_on_premium_features ); ?>">
 					<button id="mo2f_login_popup_save_button"  class="mo2f-save-settings-button"><?php esc_html_e( 'Save Settings', 'miniorange-2-factor-authentication' ); ?></button>
-					<button id="mo2f_login_popup_reset_button"  class="mo2f-save-settings-button"><?php esc_html_e( 'Reset Settings', 'miniorange-2-factor-authentication' ); ?></button>
+					<button id="mo2f_login_popup_reset_button"  class="mo2f-reset-settings-button"><?php esc_html_e( 'Reset Settings', 'miniorange-2-factor-authentication' ); ?></button>
 					</div>
 				</div>
 		</form>

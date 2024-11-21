@@ -75,7 +75,6 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 			// Set current step.
 			$current_step       = ( isset( $_GET['current-step'] ) ) ? sanitize_text_field( wp_unslash( $_GET['current-step'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended -- Reading GET parameter from the URL for checking the tab name, doesn't require nonce verification.
 			$this->current_step = ! empty( $current_step ) ? $current_step : current( array_keys( $this->wizard_steps ) );
-			wp_register_style( 'mo_2fa_admin_setupWizard', plugins_url( 'includes' . DIRECTORY_SEPARATOR . 'css' . DIRECTORY_SEPARATOR . 'setup-wizard.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
 			wp_enqueue_script( 'mo2f_setup_wizard', plugins_url( 'includes' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'setup-wizard.min.js', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
 			$save_step = ( isset( $_POST['save_step'] ) ) ? sanitize_text_field( wp_unslash( $_POST['save_step'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Reading POST parameter for checking the saved step, doesn't require nonce verification for the 1st window.
 			if ( ! empty( $save_step ) && ! empty( $this->wizard_steps[ $this->current_step ]['save'] ) ) {
@@ -253,7 +252,7 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 		<p class="mo2f-setup-wizard-font"><?php esc_html_e( 'This wizard will assist you with plugin configuration and the 2FA settings for you and the users on this website.', 'miniorange-2-factor-authentication' ); ?></p>
 
 		<div class="mo2f-setup-actions">
-			<a class="button button-primary"
+			<a class="button mo2f-save-settings-button"
 				href="<?php echo esc_url( $next_step ); ?>">
 				<?php esc_html_e( 'Let’s get started!', 'miniorange-2-factor-authentication' ); ?>
 			</a>

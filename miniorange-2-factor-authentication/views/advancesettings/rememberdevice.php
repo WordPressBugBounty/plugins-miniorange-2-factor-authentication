@@ -50,7 +50,9 @@ $crown                       = '<svg width="18" class="ml-mo-4 -mb-mo-0.5" heigh
 		<?php
 		printf(
 			/* Translators: %s: bold tags */
-			esc_html( __( '%1$1sNote:%2$12s This can be enabled only when \'Username + 2FA\' login option is selected in the \'Passwordless 2FA\' settings under the \'Passwordless Login\' tab.', 'miniorange-2-factor-authentication' ) ), //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal
+			esc_html( __( '%1$1sNote:%2$12s Checking this option will enable %3$3s\'Remember Device\'%4$4s. When login from the same device which user has allowed to remember, user will bypass 2nd factor i.e user will be able to login through \'username\' + \'password\' only.', 'miniorange-2-factor-authentication' ) ), //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal
+			'<b>',
+			'</b>',
 			'<b>',
 			'</b>',
 		);
@@ -111,18 +113,6 @@ $crown                       = '<svg width="18" class="ml-mo-4 -mb-mo-0.5" heigh
 		</div>
 	</div>
 	<br>
-	<div class="text-mo-tertiary-txt ml-mo-16"> 
-		<?php
-				printf(
-					/* Translators: %s: bold tags */
-					esc_html( __( '%1$1sNote:%2$12s Checking this option will enable %3$3s\'Remember Device\'%4$4s.  In the login from the same device, user will bypass 2nd factor i.e user will be logged in through username + password only.', 'miniorange-2-factor-authentication' ) ), //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal
-					'<b>',
-					'</b>',
-					'<b>',
-					'</b>',
-				);
-				?>
-	</div>
 	<br>	
 	<div class="justify-start <?php echo $enable_2fa ? 'flex' : 'hidden'; ?> ml-mo-16">
 		<div class=" <?php echo esc_attr( $overlay_on_premium_features ); ?>">

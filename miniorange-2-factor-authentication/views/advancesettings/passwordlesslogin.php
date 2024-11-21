@@ -23,7 +23,7 @@ $crown                       = '<svg width="18" class="ml-mo-4 -mb-mo-0.5" heigh
 ?>
 <div class="mo2f-settings-div <?php echo esc_attr( $overlay_on_premium_features ); ?>" >
 	<div class="mo2f-settings-head">
-		<span><?php esc_html_e( 'Passwordless 2FA', 'miniorange-2-factor-authentication' ); ?></span><?php echo $crown; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+		<span><?php esc_html_e( 'Passwordless Login with 2FA', 'miniorange-2-factor-authentication' ); ?></span><?php echo $crown; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
 	</div>
 	<br>
 	<div class="ml-mo-16">

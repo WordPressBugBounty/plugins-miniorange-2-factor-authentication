@@ -29,8 +29,8 @@ $crown                       = MO2F_PREMIUM_PLAN ? '' : '<svg width="18" class="
 		<span>
 			<input type="text" class="m-mo-4" id= "mo2f_change_app_name" name="mo2f_google_auth_appname" placeholder="Enter the app name" value="<?php echo esc_attr( $gauth_name ); ?>"  />
 		</span>
-		<div class="justify-start" id="mo2f_google_appname_save"><div class="mo2f_google_appname_save_button"><button id="mo2f_google_appname_save_button" class="mo2f-save-settings-button"><?php esc_html_e( 'Save App Name', 'miniorange-2-factor-authentication' ); ?></button></div></div>
 	</div>
+	<div class="justify-start" id="mo2f_google_appname_save"><div class="mo2f_google_appname_save_button"><button id="mo2f_google_appname_save_button" class="mo2f-save-settings-button"><?php esc_html_e( 'Save App Name', 'miniorange-2-factor-authentication' ); ?></button></div></div>
 </div>
 
 <div class="mo2f-settings-div">

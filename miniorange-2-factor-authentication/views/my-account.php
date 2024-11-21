@@ -32,7 +32,7 @@ if ( ! get_option( 'mo2f_customerKey' ) ) {
                 </h4>
                 <h3>Your Profile</h3>
                 <h2 >
-                 <a id="mo2f_transaction_check" class="mo2f-save-settings-button" style ="background-color: #000000">Refresh Available Email and SMS</a>
+                 <a id="mo2f_transaction_check" class="mo2f-save-settings-button">Refresh Available Email & SMS Transactions</a>
                </h2>
                 <table border="1" style="background-color:#FFFFFF; border:1px solid #CCCCCC; border-collapse: collapse; padding:0px 0px 0px 10px; margin:2px; width:100%">
                     <tr>
@@ -65,7 +65,7 @@ if ( ! get_option( 'mo2f_customerKey' ) ) {
                 <br/>
                 <div class="flex justify-center">';
 			echo '
-                <a id="mo_logout" class="mo2f-reset-settings-button" >Remove Account and Reset Settings</a>
+                <a id="mo_logout" class="mo2f-reset-settings-button" >Remove Account</a>
                 </div>
             </div>
         </div>

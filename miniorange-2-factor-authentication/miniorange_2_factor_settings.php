@@ -9,7 +9,7 @@
  * Plugin Name: miniOrange 2 Factor Authentication
  * Plugin URI: https://miniorange.com
  * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. We Support Google/Authy/LastPass/Microsoft Authenticator, QR Code, Push Notification, Soft Token and Security Questions(KBA) for 3 User in the free version of the plugin.
- * Version: 6.0.4
+ * Version: 6.0.5
  * Author: miniOrange
  * Author URI: https://miniorange.com
  * Text Domain: miniorange-2-factor-authentication
@@ -36,7 +36,7 @@ require dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
 require_once dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
 define( 'MO_HOST_NAME', 'https://login.xecurify.com' );
-define( 'MO2F_VERSION', '6.0.4' );
+define( 'MO2F_VERSION', '6.0.5' );
 define( 'MO2F_PLUGIN_URL', ( plugin_dir_url( __FILE__ ) ) );
 define( 'MO2F_TEST_MODE', false );
 define( 'MO2F_IS_ONPREM', get_option( 'is_onprem', 1 ) );
@@ -423,15 +423,15 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		 */
 		public function mo_wpns_settings_script( $hook ) {
 			if ( strpos( $hook, 'page_mo_2fa' ) ) {
-			wp_enqueue_script( 'mo_wpns_admin_settings_script', plugins_url( 'includes/js/settings_page.min.js', __FILE__ ), array( 'jquery' ), MO2F_VERSION, false );
-			wp_localize_script(
-				'mo_wpns_admin_settings_script',
-				'settings_page_object',
-				array(
-					'nonce'           => wp_create_nonce( 'mo2f_settings_nonce' ),
-					'contactus_nonce' => wp_create_nonce( 'mo-two-factor-ajax-nonce' ),
-				)
-			);			
+				wp_enqueue_script( 'mo_wpns_admin_settings_script', plugins_url( 'includes/js/settings_page.min.js', __FILE__ ), array( 'jquery' ), MO2F_VERSION, false );
+				wp_localize_script(
+					'mo_wpns_admin_settings_script',
+					'settings_page_object',
+					array(
+						'nonce'           => wp_create_nonce( 'mo2f_settings_nonce' ),
+						'contactus_nonce' => wp_create_nonce( 'mo-two-factor-ajax-nonce' ),
+					)
+				);
 				wp_enqueue_script( 'mo_wpns_hide_warnings_script', plugins_url( 'includes/js/hide.min.js', __FILE__ ), array( 'jquery' ), MO2F_VERSION, false );
 				wp_enqueue_script( 'mo_wpns_admin_settings_phone_script', plugins_url( 'includes/js/phone.min.js', __FILE__ ), array(), MO2F_VERSION, false );
 				wp_enqueue_script( 'mo2f-script-handle', plugins_url( 'includes/js/mo2f-color-picker.js', __FILE__ ), array( 'wp-color-picker' ), MO2F_VERSION, true );

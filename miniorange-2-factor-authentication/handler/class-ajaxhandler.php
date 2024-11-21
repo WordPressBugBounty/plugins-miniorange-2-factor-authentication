@@ -1,6 +1,6 @@
 <?php
 /**
- * This file is part of GAuth plugin.
+ * This file is a part of GAuth plugin.
  *
  * @package miniOrange-2-factor-authentication/handler
  */

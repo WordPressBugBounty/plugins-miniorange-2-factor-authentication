@@ -37,7 +37,6 @@ $GLOBALS['mo2f_grace_period']                               = null;
 $GLOBALS['mo2f_grace_period_type']                          = 'hours';
 $GLOBALS['mo2f_enable_email_change']                        = 0;
 $GLOBALS['mo2f_remember_device']                            = '1';
-$GLOBALS['mo2f_enable_custom_poweredby']                    = '1';
 $GLOBALS['mo2f_enable_login_popup_customization']           = '1';
 $GLOBALS['mo2f_show_loginwith_phone']                       = '1';
 $GLOBALS['mo2f_enable_rba_types']                           = '0';
@@ -97,11 +96,11 @@ $GLOBALS['mo2f_reconfig_link_email_template']               = '
 <td>
 <input type="hidden" name="user_id" id="user_id" value="##user_id##">
 <input type="hidden" name="email" id="email" value="##user_email##">
-<p style="margin-top:0;margin-bottom:20px">' . esc_html__( 'Dear ', 'miniorange-2-factor-authentication' ) . '##user_name##,</p>
-<p style="margin-top:0;margin-bottom:10px">' . esc_html__( 'Please click on the below link in order to reconfigure the 2FA method:', 'miniorange-2-factor-authentication' ) . '</p>
-<p><a href="##url##" >' . esc_html__( 'Click to reconfigure 2nd factor', 'miniorange-2-factor-authentication' ) . '</a></p>
-<p style="margin-top:0;margin-bottom:15px">' . esc_html__( 'Thank you', 'miniorange-2-factor-authentication' ) . ',<br> ' . esc_html__( 'miniOrange Team', 'miniorange-2-factor-authentication' ) . ' </p>
-<p style="margin-top:0;margin-bottom:0px;font-size:11px;color:red">' . esc_html__( ' Disclaimer: This email and any files transmitted with it are confidential and intended solely for the use of the individual or entity to whom they are addressed.', 'miniorange-2-factor-authentication' ) . '</p>
+<p style="margin-top:0;margin-bottom:20px">Dear ##user_name##,</p>
+<p style="margin-top:0;margin-bottom:10px">Please click on the below link in order to reconfigure the 2FA method:</p>
+<p><a href="##url##" >Click to reconfigure 2nd factor</a></p>
+<p style="margin-top:0;margin-bottom:15px">Thank you<br> miniOrange Team</p>
+<p style="margin-top:0;margin-bottom:0px;font-size:11px;color:red">Disclaimer: This email and any files transmitted with it are confidential and intended solely for the use of the individual or entity to whom they are addressed.</p>
 </div></div></td>
 </tr>
 </tbody>
