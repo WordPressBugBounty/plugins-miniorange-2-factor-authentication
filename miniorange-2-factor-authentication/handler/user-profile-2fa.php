@@ -5,36 +5,34 @@
  * @package miniOrange-2-factor-authentication/handler
  */
 
-use TwoFA\Onprem\MO2f_Cloud_Onprem_Interface;
-use TwoFA\Onprem\MO2f_Utility;
+use TwoFA\Handler\Twofa\MO2f_Cloud_Onprem_Interface;
+use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Onprem\Two_Factor_Setup_Onprem_Cloud;
 use TwoFA\Database\Mo2fDB;
 use TwoFA\Helper\Mo2f_Common_Helper;
-use TwoFA\Onprem\Miniorange_Password_2Factor_Login;
+use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\MoWpnsConstants;
-
+use TwoFA\Handler\Mo2f_Main_Handler;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 global $mo2f_onprem_cloud_obj;
-$is_registered = empty( get_option( 'mo2f_customerkey' ) ) ? false : true;
+$is_registered = empty( get_site_option( 'mo2f_customerkey' ) ) ? false : true;
 $userrole      = $user->roles;
 $roles         = (array) $user->roles;
-$flag          = 0;
-foreach ( $roles as $userrole ) {
-	if ( get_option( 'mo2fa_' . $userrole ) === '1' ) {
-		$flag = 1;
-	}
-}
-if ( ! current_user_can( 'administrator', $user->ID ) || ( ! MO2F_IS_ONPREM && ! $is_registered ) || 0 === $flag ) {
+$main_handler  = new Mo2f_Main_Handler();
+$flag          = $main_handler->mo2f_check_if_twofa_is_enabled( $user );
+if ( ! current_user_can( 'administrator', $user->ID ) || ( ! MO2F_IS_ONPREM && ! $is_registered ) || ! $flag ) {
 	return;
 } elseif ( ! MO2F_IS_ONPREM && ! $is_registered ) {
 	return;
 }
 $userid            = get_current_user_id();
-$available_methods = $mo2f_onprem_cloud_obj->mo2f_plan_methods();
+$common_helper     = new Mo2f_Common_Helper();
+$available_methods = $common_helper->fetch_methods( $user );
+$available_methods = apply_filters( 'mo2f_basic_plan_settings_filter', $available_methods, 'fetch_twofa_methods', array( 'user' => $user ) );
 if ( ! $available_methods ) {
 	return;
 }
@@ -45,7 +43,7 @@ $same_user = $user->ID === $userid;
 global $mo2fdb_queries;
 $current_method         = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
 $twofactor_transactions = new Mo2fDB();
-$exceeded               = $twofactor_transactions->check_alluser_limit_exceeded( $user->ID );
+$exceeded               = apply_filters( 'mo2f_basic_plan_settings_filter', $mo2fdb_queries->check_alluser_limit_exceeded( $user->ID ), 'is_user_limit_exceeded', array() );
 if ( $exceeded ) {
 	return;
 }
@@ -62,12 +60,14 @@ if ( ! $user_column_exists ) {
 $two_factor_methods_descriptions = array(
 	MoWpnsConstants::GOOGLE_AUTHENTICATOR => 'administrator' === $user->roles[0] ? 'Please scan the below QR code using Google Authenticator app.' : 'Link to configure Google authenticator method will be sent to ' . $user->user_email . '.',
 	MoWpnsConstants::SECURITY_QUESTIONS   => 'Please click on %1$1sUpdate User%2$2s button in order to set the %3$3sSecurity Questions%4$4s method for ' . $user->user_login . '.',
-	MoWpnsConstants::OTP_OVER_SMS         => get_option( 'mo2f_customerkey' ) ? 'Enter the ' . $user->user_login . '\'s phone number and click on %1$1sSave%2$2s .' : '',
+	MoWpnsConstants::OTP_OVER_SMS         => get_site_option( 'mo2f_customerkey' ) ? 'Enter the ' . $user->user_login . '\'s phone number and click on %1$1sSave%2$2s .' : '',
 	MoWpnsConstants::OTP_OVER_EMAIL       => '',
 	MoWpnsConstants::OUT_OF_BAND_EMAIL    => '',
 	MoWpnsConstants::HARDWARE_TOKEN       => 'Enter the One Time Passcode on your Hardware Token to login.',
 );
 global $main_dir;
+wp_enqueue_style( 'mo2f_intl_tel_style', plugin_dir_url( __FILE__ ) . '../includes/css/phone.min.css', array(), MO2F_VERSION );
+wp_enqueue_script( 'mo2f_intl_tel_script', plugin_dir_url( __FILE__ ) . '../includes/js/phone.min.js', array( 'jquery' ), MO2F_VERSION, false );
 wp_enqueue_script( 'mo_wpns_min_qrcode_script', $main_dir . '/includes/jquery-qrcode/jquery-qrcode.min.js', array(), MO2F_VERSION, false );
 wp_enqueue_style( 'mo2f_user-profile_style', $main_dir . '/includes/css/user-profile.min.css', array(), MO2F_VERSION );
 wp_enqueue_script( 'user-profile-2fa-script', $main_dir . '/includes/js/user-profile-twofa.min.js', array(), MO2F_VERSION, false );
@@ -91,7 +91,7 @@ $twofa_heading .= $userid === $user->ID ? 'yourself' : $user->user_login;
 				<div class="mo2fa_tab">
 					<?php
 					foreach ( $two_factor_methods_descriptions as $method => $description ) {
-						if ( array_key_exists( $method, $available_methods ) ) {
+						if ( in_array( $method, $available_methods, true ) ) {
 							?>
 							<button class="mo2fa_tablinks" type="button"
 							<?php
@@ -109,7 +109,7 @@ $twofa_heading .= $userid === $user->ID ? 'yourself' : $user->user_login;
 			</form>
 			<?php
 			foreach ( $two_factor_methods_descriptions as $method => $description ) {
-				if ( array_key_exists( $method, $available_methods ) ) {
+				if ( in_array( $method, $available_methods, true ) ) {
 					?>
 					<div id="<?php echo esc_attr( $method ); ?>" class="mo2fa_tabcontent">
 						<p>
@@ -158,7 +158,7 @@ $twofa_heading .= $userid === $user->ID ? 'yourself' : $user->user_login;
 		$email                  = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID );
 		$pass_2fa_login_session = new Miniorange_Password_2Factor_Login();
 		$trimmed_method         = $method;
-		$is_registered          = get_option( 'mo2f_customerkey' );
+		$is_registered          = get_site_option( 'mo2f_customerkey' );
 		$userid                 = get_current_user_id();
 		if ( empty( $email ) ) {
 			$mo2fdb_queries->update_user_details( $user->ID, array( 'mo2f_user_email' => $user->user_email ) );
@@ -215,7 +215,7 @@ $twofa_heading .= $userid === $user->ID ? 'yourself' : $user->user_login;
 						'</b>',
 					);
 					$mo2f_user_phone = $mo2fdb_queries->get_user_detail( 'mo2f_user_phone', $user->ID );
-					$user_phone      = $mo2f_user_phone ? $mo2f_user_phone : get_option( 'user_phone_temp' );
+					$user_phone      = $mo2f_user_phone ? $mo2f_user_phone : get_site_option( 'user_phone_temp' );
 					?>
 				<form name="f" method="post" action="" id="<?php echo esc_attr( 'mo2f_verify_form-' . $trimmed_method ); ?>">
 

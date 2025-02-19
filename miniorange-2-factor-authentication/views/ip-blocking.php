@@ -21,7 +21,7 @@ echo '	<h2>IP LookUP<a href="https://developers.miniorange.com/docs/security/wor
 						<td>Enter IP Address : </td>
 						<td style="padding:0px 10px"><input class="mo_wpns_table_textbox" id="lookupip" type="text" name="lookupip"
 							required placeholder="IP address" value=""  pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}" /></td>
-						<td><input type="submit" id="lookup-button" class="button button-primary button-large" value="Lookup IP" /></td>
+						<td><input type="submit" id="lookup-button" class="mo2f-save-settings-button" value="Lookup IP" /></td>
 					</tr>
 					<tr><td colspan="3"><div class="ip_lookup_desc" hidden ></div><td></tr>
 				</table>
@@ -32,12 +32,12 @@ echo '	<h2>IP LookUP<a href="https://developers.miniorange.com/docs/security/wor
 echo '	<div class="mo_wpns_setting_layout">';
 
 echo '		<h2>Manual Block IP\'s</h2>
-			<form name="f" method="post" action="" id="manualblockipform" >
+			<form name="mo2f_manualblockipform" method="post" action="" id="manualblockipform" >
 				<input type="hidden" name="option" value="mo_wpns_manual_block_ip" />
 				<table><tr><td>You can manually block an IP address here: </td>
 				<td style="padding:0px 10px"><input class="mo_wpns_table_textbox" type="text" name="ip"
 					required placeholder="IP address" value="" pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}" /></td>
-				<td><input type="submit" class="button button-primary button-large" value="Manual Block IP" /></td></tr></table>
+				<td><input type="submit" class="mo2f-save-settings-button" value="Manual Block IP" /></td></tr></table>
 			</form>
 			<h2>Blocked IP\'s</h2>
 			<table id="blockedips_table" class="display">
@@ -69,7 +69,7 @@ echo '			</tbody>
 				<table><tr><td>Add new IP address to whitelist : </td>
 				<td style="padding:0px 10px"><input class="mo_wpns_table_textbox" type="text" name="ip"
 					required placeholder="IP address" value=""  pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}" /></td>
-				<td><input type="submit" class="button button-primary button-large" value="Whitelist IP" /></td></tr></table>
+				<td><input type="submit" class="mo2f-save-settings-button" value="Whitelist IP" /></td></tr></table>
 			</form>
 			<h2>Whitelisted IP\'s</h2>
 			<table id="whitelistedips_table" class="display">

@@ -17,7 +17,7 @@ if ( ! class_exists( 'Mo2f_Tabs' ) ) {
 	final class Mo2f_Tabs {
 		const TWO_FACTOR           = 'two_factor';
 		const WHITE_LABELLING      = 'white_labelling';
-		const ADVANCE_SETTINGS     = 'advance_settings';
+		const REPORTS              = 'reports';
 		const UPGRADE              = 'upgrade';
 		const MY_ACCOUNT           = 'my_account';
 		const SETUPWIZARD_SETTINGS = 'setupwizard_settings';

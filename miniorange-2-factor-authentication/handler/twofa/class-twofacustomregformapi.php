@@ -19,12 +19,14 @@
  * @license        http://www.gnu.org/copyleft/gpl.html MIT/Expat, see LICENSE.php
  */
 
-namespace TwoFA\Handler;
+namespace TwoFA\Handler\Twofa;
 
 use TwoFA\Helper\MoWpnsMessages;
-use TwoFA\Onprem\MO2f_Utility;
+use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Handler\Twofa\TwoFAMOGateway;
+use TwoFA\Traits\Instance;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -40,6 +42,8 @@ if ( ! class_exists( 'TwoFACustomRegFormAPI' ) ) {
 	 * Twofa customer registration
 	 */
 	class TwoFACustomRegFormAPI {
+
+		use Instance;
 
 		/**
 		 * It is a constructor
@@ -74,9 +78,9 @@ if ( ! class_exists( 'TwoFACustomRegFormAPI' ) ) {
 			if ( isset( $response['status'] ) && isset( $response['message'] ) && 'ERROR' === $response['status'] && strpos( $response['message'], 'curl extension' ) !== false ) {
 				$response['message'] = 'Please enable curl extension.';
 			}
-			if ( isset( $response['phoneDelivery'] ) && isset( $response['phoneDelivery']['contact'] ) ) {
+			if ( isset( $response['phoneDelivery'] ) && isset( $response['phoneDelivery']['contact'] ) && isset( $response['status'] ) && 'FAILED' !== $response['status'] ) {
 				$response['message'] = MoWpnsMessages::lang_translate( MoWpnsMessages::SENT_OTP ) . ' ' . MO2f_Utility::get_hidden_phone( $response['phoneDelivery']['contact'] ) . MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_SENT_OTP );
-			} elseif ( isset( $response['emailDelivery'] ) && isset( $response['emailDelivery']['contact'] ) ) {
+			} elseif ( isset( $response['emailDelivery'] ) && isset( $response['emailDelivery']['contact'] ) && isset( $response['status'] ) && 'FAILED' !== $response['status'] ) {
 				$response['message'] = MoWpnsMessages::lang_translate( MoWpnsMessages::SENT_OTP ) . ' ' . MO2f_Utility::get_hidden_phone( $response['emailDelivery']['contact'] ) . MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_SENT_OTP );
 			} elseif ( isset( $response['message'] ) ) {
 				$response['message'] = MoWpnsMessages::lang_translate( $response['message'] );

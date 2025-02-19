@@ -39,17 +39,15 @@ $GLOBALS['mo2f_enable_email_change']                        = 0;
 $GLOBALS['mo2f_remember_device']                            = '1';
 $GLOBALS['mo2f_enable_login_popup_customization']           = '1';
 $GLOBALS['mo2f_show_loginwith_phone']                       = '1';
-$GLOBALS['mo2f_enable_rba_types']                           = '0';
 $GLOBALS['mo2f_action_rba_limit_exceed']                    = '1';
-$GLOBALS['mo2f_session_allowed_type']                       = '1';
 $GLOBALS['mo2f_sesssion_restriction']                       = '1';
 $GLOBALS['mo2f_session_logout_time_enable']                 = '1';
 $GLOBALS['mo2f_login_option']                               = '0';
-$GLOBALS['mo2f_email_ver_subject']                          = '2-Factor Authentication(Email Verification Via Link)';
-$GLOBALS['mo2f_email_subject']                              = '2-Factor Authentication';
-$GLOBALS['mo2f_2fa_reconfig_email_subject']                 = '2FA-Reconfiguration Link';
-$GLOBALS['mo2f_2fa_backup_code_email_subject']              = '2-Factor Authentication(Backup Codes)';
-$GLOBALS['mo2f_2fa_new_ip_detected_email_subject']          = 'Sign in from a new location for your user account | ' . get_bloginfo();
+$GLOBALS['mo2f_email_ver_subject']                          = '2FA - Email Verification Via Link';
+$GLOBALS['mo2f_email_subject']                              = '2FA - Email Verification Via OTP';
+$GLOBALS['mo2f_2fa_reconfig_email_subject']                 = '2FA - Account Recovery Link';
+$GLOBALS['mo2f_2fa_backup_code_email_subject']              = '2FA - Backup Codes';
+$GLOBALS['mo2f_2fa_new_ip_detected_email_subject']          = '2FA - User Logged In Using New IP';
 $GLOBALS['mo2f_otp_over_email_template']                    = '<table cellpadding="25" style="margin:0px auto">
 <tbody>
 <tr>
@@ -96,10 +94,10 @@ $GLOBALS['mo2f_reconfig_link_email_template']               = '
 <td>
 <input type="hidden" name="user_id" id="user_id" value="##user_id##">
 <input type="hidden" name="email" id="email" value="##user_email##">
-<p style="margin-top:0;margin-bottom:20px">Dear ##user_name##,</p>
-<p style="margin-top:0;margin-bottom:10px">Please click on the below link in order to reconfigure the 2FA method:</p>
-<p><a href="##url##" >Click to reconfigure 2nd factor</a></p>
-<p style="margin-top:0;margin-bottom:15px">Thank you<br> miniOrange Team</p>
+<p style="margin-top:0;margin-bottom:20px">Dear ' . '##user_name##,</p>
+<p style="margin-top:0;margin-bottom:10px">Please click on the below link to recover your account:</p>
+<p><a href="##url##" >Click to recover your account</a></p>
+<p style="margin-top:0;margin-bottom:15px">Thank you,<br> miniOrange Team</p>
 <p style="margin-top:0;margin-bottom:0px;font-size:11px;color:red">Disclaimer: This email and any files transmitted with it are confidential and intended solely for the use of the individual or entity to whom they are addressed.</p>
 </div></div></td>
 </tr>
@@ -199,3 +197,15 @@ $GLOBALS['mo2f_new_ip_detected_email_template']             = '<table cellpaddin
 </tr>
 </tbody>
 </table>';
+$GLOBALS['mo2f_default_kba_question_set'] = array(
+	'What is your first company name?',
+	'What was your childhood nickname?',
+	'In what city did you meet your spouse/significant other?',
+	'What is the name of your favorite childhood friend?',
+	'What school did you attend for sixth grade?',
+	'In what city or town was your first job?',
+	'What is your favourite sport?',
+	'Who is your favourite sports player?',
+	'What is your grandmother\'s maiden name?',
+	'What was your first vehicle\'s registration number?',
+);

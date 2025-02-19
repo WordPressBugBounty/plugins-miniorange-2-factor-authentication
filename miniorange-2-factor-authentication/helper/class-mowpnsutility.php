@@ -9,7 +9,8 @@ namespace TwoFA\Helper;
 
 use TwoFA\Traits\Instance;
 use TwoFA\Helper\MoWpnsHandler;
-use TwoFA\Onprem\Miniorange_Authentication;
+use TwoFA\Handler\Twofa\Miniorange_Authentication;
+use WP_Session_Tokens;
 
 require_once dirname( dirname( __FILE__ ) ) . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
@@ -158,10 +159,9 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		/**
 		 * Collect data for the plugin configurations.
 		 *
-		 * @param boolean $send_all_configuration To check whether to send all the plugin configuration.
 		 * @return string
 		 */
-		public static function mo_2fa_send_configuration( $send_all_configuration = false ) {
+		public static function mo_2fa_send_configuration() {
 			global $mo2fdb_queries;
 			$user_object   = wp_get_current_user();
 			$other_methods = $mo2fdb_queries->get_all_user_2fa_methods();
@@ -240,19 +240,6 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 				$plugin_configuration = $plugin_configuration . $space . 'Setup Wizard Skipped: ' . $mo2f_wizard_skipped;
 			} else {
 				$plugin_configuration = $plugin_configuration . $space . 'Setup Wizard Skipped: No';
-			}
-
-			if ( ! $send_all_configuration ) {
-				return $plugin_configuration;
-			}
-
-			if ( get_site_option( 'enable_form_shortcode' ) ) {
-				$forms = array( 'mo2f_custom_reg_bbpress', 'mo2f_custom_reg_wocommerce', 'mo2f_custom_reg_custom', 'mo2f_custom_reg_pmpro' );
-				foreach ( $forms as $form ) {
-					if ( get_site_option( $form ) ) {
-						$plugin_configuration = $plugin_configuration . $space . $form . ':' . get_option( $form );
-					}
-				}
 			}
 
 			return $plugin_configuration;
@@ -354,6 +341,43 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 			$headers = array( 'Content-Type: text/html; charset=UTF-8' );
 			wp_mail( $to_email, $subject, $content, $headers );
 
+		}
+
+		/**
+		 * Check session details at login.
+		 *
+		 * @param object $user User.
+		 * @param bool   $is_ajax_request is_ajax_request.
+		 * @return mixed
+		 */
+		public function mo2f_check_session_management_details( $user, $is_ajax_request = true ) {
+			$session_allowed = get_site_option( 'mo2f_maximum_allowed_session', 1 );
+			$session_details = WP_Session_Tokens::get_instance( $user->ID );
+			$session_count   = count( $session_details->get_all() );
+			if ( $session_count >= (int) $session_allowed ) {
+				$session_action = get_site_option( 'mo2f_session_allowed_type', 'allow_access' );
+				if ( 'allow_access' === $session_action ) {
+					$previous_session_details = WP_Session_Tokens::get_instance( $user->ID );
+					$result                   = $previous_session_details->destroy_all();
+				} elseif ( $is_ajax_request ) {
+					wp_send_json_error( MoWpnsConstants::SESSION_LIMIT_REACHED );
+				} else {
+					return MoWpnsConstants::SESSION_LIMIT_REACHED;
+				}
+			}
+		}
+
+		/**
+		 * Shows upgradation message.
+		 *
+		 * @param string $action Action.
+		 * @return void
+		 */
+		public function mo2f_show_upgrade_message( $action ) {
+			$show_message = new MoWpnsMessages();
+			if ( ! has_action( $action ) ) {
+				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ), 'ERROR' );
+			}
 		}
 
 	}

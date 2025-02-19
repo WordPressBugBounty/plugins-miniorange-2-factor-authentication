@@ -18,12 +18,13 @@
  * @package        miniorange-2-factor-authentication/handler/twofa
  */
 
-namespace TwoFA\Handler;
+namespace TwoFA\Handler\Twofa;
 
 use TwoFA\Helper\MoWpnsUtility;
-use TwoFA\Onprem\MO2f_Cloud_Onprem_Interface;
+use TwoFA\Handler\Twofa\MO2f_Cloud_Onprem_Interface;
 use TwoFA\Helper\TwoFAMoSessions;
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Traits\Instance;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -34,8 +35,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Contains Request Calls to Customer service.
  */
 global $mo2f_dir_name;
-
-require_once $mo2f_dir_name . 'helper' . DIRECTORY_SEPARATOR . 'class-twofamosessions.php';
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -49,6 +48,8 @@ if ( ! class_exists( 'TwoFAMOGateway' ) ) {
 	 * Twofa Gatewayclass class
 	 */
 	class TwoFAMOGateway {
+
+		use Instance;
 
 		/**
 		 * It will help to send the otp

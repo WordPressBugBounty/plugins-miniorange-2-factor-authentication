@@ -99,4 +99,5 @@ $two_factor_premium_doc = array(
 	'Enable 2FA Role Based'                  => MoWpnsConstants::MO2F_PLUGINS_PAGE_URL . '/how-to-enable-role-based-2fa-for-wordpress-two-factor-authentication',
 
 	'Session Control'                        => MoWpnsConstants::MO2F_PLUGINS_PAGE_URL . '/set-two-factor-from-session-addon',
+	'License Transfer'                       => MoWpnsConstants::MO2F_PLUGINS_PAGE_URL . '/migrate-wordpress-2fa-premium-license-from-testing-site-to-production-site',
 );

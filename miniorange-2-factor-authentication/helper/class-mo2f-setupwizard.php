@@ -5,11 +5,15 @@
  * @package miniorange-2-factor-authentication/controllers/twofa
  */
 
-use TwoFA\Onprem\Google_Auth_Onpremise;
-use TwoFA\Onprem\MO2f_Utility;
+namespace TwoFA\Helper;
+
+use TwoFA\Handler\Twofa\Google_Auth_Onpremise;
+use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Database\Mo2fDB;
 use TwoFA\Helper\MoWpnsConstants;
-use TwoFA\Onprem\MO2f_Cloud_Onprem_Interface;
+use TwoFA\Handler\Twofa\MO2f_Cloud_Onprem_Interface;
+use TwoFA\Traits\Instance;
+use WP_Error;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -20,6 +24,9 @@ if ( ! class_exists( 'Mo2f_Setupwizard' ) ) {
 	 * Class Mo2f_Setupwizard
 	 */
 	class Mo2f_Setupwizard {
+
+		use Instance;
+
 		/**
 		 * Constructor of class.
 		 */
@@ -71,29 +78,28 @@ if ( ! class_exists( 'Mo2f_Setupwizard' ) ) {
 			if ( ! check_ajax_referer( 'mo-two-factor-ajax-nonce', 'nonce', false ) ) {
 				wp_send_json_error( 'mo2f-ajax' );
 			}
-			$ques_anwers = array(
-				'kba_q1' => 'mo2f_kbaquestion_1',
-				'kba_q2' => 'mo2f_kbaquestion_2',
-				'kba_q3' => 'mo2f_kbaquestion_3',
-				'kba_a1' => 'mo2f_kba_ans1',
-				'kba_a2' => 'mo2f_kba_ans2',
-				'kba_a3' => 'mo2f_kba_ans3',
-			);
-
-			foreach ( $ques_anwers as $key => $value ) {
-				$ques_anwers[ $key ] = isset( $_POST[ $value ] ) ? sanitize_text_field( wp_unslash( $_POST[ $value ] ) ) : null;
+			$default_question_count = get_site_option( 'mo2f_default_kbaquestions_users', 2 );
+			$custom_question_count  = get_site_option( 'mo2f_custom_kbaquestions_users', 1 );
+			$total_questions        = $default_question_count + $custom_question_count;
+			$kba_ques_ans           = array();
+			for ( $i = 1; $i <= $total_questions; $i++ ) {
+				$kba_ques_ans[ 'kba_q' . $i ] = isset( $post[ 'mo2f_kbaquestion_' . $i ] ) ? sanitize_text_field( wp_unslash( $post[ 'mo2f_kbaquestion_' . $i ] ) ) : '';
+				$kba_ques_ans[ 'kba_a' . $i ] = isset( $post[ 'mo2f_kba_ans' . $i ] ) ? sanitize_text_field( wp_unslash( $post[ 'mo2f_kba_ans' . $i ] ) ) : '';
 			}
 			$user = wp_get_current_user();
 			$this->mo2f_check_and_create_user( $user->ID );
-			if ( MO2f_Utility::mo2f_check_empty_or_null( $ques_anwers['kba_q1'] ) || MO2f_Utility::mo2f_check_empty_or_null( $ques_anwers['kba_a1'] ) || MO2f_Utility::mo2f_check_empty_or_null( $ques_anwers['kba_q2'] ) || MO2f_Utility::mo2f_check_empty_or_null( $ques_anwers['kba_a2'] ) || MO2f_Utility::mo2f_check_empty_or_null( $ques_anwers['kba_q3'] ) || MO2f_Utility::mo2f_check_empty_or_null( $ques_anwers['kba_a3'] ) ) {
-				wp_send_json_error( 'Invalid Questions or Answers' );
+			foreach ( $kba_ques_ans as $key => $value ) {
+				if ( MO2f_Utility::mo2f_check_empty_or_null( $value ) ) {
+					wp_send_json_error( 'Invalid Questions or Answers' );
+				}
 			}
-			if ( strcasecmp( $ques_anwers['kba_q1'], $ques_anwers['kba_q2'] ) === 0 || strcasecmp( $ques_anwers['kba_q2'], $ques_anwers['kba_q3'] ) === 0 || strcasecmp( $ques_anwers['kba_q3'], $ques_anwers['kba_q1'] ) === 0 ) {
+			$questions        = array_keys( $kba_ques_ans );
+			$unique_questions = array_unique( array_map( 'strtolower', $kba_ques_ans ) );
+			if ( count( $questions ) !== count( $unique_questions ) ) {
 				wp_send_json_error( 'The questions you select must be unique.' );
 			}
-
-			foreach ( $ques_anwers as $key => $value ) {
-				$ques_anwers[ $key ] = addcslashes( stripslashes( $value ), '"\\' );
+			foreach ( $kba_ques_ans as $key => $value ) {
+				$kba_ques_ans[ $key ] = addcslashes( stripslashes( $value ), '"\\' );
 			}
 			$email            = $user->user_email;
 			$kba_registration = new MO2f_Cloud_Onprem_Interface();
@@ -105,7 +111,7 @@ if ( ! class_exists( 'Mo2f_Setupwizard' ) ) {
 					'mo2f_user_email'                      => $email,
 				)
 			);
-			$kba_reg_reponse = json_decode( $kba_registration->mo2f_register_kba_details( $email, $ques_anwers['kba_q1'], $ques_anwers['kba_a1'], $ques_anwers['kba_q2'], $ques_anwers['kba_a2'], $ques_anwers['kba_q3'], $ques_anwers['kba_a3'], $user->ID ), true );
+			$kba_reg_reponse = json_decode( $kba_registration->mo2f_register_kba_details( $email, $kba_ques_ans, $user->ID ), true );
 
 			if ( 'SUCCESS' === $kba_reg_reponse['status'] ) {
 				wp_send_json_success();
@@ -173,7 +179,7 @@ if ( ! class_exists( 'Mo2f_Setupwizard' ) ) {
 			} else {
 				$skip_wizard_2fa_stage = isset( $_POST['twofactorskippedon'] ) ? sanitize_text_field( wp_unslash( $_POST['twofactorskippedon'] ) ) : null;
 
-				update_option( 'mo2f_wizard_skipped', $skip_wizard_2fa_stage );
+				update_site_option( 'mo2f_wizard_skipped', $skip_wizard_2fa_stage );
 			}
 		}
 
@@ -186,7 +192,7 @@ if ( ! class_exists( 'Mo2f_Setupwizard' ) ) {
 		public function mo2f_check_and_create_user( $user_id ) {
 			global $mo2fdb_queries;
 			$twofactor_transactions = new Mo2fDB();
-			$exceeded               = $twofactor_transactions->check_alluser_limit_exceeded( $user_id );
+			$exceeded               = apply_filters( 'mo2f_basic_plan_settings_filter', $mo2fdb_queries->check_alluser_limit_exceeded( $user_id ), 'is_user_limit_exceeded', array() );
 			if ( $exceeded ) {
 				echo 'User Limit has been exceeded';
 				exit;

@@ -10,14 +10,6 @@
 namespace TwoFA\Views;
 
 use TwoFA\Helper\MoWpnsConstants;
-use TwoFA\Onprem\Google_Auth_Onpremise;
-use TwoFA\Helper\Mo2f_Common_Helper;
-use Mo2f_KBA_Handler;
-use Mo2f_EMAIL_Handler;
-use Mo2f_TELEGRAM_Handler;
-use Mo2f_OUTOFBANDEMAIL_Handler;
-use Mo2f_SMS_Handler;
-use Mo2f_GOOGLEAUTHENTICATOR_Handler;
 use TwoFA\Helper\MoWpnsUtility;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -75,6 +67,7 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 			// Set current step.
 			$current_step       = ( isset( $_GET['current-step'] ) ) ? sanitize_text_field( wp_unslash( $_GET['current-step'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended -- Reading GET parameter from the URL for checking the tab name, doesn't require nonce verification.
 			$this->current_step = ! empty( $current_step ) ? $current_step : current( array_keys( $this->wizard_steps ) );
+			wp_register_style( 'mo_2fa_admin_setupWizard', plugins_url( 'includes' . DIRECTORY_SEPARATOR . 'css' . DIRECTORY_SEPARATOR . 'setup-wizard.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
 			wp_enqueue_script( 'mo2f_setup_wizard', plugins_url( 'includes' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'setup-wizard.min.js', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
 			$save_step = ( isset( $_POST['save_step'] ) ) ? sanitize_text_field( wp_unslash( $_POST['save_step'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Reading POST parameter for checking the saved step, doesn't require nonce verification for the 1st window.
 			if ( ! empty( $save_step ) && ! empty( $this->wizard_steps[ $this->current_step ]['save'] ) ) {
@@ -252,7 +245,7 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 		<p class="mo2f-setup-wizard-font"><?php esc_html_e( 'This wizard will assist you with plugin configuration and the 2FA settings for you and the users on this website.', 'miniorange-2-factor-authentication' ); ?></p>
 
 		<div class="mo2f-setup-actions">
-			<a class="button mo2f-save-settings-button"
+			<a class="button button-primary"
 				href="<?php echo esc_url( $next_step ); ?>">
 				<?php esc_html_e( 'Let’s get started!', 'miniorange-2-factor-authentication' ); ?>
 			</a>
@@ -468,16 +461,16 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 				if ( isset( $wp_roles ) ) {
 					update_site_option( 'mo2f_activate_plugin', 1 );
 					foreach ( $wp_roles->role_names as $role => $name ) {
-						update_option( 'mo2fa_' . $role, 1 );
+						update_site_option( 'mo2fa_' . $role, 1 );
 					}
 				}
 			} elseif ( isset( $settings['mo2f-enforcement-policy'] ) && 'mo2f-certain-roles-only' === $settings['mo2f-enforcement-policy'] && isset( $settings['mo2f-enforce-roles'] ) && is_array( $settings['mo2f-enforce-roles'] ) ) {
 				foreach ( $wp_roles->role_names as $role => $name ) {
 					if ( in_array( 'mo2fa_' . $role, $settings['mo2f-enforce-roles'], true ) ) {
 						update_site_option( 'mo2f_activate_plugin', 1 );
-						update_option( 'mo2fa_' . $role, 1 );
+						update_site_option( 'mo2fa_' . $role, 1 );
 					} else {
-						update_option( 'mo2fa_' . $role, 0 );
+						update_site_option( 'mo2fa_' . $role, 0 );
 					}
 				}
 			}

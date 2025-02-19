@@ -20,6 +20,8 @@
 
 namespace TwoFA\Helper;
 
+use TwoFA\Traits\Instance;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -31,6 +33,8 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 	 * Contains Request Calls to Customer service.
 	 **/
 	class MoWpnsHandler {
+
+		use Instance;
 
 		/**
 		 * It is for check the ip is block
@@ -108,11 +112,11 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 				return;
 			}
 			$blocked_for_time = null;
-			if ( ! $permenently && get_option( 'mo2f_time_of_blocking_type' ) ) {
-				$blocking_type        = get_option( 'mo2f_time_of_blocking_type' );
+			if ( ! $permenently && get_site_option( 'mo2f_time_of_blocking_type' ) ) {
+				$blocking_type        = get_site_option( 'mo2f_time_of_blocking_type' );
 				$time_of_blocking_val = 3;
-				if ( get_option( 'mo2f_time_of_blocking_val' ) ) {
-					$time_of_blocking_val = get_option( 'mo2f_time_of_blocking_val' );
+				if ( get_site_option( 'mo2f_time_of_blocking_val' ) ) {
+					$time_of_blocking_val = get_site_option( 'mo2f_time_of_blocking_val' );
 				}
 				if ( 'months' === $blocking_type ) {
 					$blocked_for_time = current_time( 'timestamp' ) + $time_of_blocking_val * 30 * 24 * 60 * 60; // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- This will return the current time of user action
@@ -126,7 +130,7 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 			$wpns_db_queries->insert_blocked_ip( $ip_address, $reason, $blocked_for_time );
 			// send notification.
 			global $mo_wpns_utility;
-			if ( MoWpnsUtility::get_mo2f_db_option( 'mo_wpns_enable_ip_blocked_email_to_admin', 'get_option' ) ) {
+			if ( MoWpnsUtility::get_mo2f_db_option( 'mo_wpns_enable_ip_blocked_email_to_admin', 'site_option' ) ) {
 				$mo_wpns_utility->sendIpBlockedNotification( $ip_address, MoWpnsConstants::LOGIN_ATTEMPTS_EXCEEDED );
 			}
 
@@ -261,15 +265,6 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 			return $wpns_db_queries->get_login_transaction_report();
 		}
 		/**
-		 * It will get the report in tabular form
-		 *
-		 * @return string
-		 */
-		public function get_error_transaction_report() {
-			global $wpns_db_queries;
-			return $wpns_db_queries->get_error_transaction_report();
-		}
-		/**
 		 * Move failed transaction on table
 		 *
 		 * @param string $ip_address .
@@ -312,11 +307,11 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 				return false;
 			}
 			$range_count = 0;
-			if ( is_numeric( get_option( 'mo_wpns_iprange_count' ) ) ) {
-				$range_count = intval( get_option( 'mo_wpns_iprange_count' ) );
+			if ( is_numeric( get_site_option( 'mo_wpns_iprange_count' ) ) ) {
+				$range_count = intval( get_site_option( 'mo_wpns_iprange_count' ) );
 			}
 			for ( $i = 1; $i <= $range_count; $i++ ) {
-				$blockedrange = get_option( 'mo_wpns_iprange_range_' . $i );
+				$blockedrange = get_site_option( 'mo_wpns_iprange_range_' . $i );
 				$rangearray   = explode( '-', $blockedrange );
 				if ( 2 === count( $rangearray ) ) {
 					$lowip  = ip2long( trim( $rangearray[0] ) );

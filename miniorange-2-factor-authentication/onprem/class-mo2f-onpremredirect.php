@@ -11,6 +11,9 @@ use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\TwoFAMoSessions;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsMessages;
+use TwoFA\Handler\Twofa\Google_Auth_Onpremise;
+use TwoFA\Handler\Twofa\MO2f_Utility;
+use TwoFA\Handler\Twofa\Miniorange_Authentication;
 
 if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 	/**
@@ -171,7 +174,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 		 * @return array
 		 */
 		public function mo2f_check_if_email_transactions_exists() {
-			if ( (int) MoWpnsUtility::get_mo2f_db_option( 'cmVtYWluaW5nT1RQ', 'site_option' ) <= 0 ) {
+			if ( (int) MoWpnsUtility::get_mo2f_db_option( 'cmVtYWluaW5nT1RQ', 'site_option' ) <= 0 && ! get_site_option( 'mo2fa_lk' ) ) {
 				return false;
 			} else {
 				return true;
@@ -242,7 +245,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 						'status'  => 'ERROR',
 						'message' => 'The One time passcode has been expired. Please resend the code.',
 					);
-				} elseif ( (string) ( $transaction_id . $otp_token ) === (string) $valid_token ) {
+				} elseif ( strtolower( (string) ( $transaction_id . $otp_token ) ) === strtolower( (string) $valid_token ) ) {
 					$arr = array(
 						'status'  => 'SUCCESS',
 						'message' => 'Successfully validated.',

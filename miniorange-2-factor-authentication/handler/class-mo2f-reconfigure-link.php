@@ -5,13 +5,14 @@
  * @package miniOrange-2-factor-authentication/handler
  */
 
-namespace TwoFA\Onprem;
+namespace TwoFA\Handler;
 
-use TwoFA\Onprem\MO2f_Utility;
+use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\Mo2f_Login_Popup;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\Mo2f_Common_Helper;
+use TwoFA\Traits\Instance;
 use WP_REST_Request;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -23,6 +24,8 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 	 * Class Mo2f_Reconfigure_Link
 	 */
 	class Mo2f_Reconfigure_Link {
+
+		use Instance;
 
 		/**
 		 * Class Mo2f_Reconfigure_Link constructor
@@ -46,7 +49,7 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 			$user_id            = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
 			$currentuser        = get_user_by( 'id', $user_id );
 			$email_delivered    = $this->mo2f_send_reconfig_link_on_email( $currentuser, $currentuser->user_email );
-			$mo2f_title         = $email_delivered ? 'Reconfiguration Link Email Sent!' : 'Reconfiguration Link Email Counldn\'t Send!';
+			$mo2f_title         = $email_delivered ? 'Account Recovery Email Sent' : 'Account Recovery Email Counldn\'t Send';
 			$mo2f_message       = $this->mo2f_get_message( $email_delivered, $user_id );
 			$mo2fa_login_status = MoWpnsConstants::MO_2_FACTOR_RECONFIGURATION_LINK_SENT;
 			$this->mo2f_show_login_prompt( $mo2f_message, $mo2fa_login_status, $currentuser, $redirect_to, $session_id_encrypt, $mo2f_title, $twofa_method );
@@ -61,7 +64,7 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 		 */
 		public function mo2f_get_message( $email_delivered, $user_id ) {
 			if ( $email_delivered ) {
-				return 'An email containing the link to reconfigure your Two-Factor Authentication (2FA) settings has been sent to your inbox. Please click on the link to proceed with the reconfiguration process.';
+				return 'An email containing the link to recover your account by resettings your Two-Factor Authentication (2FA) details has been sent to your inbox. Please click on that link for the same.';
 			} else {
 				return 'Apologies, we\'re encountering an issue while attempting to send the reconfiguration email. Kindly verify your network ' . ( user_can( $user_id, 'administrator' ) ? 'or SMTP connection settings.' : 'and try again.' );
 			}
@@ -82,7 +85,7 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 		public function mo2f_show_login_prompt( $mo2fa_login_message, $mo2fa_login_status, $current_user, $redirect_to, $session_id, $mo2f_title, $twofa_method ) {
 			$login_popup     = new Mo2f_Login_Popup();
 			$common_helper   = new Mo2f_Common_Helper();
-			$skeleton_values = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $current_user->ID, 'login_2fa', '' );
+			$skeleton_values = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $current_user->ID, 'login_2fa', $mo2f_title );
 			$html            = $login_popup->mo2f_twofa_authentication_login_prompt( $mo2fa_login_status, $mo2fa_login_message, $redirect_to, $session_id, $skeleton_values, $twofa_method );
 			$html           .= $common_helper->mo2f_get_hidden_forms_login( $redirect_to, $session_id, $mo2fa_login_status, $mo2fa_login_message, $twofa_method, $current_user->ID );
 			$html           .= $common_helper->mo2f_get_hidden_script_login();
@@ -133,7 +136,7 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 			global $image_path;
 			$user_id = $current_user->ID;
 			$image   = wp_upload_dir();
-			$img_url = get_site_option( 'mo2f_enable_custom_poweredby' ) ? $image['baseurl'] . '/miniorange/custom.png' : $image_path . 'includes/images/xecurify-logo.png';
+			$img_url = $image_path . 'includes/images/' . get_site_option( 'mo2f_custom_logo', 'miniOrange2.png' );
 			$url     = get_site_option( 'siteurl' );
 			$url    .= '/wp-json/miniorange/mo_2fa_two_fa/resetuser2fa=' . $reset_token . '/message=resetsuccess';
 			$message = MoWpnsUtility::get_mo2f_db_option( 'mo2f_reconfig_link_email_template', 'site_option' );

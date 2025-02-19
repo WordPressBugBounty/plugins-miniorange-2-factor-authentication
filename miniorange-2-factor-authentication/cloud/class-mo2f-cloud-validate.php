@@ -20,10 +20,10 @@
 
 namespace TwoFA\Cloud;
 
-use TwoFA\Onprem\MO2f_Utility;
-use TwoFA\Onprem\Miniorange_Password_2Factor_Login;
+use TwoFA\Handler\Twofa\MO2f_Utility;
+use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
 use TwoFA\Helper\MoWpnsConstants;
-use TwoFA\Onprem\Mo2f_Api;
+use TwoFA\Helper\Mo2f_Api;
 use TwoFA\Helper\TwoFAMoSessions;
 use WP_Error;
 
@@ -53,7 +53,7 @@ if ( ! class_exists( 'Mo2f_Cloud_Validate' ) ) {
 		public function mo2f_google_auth_validate( $useremail, $otptoken, $secret ) {
 			$url          = MO_HOST_NAME . '/moas/api/auth/validate-google-auth-secret';
 			$mo2f_api     = new Mo2f_Api();
-			$customer_key = get_option( 'mo2f_customerKey' );
+			$customer_key = get_site_option( 'mo2f_customerKey' );
 			$field_string = array(
 				'customerKey'       => $customer_key,
 				'username'          => $useremail,
@@ -89,13 +89,13 @@ if ( ! class_exists( 'Mo2f_Cloud_Validate' ) ) {
 				} elseif ( 'ERROR' === $response['status'] ) {
 					$pass2fa_login->remove_current_activity( $session_id );
 					$error = new WP_Error();
-					$error->add( 'empty_username', __( '<strong>ERROR</strong>: An error occured while processing your request. Please Try again.' ) );
+					$error->add( 'empty_username', __( '<strong>ERROR</strong>: An error occured while processing your request. Please Try again.', 'miniorange-2-factor-authentication' ) );
 					return $error;
 				}
 			} else {
 				$pass2fa_login->remove_current_activity( $session_id );
 				$error = new WP_Error();
-				$error->add( 'empty_username', __( '<strong>ERROR</strong>: An error occured while processing your request. Please Try again.' ) );
+				$error->add( 'empty_username', __( '<strong>ERROR</strong>: An error occured while processing your request. Please Try again.', 'miniorange-2-factor-authentication' ) );
 
 				return $error;
 			}

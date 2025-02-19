@@ -1,6 +1,7 @@
 jQuery( document ).ready(
 	function($){
 	jQuery( '.my-color-field' ).wpColorPicker();
+	jQuery('.wp-color-result-text').css('color', 'black');
 	}
 );
 jQuery( document ).ready(

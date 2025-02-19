@@ -7,15 +7,16 @@
 
 use TwoFA\Helper\MocURL;
 use TwoFA\Helper\MoWpnsConstants;
-use TwoFA\Onprem\MO2f_Utility;
-use TwoFA\Onprem\MO2f_Cloud_Onprem_Interface;
-use TwoFA\Onprem\Miniorange_Authentication;
-use TwoFA\Onprem\Miniorange_Password_2Factor_Login;
+use TwoFA\Handler\Twofa\MO2f_Utility;
+use TwoFA\Handler\Twofa\MO2f_Cloud_Onprem_Interface;
+use TwoFA\Handler\Twofa\Miniorange_Authentication;
+use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
+use TwoFA\Handler\TwofaMethods\Mo2f_KBA_Handler;
 use TwoFA\Helper\MoWpnsMessages;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-
+global $mo2fdb_queries;
 $is_userprofile_enabled = isset( $_POST['mo2f_enable_userprofile_2fa'] ) ? sanitize_key( wp_unslash( $_POST['mo2f_enable_userprofile_2fa'] ) ) : false;
 if ( ! $is_userprofile_enabled ) {
 	return;
@@ -28,13 +29,10 @@ if ( ! wp_verify_nonce( $nonce, 'mo2f-update-mobile-nonce' ) || ! current_user_c
 	$mo2f_error->add( 'empty_username', '<strong>' . __( 'ERROR', 'miniorange-2-factor-authentication' ) . '</strong>: ' . __( 'Invalid Request.', 'miniorange-2-factor-authentication' ) );
 	return $mo2f_error;
 } else {
-
-	if ( isset( $_POST['method'] ) ) {
-		$method = sanitize_text_field( wp_unslash( $_POST['method'] ) );
-	} else {
+	$method = isset( $_POST['method'] ) ? sanitize_text_field( wp_unslash( $_POST['method'] ) ) : null ;
+	if ( is_null( $method ) || $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user_id ) === $method  ) {
 		return;
 	}
-	global $mo2fdb_queries;
 	$email   = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user_id );
 	$email   = sanitize_email( $email );
 	$enduser = new MocURL();
@@ -60,6 +58,8 @@ if ( ! wp_verify_nonce( $nonce, 'mo2f-update-mobile-nonce' ) || ! current_user_c
 			if ( $userid === $user_id ) {
 				if ( isset( $_POST['mo2f_configuration_status'] ) && sanitize_text_field( wp_unslash( $_POST['mo2f_configuration_status'] ) ) === 'SUCCESS' ) {
 					$content = array( 'status' => 'SUCCESS' );
+				} else{
+					$content = array( 'status' => 'ERROR' );
 				}
 			} else {
 				$content = mo2f_send_twofa_setup_link_on_email( $email, $user_id, $method );
@@ -74,7 +74,7 @@ if ( ! wp_verify_nonce( $nonce, 'mo2f-update-mobile-nonce' ) || ! current_user_c
 			}
 			break;
 		case MoWpnsConstants::OTP_OVER_SMS:
-			if ( ! get_option( 'mo2f_customerKey' ) ) {
+			if ( ! get_site_option( 'mo2f_customerKey' ) ) {
 				update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::lang_translate( 'Please register with miniOrange to set the OTP Over SMS method.' ) );
 				return;
 			}
@@ -93,18 +93,22 @@ if ( ! wp_verify_nonce( $nonce, 'mo2f-update-mobile-nonce' ) || ! current_user_c
 			if ( $userid === $user_id ) {
 				$obj              = new Miniorange_Authentication();
 				$kba_ques_ans_obj = new Mo2f_KBA_Handler();
-				$kba_ques_ans     = $kba_ques_ans_obj->mo2f_get_kba_details( $_POST );
-				if ( MO2f_Utility::mo2f_check_empty_or_null( $kba_ques_ans['kba_q1'] ) || MO2f_Utility::mo2f_check_empty_or_null( $kba_ques_ans['kba_a1'] ) || MO2f_Utility::mo2f_check_empty_or_null( $kba_ques_ans['kba_q2'] ) || MO2f_Utility::mo2f_check_empty_or_null( $kba_ques_ans['kba_a2'] ) || MO2f_Utility::mo2f_check_empty_or_null( $kba_ques_ans['kba_q3'] ) || MO2f_Utility::mo2f_check_empty_or_null( $kba_ques_ans['kba_a3'] ) ) {
-					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_ENTRY ), 'ERROR' );
-					return;
+				$kba_ques_ans     = $kba_ques_ans_obj->mo2f_get_ques_ans( $_POST );
+				$show_message     = new MoWpnsMessages();
+				foreach ( $kba_ques_ans as $key => $value ) {
+					if ( MO2f_Utility::mo2f_check_empty_or_null( $value ) ) {
+						$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_ENTRY ), 'ERROR' );
+						return;
+					}
 				}
-
-				if ( 0 === strcasecmp( $kba_ques_ans['kba_q1'], $kba_ques_ans['kba_q2'] ) || 0 === strcasecmp( $kba_ques_ans['kba_q2'], $kba_ques_ans['kba_q3'] ) || 0 === strcasecmp( $kba_ques_ans['kba_q3'], $kba_ques_ans['kba_q1'] ) ) {
+				$questions        = array_keys( $kba_ques_ans );
+				$unique_questions = array_unique( array_map( 'strtolower', $kba_ques_ans ) );
+				if ( count( $questions ) !== count( $unique_questions ) ) {
 					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::UNIQUE_QUESTION ), 'ERROR' );
 					return;
 				}
 				$kba_registration = new MO2f_Cloud_Onprem_Interface();
-				$content          = json_decode( $kba_registration->mo2f_register_kba_details( $email, $kba_ques_ans['kba_q1'], $kba_ques_ans['kba_a1'], $kba_ques_ans['kba_q2'], $kba_ques_ans['kba_a2'], $kba_ques_ans['kba_q3'], $kba_ques_ans['kba_a3'], $user_id ), true );
+				$content          = json_decode( $kba_registration->mo2f_register_kba_details( $email, $kba_ques_ans, $user_id ), true );
 			} else {
 				$content = mo2f_send_twofa_setup_link_on_email( $email, $user_id, $method );
 			}
@@ -160,7 +164,6 @@ function mo2f_send_twofa_setup_link_on_email( $email, $user_id, $tfa_method ) {
 	$txid = bin2hex( openssl_random_pseudo_bytes( 32 ) );
 	update_site_option( $txid, get_current_user_id() );
 	update_user_meta( $user_id, 'mo2f_transactionId', $txid );
-	update_user_meta( $user_id, 'mo2f_user_profile_set', true );
 	$subject = '2FA-Configuration';
 	$headers = array( 'Content-Type: text/html; charset=UTF-8' );
 	$path    = plugins_url( DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'qr_over_email.php', dirname( __FILE__ ) ) . '?email=' . $email . '&amp;user_id=' . $user_id;
@@ -204,6 +207,7 @@ function mo2f_send_twofa_setup_link_on_email( $email, $user_id, $tfa_method ) {
 			'message' => 'Successfully validated.',
 			'txid'    => '',
 		);
+		update_user_meta( $user_id, 'mo2f_user_profile_set', true );
 		$mo2fdb_queries->update_user_details(
 			$user_id,
 			array(
@@ -223,7 +227,6 @@ function mo2f_send_twofa_setup_link_on_email( $email, $user_id, $tfa_method ) {
 			'message' => 'TEST FAILED.',
 		);
 	}
-
 	return $arr;
 }
 

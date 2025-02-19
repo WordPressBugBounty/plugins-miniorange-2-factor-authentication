@@ -13,17 +13,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use TwoFA\Onprem\Mo2f_KBA_Handler;
 use TwoFA\Helper\MoWpnsConstants;
-use TwoFA\Onprem\Mo2f_Main_Handler;
-use TwoFA\Onprem\MO2f_Utility;
-use TwoFA\Onprem\Miniorange_Password_2Factor_Login;
+use TwoFA\Handler\Mo2f_Main_Handler;
+use TwoFA\Handler\TwofaMethods\Mo2f_GOOGLEAUTHENTICATOR_Handler;
+use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\MocURL;
-use TwoFA\Onprem\Mo2f_Inline_Popup;
+use TwoFA\Helper\Mo2f_Inline_Popup;
+use TwoFA\Traits\Instance;
+
 if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 	/**
 	 * Class Mo2f_Common_Helper
 	 */
 	class Mo2f_Common_Helper {
+
+		use Instance;
 
 		/**
 		 * Class Mo2f_Common_Helper variable
@@ -41,55 +45,13 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		}
 
 		/**
-		 * Creates and sends backupcodes.
-		 *
-		 * @param string $session_id_encrypt Session Id.
-		 * @return array
-		 */
-		public function mo2f_create_and_send_backupcodes_inline( $session_id_encrypt ) {
-			global $mo2fdb_queries;
-			$id = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
-			update_site_option( 'mo2f_is_inline_used', '1' );
-			$mo2f_user_email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $id );
-			if ( empty( $mo2f_user_email ) ) {
-				$currentuser     = get_user_by( 'id', $id );
-				$mo2f_user_email = $currentuser->user_email;
-			}
-			$generate_backup_code = new MocURL();
-			$codes                = $generate_backup_code->mo_2f_generate_backup_codes( $mo2f_user_email, site_url() );
-			$codes                = explode( ' ', $codes );
-			$result               = MO2f_Utility::mo2f_email_backup_codes( $codes, $mo2f_user_email );
-			update_user_meta( $id, 'mo_backup_code_generated', 1 );
-			update_user_meta( $id, 'mo_backup_code_screen_shown', 1 );
-			return $codes;
-		}
-
-		/**
-		 * This function used to include css and js files.
-		 *
-		 * @return void
-		 */
-		public function mo2f_echo_js_css_files() {
-			wp_register_style( 'mo2f_style_settings', plugins_url( 'includes/css/twofa_style_settings.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
-			wp_print_styles( 'mo2f_style_settings' );
-
-			wp_register_script( 'mo2f_bootstrap_js', plugins_url( 'includes/js/bootstrap.min.js', dirname( __FILE__ ) ), array(), MO2F_VERSION, true );
-			wp_print_scripts( 'jquery' );
-			wp_print_scripts( 'mo2f_bootstrap_js' );
-			if ( get_site_option( 'mo2f_enable_login_popup_customization' ) ) {
-				wp_register_style( 'mo2f_custom-login-popup', plugins_url( 'includes/css/mo2f_login_popup_ui.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
-				wp_print_styles( 'mo2f_custom-login-popup' );
-			}
-		}
-
-		/**
 		 * Return the handler object for selected method.
 		 *
 		 * @param string $selected_method Twofa method name.
 		 * @return object
 		 */
 		public function mo2f_get_object( $selected_method ) {
-			$class_name = 'Mo2f_' . str_replace( ' ', '', $selected_method ) . '_Handler';
+			$class_name = 'TwoFA\Handler\TwofaMethods\Mo2f_' . str_replace( ' ', '', $selected_method ) . '_Handler';
 			if ( class_exists( $class_name ) ) {
 				return new $class_name();
 			} else {
@@ -98,6 +60,34 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				$error_prompt->mo2f_show_login_prompt_for_otp_based_methods( MoWpnsMessages::ERROR_DURING_PROCESS, MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT, $current_user, '', '', '' );
 				exit;
 			}
+		}
+
+		/**
+		 * Gets user from username.
+		 *
+		 * @param string $username Username.
+		 * @return mixed
+		 */
+		public function mo2f_get_user( $username ) {
+			$user = is_email( $username ) ? get_user_by( 'email', $username ) : get_user_by( 'login', $username );
+			return $user;
+		}
+
+		/**
+		 * Authenticates username and password.
+		 *
+		 * @param string $username Username.
+		 * @param string $password Password.
+		 * @param object $user User.
+		 * @return mixed
+		 */
+		public function mo2f_wp_authenticate( $username, $password = '', $user = null ) {
+			if ( is_email( $username ) ) {
+				$current_user = wp_authenticate_email_password( $user, $username, $password );
+			} else {
+				$current_user = wp_authenticate_username_password( $user, $username, $password );
+			}
+			return $current_user;
 		}
 
 		/**
@@ -122,24 +112,57 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		public function mo2f_inline_setup_success( $current_user_id, $redirect_to, $session_id ) {
 			global $mo2fdb_queries;
 			$backup_methods = (array) get_site_option( 'mo2f_enabled_backup_methods' );
-			if ( get_site_option( 'mo2f_enable_backup_methods' ) && in_array( 'mo2f_back_up_codes', $backup_methods, true ) ) {
-				$mo2f_user_email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $current_user_id );
-				if ( empty( $mo2f_user_email ) ) {
-					$currentuser     = get_user_by( 'id', $current_user_id );
-					$mo2f_user_email = $currentuser->user_email;
+			if ( get_site_option( 'mo2f_enable_backup_methods' ) ) {
+				if ( in_array( 'backup_kba', $backup_methods, true ) && MoWpnsConstants::SECURITY_QUESTIONS !== $mo2fdb_queries->get_user_detail( 'mo2f_configured_2fa_method', $current_user_id ) && ! TwoFAMoSessions::get_session_var( 'mo2f_is_kba_backup_configured' . $current_user_id ) ) {
+					do_action(
+						'mo2f_basic_plan_settings_action',
+						'show_kba_registration_form',
+						array(
+							'user_id'     => $current_user_id,
+							'redirect_to' => $redirect_to,
+							'session_id'  => $session_id,
+						)
+					);
 				}
-				$generate_backup_code = new MocURL();
-				$codes                = $generate_backup_code->mo_2f_generate_backup_codes( $mo2f_user_email, site_url() );
-				$code_generate        = get_user_meta( $current_user_id, 'mo_backup_code_generated', false );
-				if ( empty( $code_generate ) && 'InternetConnectivityError' !== $codes && 'DBConnectionIssue' !== $codes && 'UnableToFetchData' !== $codes && 'UserLimitReached' !== $codes && 'ERROR' !== $codes && 'LimitReached' !== $codes && 'AllUsed' !== $codes && 'invalid_request' !== $codes ) {
-					$inline_popup = new Mo2f_Inline_Popup();
-					$codes        = $this->mo2f_create_and_send_backupcodes_inline( $session_id );
-					$inline_popup->mo2f_show_generated_backup_codes_inline( $redirect_to, $session_id, $codes );
+				TwoFAMoSessions::unset_session( 'mo2f_is_kba_backup_configured' . $current_user_id );
+				if ( in_array( 'mo2f_back_up_codes', $backup_methods, true ) ) {
+					$mo2f_user_email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $current_user_id );
+					if ( empty( $mo2f_user_email ) ) {
+						$currentuser     = get_user_by( 'id', $current_user_id );
+						$mo2f_user_email = $currentuser->user_email;
+					}
+					$generate_backup_code = new MocURL();
+					$codes                = apply_filters( 'mo2f_basic_plan_settings_filter', $generate_backup_code->mo2f_get_backup_codes( $mo2f_user_email, site_url() ), 'generate_backup_codes', array( 'user_id' => $current_user_id ) );
+					if ( ! is_array( $codes ) ) {
+						$codes = explode( ' ', trim( $codes ) );
+					}
+					$common_helper = new Mo2f_Common_Helper();
+					$mo2f_message  = $common_helper->mo2f_check_backupcode_status( $codes, $current_user_id );
+					if ( ! $mo2f_message ) {
+						$inline_popup = new Mo2f_Inline_Popup();
+						$codes        = $this->mo2f_send_backupcodes_inline( $current_user_id, $codes, $mo2f_user_email );
+						$inline_popup->mo2f_show_generated_backup_codes_inline( $redirect_to, $session_id, $codes );
+					}
 				}
 			}
 			$pass2fa = new Mo2f_Main_Handler();
 			$pass2fa->mo2fa_pass2login( $redirect_to, $session_id );
 			exit;
+		}
+
+		/**
+		 * Sends backup codes on users email.
+		 *
+		 * @param int    $user_id User id.
+		 * @param mixed  $codes Backup codes.
+		 * @param string $mo2f_user_email user email.
+		 * @return mixed.
+		 */
+		public function mo2f_send_backupcodes_inline( $user_id, $codes, $mo2f_user_email ) {
+			$result = MO2f_Utility::mo2f_email_backup_codes( $codes, $mo2f_user_email );
+			update_user_meta( $user_id, 'mo_backup_code_generated', 1 );
+			update_user_meta( $user_id, 'mo_backup_code_screen_shown', 1 );
+			return $codes;
 		}
 
 		/**
@@ -175,7 +198,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @param string $session_id It will carry the session id .
 		 * @return void
 		 */
-		public function remove_current_activity( $session_id ) {
+		public function mo2f_remove_current_activity( $session_id ) {
 			global $mo2fdb_queries;
 			$session_variables = array(
 				'mo2f_current_user_id',
@@ -190,23 +213,11 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				'mo2f_authy_keys',
 			);
 
-			$cookie_variables = array(
-				'mo2f_current_user_id',
-				'mo2f_1stfactor_status',
-				'mo_2factor_login_status',
-				'mo2f-login-qrCode',
-				'mo2f_transactionId',
-				'mo2f_login_message',
-				'kba_question1',
-				'kba_question2',
-				'mo2f_show_qr_code',
-				'mo2f_google_auth',
-				'mo2f_authy_keys',
-			);
-
 			MO2f_Utility::unset_session_variables( $session_variables );
-			MO2f_Utility::unset_cookie_variables( $cookie_variables );
-			$key             = get_option( 'mo2f_encryption_key' );
+			TwoFAMoSessions::unset_session( 'mo2f_show_error_message' );
+			TwoFAMoSessions::unset_session( 'mo2f_show_defult_login_form' );
+			TwoFAMoSessions::unset_session( 'mo2f_change_error_message' );
+			$key             = get_site_option( 'mo2f_encryption_key' );
 			$session_id      = MO2f_Utility::decrypt_data( $session_id, $key );
 			$session_id_hash = md5( $session_id );
 			$mo2fdb_queries->save_user_login_details(
@@ -254,6 +265,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_check_backupcode_status( $status, $user_id ) {
+			$status = is_array( $status ) ? $status[0] : $status;
 			$error_status_and_message = array(
 				'InternetConnectivityError' => MoWpnsMessages::BACKUP_CODE_INTERNET_ISSUE,
 				'AllUsed'                   => MoWpnsMessages::BACKUP_CODE_ALL_USED,
@@ -262,7 +274,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				'invalid_request'           => MoWpnsMessages::BACKUP_CODE_INVALID_REQUEST,
 			);
 			foreach ( $error_status_and_message as $error_status => $error_message ) {
-				if ( $status === $error_status ) {
+				if ( $error_status === $status ) {
 					return $error_status_and_message[ $status ];
 				}
 			}
@@ -311,8 +323,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			if ( ! $grace_period_set_time ) {
 				return false;
 			}
-			$grace_period = get_option( 'mo2f_grace_period_value' );
-			if ( get_option( 'mo2f_grace_period_type' ) === 'hours' ) {
+			$grace_period = get_site_option( 'mo2f_grace_period_value' );
+			if ( get_site_option( 'mo2f_grace_period_type' ) === 'hours' ) {
 				$grace_period = $grace_period * 60 * 60;
 			} else {
 				$grace_period = $grace_period * 24 * 60 * 60;
@@ -449,6 +461,26 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$html .= $this->mo2f_backto_login_form();
 			$html .= $this->mo2f_backto_2fa_validation_screen_form( $session_id_encrypt, $redirect_to, $twofa_method );
 			$html .= $this->mo2f_get_reconfiguration_link_hidden_forms( $redirect_to, $session_id_encrypt, $twofa_method );
+			$html .= apply_filters(
+				'mo2f_premium_common_helper',
+				'',
+				'mo2f_get_backup_method_hidden_form',
+				array(
+					'redirect_to'        => $redirect_to,
+					'session_id_encrypt' => $session_id_encrypt,
+					'twofa_method'       => $twofa_method,
+				)
+			);
+			$html .= apply_filters(
+				'mo2f_premium_common_helper',
+				'',
+				'mo2f_get_rba_consent_hidden_form',
+				array(
+					'redirect_to'        => $redirect_to,
+					'session_id_encrypt' => $session_id_encrypt,
+					'user_id'            => $user_id,
+				)
+			);
 			$html .= $this->mo2f_get_validation_success_form( $redirect_to, $session_id_encrypt, $user_id );
 			return $html;
 		}
@@ -510,6 +542,9 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			jQuery("a[href=\'#mo2f_send_reconfig_link\']").click(function() {
 				jQuery("#mo2f_send_reconfig_link").submit();
 			});
+			jQuery("a[href=\'#kba_backup_method_link\']").click(function() {
+				jQuery("#mo2f_backup_method_form").submit();
+			});
 			jQuery("a[href=\'#mo2f_validation_screen\']").click(function() {
 				jQuery("#mo2f_backto_2fa_validation").submit();
 			});
@@ -518,6 +553,12 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			});
 			jQuery("a[href=\'#mo2f_mfa_form\']").click(function() {
 				jQuery("#mo2f_backto_mfa_form").submit();
+			});
+			jQuery("#miniorange_trust_device_yes").click(function() {
+				jQuery("#mo2f_trust_device_confirm_form").submit();
+			});
+			jQuery("#miniorange_trust_device_no").click(function() {
+				jQuery("#mo2f_trust_device_cancel_form").submit();
 			});
 			jQuery("a[href=\'#mo2f_login_form\']").click(function() {
 			jQuery("#mo2f_backto_mo_loginform").submit();
@@ -667,8 +708,10 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return string
 		 */
 		public function mo2f_get_dashboard_script_for_otp_based_methods() {
-			$script = '<script>
+			$common_helper = new Mo2f_Common_Helper();
+			$script        = '<script>
 			jQuery("#verify").click(function() {
+			' . $common_helper->mo2f_show_loader() . '
 				var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
 				var data = {
 					action: "mo_two_factor_ajax",
@@ -679,6 +722,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					nonce: nonce,
 				};
 				jQuery.post(ajaxurl, data, function(response) {
+				    ' . $common_helper->mo2f_hide_loader() . '
 					if (response.success) {
 						jQuery("#go_back_verify").css("display", "none");
 						jQuery("#mo2f_validateotp_form").css("display", "block");
@@ -691,6 +735,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			});
 			
 			jQuery("#validate").click(function() {
+			   ' . $common_helper->mo2f_show_loader() . '
 				var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
 				var data = {
 					action: "mo_two_factor_ajax",
@@ -702,6 +747,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					nonce: nonce,
 				};
 				jQuery.post(ajaxurl, data, function(response) {
+				    ' . $common_helper->mo2f_hide_loader() . '
 					if (response.success) {
 						jQuery("#mo2f_2factor_test_prompt_cross").submit();
 					} else {
@@ -722,12 +768,14 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 */
 		public function mo2f_get_script_for_otp_based_methods( $twofa_flow ) {
 			$call_to_function = array( $this, 'mo2f_get_validate_success_response_' . $twofa_flow . '_script' );
+			$common_helper    = new Mo2f_Common_Helper();
 			$script           = '<script>	jQuery(document).ready(function($){
 				jQuery(function(){
 				var ajaxurl = "' . admin_url( 'admin-ajax.php' ) . '";
 				var selected_2FA_method = jQuery("input[name=mo2f_otp_based_method]").val();
 				jQuery("#verify").click(function()
-				{  
+				{   
+				' . $common_helper->mo2f_show_loader() . '
 					var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
 					var data = {
 						"action"  : "mo_two_factor_ajax",
@@ -738,6 +786,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 						"nonce"  : nonce,	
 					};
 					jQuery.post(ajaxurl, data, function(response) {
+					    ' . $common_helper->mo2f_hide_loader() . '
 						if( response["success"] ){
 							if( selected_2FA_method == "' . esc_js( MoWpnsConstants::OUT_OF_BAND_EMAIL ) . '"){
 								jQuery("#showPushImage").css("display","block");
@@ -757,7 +806,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					});
 				});
 			jQuery("#validate").click(function()
-			{   
+			{   ' . $common_helper->mo2f_show_loader() . '
 				var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
 					var data = {
 						"action"  : "mo_two_factor_ajax",
@@ -769,6 +818,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 						"nonce"  : nonce,	
 					};
 				jQuery.post(ajaxurl, data, function(response) {
+				    ' . $common_helper->mo2f_hide_loader() . '
 					if( response["success"] ){
 						' . call_user_func( $call_to_function ) . '
 					}else if( ! response["success"] ){
@@ -846,9 +896,10 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return string
 		 */
 		public function mo2f_otp_based_methods_configuration_screen( $skeleton, $current_selected_method, $login_message, $current_user_id, $redirect_to, $session_id, $prev_screen ) {
-			$show_validation_form = TwoFAMoSessions::get_session_var( 'mo2f_otp_send_true' ) ? 'block' : 'none';
+			$show_validation_form = 'none';
 			$common_helper        = new Mo2f_Common_Helper();
-			$html                 = '<div class="mo2f-setup-popup-dashboard">';
+			$html                 = '<div id="mo2f_2fa_popup_dashboard_loader" class="modal" hidden></div>';
+			$html                .= '<div class="mo2f-setup-popup-dashboard">';
 			$html                .= '<div class="login mo_customer_validation-modal-content">';
 			$html                .= '<div class="mo2f_modal-header">
 			<h4 class="mo2f_modal-title">';
@@ -860,7 +911,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				$html            .= '</h4>
 				</div>';
 			$html                .= '<div class="mo2f_modal-body">
-						<div id="otpMessaghide" style="display: none;">
+						<div id="otpMessagehide" style="display: none;">
 							<p class="mo2fa_display_message_frontend" style="text-align: left !important; ">' . wp_kses( $login_message, array( 'b' => array() ) ) . '</p>
 						</div>
 
@@ -922,7 +973,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 								<input type="hidden" name="option" value="mo2f_send_otp_for_configuration"/>
 								<input type="hidden" name="mo2f_otp_based_method" value="' . esc_attr( $current_selected_method ) . '"/>
 								<input type="hidden" name="mo2f_session_id" value="' . esc_attr( $session_id ) . '"/>
-								<input type="button" id ="verify" name="verify" class="button button-primary button-large" value="' . esc_attr__( 'Send ' . ( MoWpnsConstants::OUT_OF_BAND_EMAIL !== $current_selected_method ? 'OTP' : 'Link' ), 'miniorange-2-factor-authentication' ); // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- This is a string literal.
+								<input type="button" id ="verify" name="verify" class="mo2f-save-settings-button" value="' . esc_attr__( 'Send ' . ( MoWpnsConstants::OUT_OF_BAND_EMAIL !== $current_selected_method ? 'OTP' : 'Link' ), 'miniorange-2-factor-authentication' ); // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- This is a string literal.
 								$html .= '" />
 								<input type="hidden" name="redirect_to" value="' . esc_url( $redirect_to ) . '"/>
 							</form>
@@ -935,13 +986,13 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 							<input type="hidden" name="mo2f_validate_otp_for_configuration_nonce" value=" ' . esc_attr( wp_create_nonce( 'mo2f-configure-otp-based-methods-validate-nonce' ) ) . '"/> <p>' . esc_html__( 'Enter One Time Passcode', 'miniorange-2-factor-authentication' ) . '</p>
 							<input class="mo2f_table_textbox" style="width:200px;" autofocus="true" type="text" name="otp_token" placeholder="' . esc_attr__( 'Enter OTP', 'miniorange-2-factor-authentication' ) . '" style="width:95%;"/> <a href="#resendsmslink" style="color:#a7a7a8 ;text-decoration:none;" >' . esc_html__( 'Resend OTP', 'miniorange-2-factor-authentication' ) . '</a>
 							<br><br>
-							<input type="button" name="validate" id="validate" class="button button-primary button-large" value="' . esc_attr__( 'Validate OTP', 'miniorange-2-factor-authentication' ) . '"/>
+							<input type="button" name="validate" id="validate" class="mo2f-save-settings-button" value="' . esc_attr__( 'Validate OTP', 'miniorange-2-factor-authentication' ) . '"/>
 						</form>
 						';
 						$html         .= ' 	<div id="showPushImage" style="display:none;">
 						<div class="mo2fa_text-align-center">We are waiting for your approval...</div>
 <div class="mo2fa_text-align-center">
-   <img src="' . esc_url( plugins_url( 'includes/images/ajax-loader-login.gif', dirname( __FILE__ ) ) ) . '"/>
+   <img src="' . esc_url( plugins_url( 'includes/images/email-loader.gif', dirname( __FILE__ ) ) ) . '"/>
 </div></div><br>';
 			if ( 'mo2f_inline_form' === $prev_screen ) {
 				$prev_screen = 'mo2f_inline_form';
@@ -991,7 +1042,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		function mo2f_show_message(response) {
 			var html = '<div id=\"otpMessage\"><p class=\"mo2fa_display_message_frontend\">' + response + '</p></div>';
 			jQuery('#otpMessage').empty();
-			jQuery('#otpMessaghide').after(html);
+			jQuery('#otpMessagehide').after(html);
 		}
 		</script>";
 			return $html;
@@ -1011,11 +1062,12 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		public function mo2f_get_miniorange_user_registration_prompt( $login_message, $redirect_to, $session_id, $prev_screen, $skeleton ) {
 			$success_response                  = array( $this, 'mo2f_get_mo_login_registration_success_response_' . $prev_screen . '_script' );
 			$error_response                    = array( $this, 'mo2f_get_mo_login_registration_error_response_' . $prev_screen . '_script' );
+			$common_helper                     = new Mo2f_Common_Helper();
 			$html                              = '<div>';
 			$html                             .= $skeleton['##crossbutton##'];
 			$html                             .= $skeleton['##pagetitle##'];
 			$html                             .= '<div>';
-				$html                         .= '	<div id="otpMessaghide" class="hidden">
+				$html                         .= '	<div id="otpMessagehide" class="hidden">
 				<p class="" style="">' . wp_kses( $login_message, array( 'b' => array() ) ) . '</p>
 			</div>';
 								$html         .= '<form name="mo2f_inline_register_form" id="mo2f_inline_register_form" method="post" action="">
@@ -1081,7 +1133,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			</form>
          
 		<script>';
-			$html                             .= 'myaccount' === $prev_screen ? 'jQuery("#mo_2fa_my_account").addClass("side-nav-active");' : '';
+			$html                             .= 'myaccount' === $prev_screen ? 'jQuery("#mo_2fa_my_account").addClass("side-nav-active"); jQuery("#mo2f-myaccount-details").addClass("side-nav-active");jQuery("#mo2f-myaccount-submenu").css("display", "block");' : '';
 			$html                             .= 'jQuery("#mo2f_inline_back_btn").click(function() {  
 					jQuery("#mo2f_goto_two_factor_form").submit();
 			});
@@ -1106,8 +1158,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			var ajaxurl = "' . esc_url( admin_url( 'admin-ajax.php' ) ) . '";	
 			jQuery("#mo2f_login").click(function() {
 				var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
-				jQuery("#mo2f_2fa_popup_dashboard_loader").html("<span class=\'mo2f_loader\' id=\'mo2f_loader\'></span>");
-				jQuery("#mo2f_2fa_popup_dashboard_loader").css("display", "block");
+				' . $common_helper->mo2f_show_loader() . '
 				var data = {
 					action: "mo_two_factor_ajax",
 					mo_2f_two_factor_ajax: "mo2f_miniorange_sign_in",
@@ -1116,7 +1167,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					nonce: nonce,
 				};
 				jQuery.post(ajaxurl, data, function(response) {
-				    jQuery("#mo2f_2fa_popup_dashboard_loader").css("display", "none");
+				    ' . $common_helper->mo2f_hide_loader() . '
 					if (response.success) {
 						' . call_user_func( $success_response ) . '
 					} else {
@@ -1126,8 +1177,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			});';
 			$html                             .= 'jQuery("#mo2f_register").click(function() {
 				var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
-				jQuery("#mo2f_2fa_popup_dashboard_loader").html("<span class=\'mo2f_loader\' id=\'mo2f_loader\'></span>");
-				jQuery("#mo2f_2fa_popup_dashboard_loader").css("display", "block");
+			' . $common_helper->mo2f_show_loader() . '
 				var data = {
 					action: "mo_two_factor_ajax",
 					mo_2f_two_factor_ajax: "mo2f_miniorange_sign_up",
@@ -1137,7 +1187,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					nonce: nonce,
 				};
 				jQuery.post(ajaxurl, data, function(response) {
-				    jQuery("#mo2f_2fa_popup_dashboard_loader").css("display", "none");
+				    ' . $common_helper->mo2f_hide_loader() . '
 					if (response.success) {
 						' . call_user_func( $success_response ) . '
 					} else {
@@ -1149,7 +1199,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			function mo2f_show_message(response) {
 				var html = '<div id=\"otpMessage\"><p class=\"mo2fa_display_message_frontend\">' + response + '</p></div>';
 				jQuery('#otpMessage').empty();
-				jQuery('#otpMessaghide').after(html);
+				jQuery('#otpMessagehide').after(html);
 			}";
 			$html                             .= '</script>';
 			return $html;
@@ -1207,7 +1257,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return string
 		 */
 		public function prompt_user_for_kba_setup( $user_id, $login_message, $redirect_to, $session_id, $prev_screen ) {
-			$html      = '<div class="mo2f_kba_setup_popup_dashboard">';
+			$html      = '<div id="mo2f_2fa_popup_dashboard_loader" class="modal" hidden></div>';
+			$html     .= '<div class="mo2f_kba_setup_popup_dashboard">';
 			$html     .= '<div class="login mo_customer_validation-modal-content">';
 			$html     .= '<div class="mo2f_modal-header">
 			<h4 class="mo2f_modal-title">';
@@ -1219,7 +1270,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				$html .= '</h4>
 				</div>';
 				$html .= '<div class="mo2f_modal-body">';
-				$html .= '	<div id="otpMessaghide" style="display: none;">
+				$html .= '	<div id="otpMessagehide" style="display: none;">
 				<p class="mo2fa_display_message_frontend" style="text-align: left !important; ">' . wp_kses( $login_message, array( 'b' => array() ) ) . '</p>
 			</div>';
 
@@ -1228,14 +1279,14 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
                 <br/>
                 <div class="row">
                     <div style="margin: 0 auto; width: 100px;">
-                        <input type="button" name="validate" id="mo2f_save_kba" class="button button-primary button-large" value="' . esc_attr__( 'Save', 'miniorange-2-factor-authentication' ) . '" />
+                        <input type="button" name="validate" id="mo2f_save_kba" class="mo2f-save-settings-button" value="' . esc_attr__( 'Save', 'miniorange-2-factor-authentication' ) . '" />
                     </div>
                 </div>
                 <input type="hidden" name="redirect_to" value="' . esc_url( $redirect_to ) . '"/>
                 <input type="hidden" name="session_id" value="' . esc_attr( $session_id ) . '"/>
             </form>';
 			$common_helper = new Mo2f_Common_Helper();
-			if ( 'mo2f_inline_form' === $prev_screen ) {
+			if ( 'mo2f_inline_form' === $prev_screen && ! TwoFAMoSessions::get_session_var( 'mo2f_is_kba_backup_configured' . $user_id ) ) {
 				$prev_screen = 'mo2f_inline_form';
 				$html       .= $common_helper->mo2f_go_back_link_form( $prev_screen );
 			}
@@ -1245,8 +1296,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$html .= "
 		function mo2f_show_message(response) {
 			var html = '<div id=\"otpMessage\"><p class=\"mo2fa_display_message_frontend\">' + response + '</p></div>';
-			jQuery('#otpMessage').empty();
-			jQuery('#otpMessaghide').after(html);
+			jQuery('#otpMessage').remove();
+			jQuery('#otpMessagehide').after(html);
 		}";
 			$html .= 'function mologinback() {
 				jQuery("#mo2f_backto_mo_loginform").submit();
@@ -1263,26 +1314,29 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return string
 		 */
 		public function mo2f_configure_kba_questions() {
-			$html  = '<div class="mo2f_kba_header">' . esc_html__( 'Please choose 3 questions', 'miniorange-2-factor-authentication' ) . '</div>';
-			$html .= '<br>';
-			$html .= '<table id="mo2f_configure_kba" cellspacing="10">';
-			$html .= '<thead>';
-			$html .= '<tr class="mo2f_kba_header">';
-			$html .= '<th>' . esc_html__( 'Sr. No.', 'miniorange-2-factor-authentication' ) . '</th>';
-			$html .= '<th class="mo2f_kba_tb_data">' . esc_html__( 'Questions', 'miniorange-2-factor-authentication' ) . '</th>';
-			$html .= '<th>' . esc_html__( 'Answers', 'miniorange-2-factor-authentication' ) . '</th>';
-			$html .= '</tr>';
-			$html .= '</thead>';
+			$default_question_count = get_site_option( 'mo2f_default_kbaquestions_users', 2 );
+			$custom_question_count  = get_site_option( 'mo2f_custom_kbaquestions_users', 1 );
+			$total_questions        = $default_question_count + $custom_question_count;
+			$html                   = '<div class="mo2f_kba_header">' . esc_html__( 'Please choose ', 'miniorange-2-factor-authentication' ) . $total_questions . esc_html__( ' questions', 'miniorange-2-factor-authentication' ) . '</div>';
+			$html                  .= '<br>';
+			$html                  .= '<table id="mo2f_configure_kba" cellspacing="10">';
+			$html                  .= '<thead>';
+			$html                  .= '<tr class="mo2f_kba_header">';
+			$html                  .= '<th>' . esc_html__( 'Sr. No.', 'miniorange-2-factor-authentication' ) . '</th>';
+			$html                  .= '<th class="mo2f_kba_tb_data">' . esc_html__( 'Questions', 'miniorange-2-factor-authentication' ) . '</th>';
+			$html                  .= '<th>' . esc_html__( 'Answers', 'miniorange-2-factor-authentication' ) . '</th>';
+			$html                  .= '</tr>';
+			$html                  .= '</thead>';
 
-			for ( $i = 1; $i <= 3; $i++ ) {
+			for ( $i = 1; $i <= $total_questions; $i++ ) {
 				$html .= '<tr class="mo2f_kba_body">';
 				$html .= '<td class="mo2f_align_center">' . $i . '.</td>';
 
-				if ( $i < 3 ) {
+				if ( $i <= $default_question_count ) {
 					$html .= '<td class="mo2f_kba_tb_data">' . $this->mo2f_kba_question_set( $i ) . '</td>';
 				} else {
 					$html .= '<td class="mo2f_kba_tb_data">';
-					$html .= '<input class="mo2f_kba_ques" type="text" style="width: 100%;" name="mo2f_kbaquestion_3" id="mo2f_kbaquestion_3" required="true" placeholder="' . esc_attr__( 'Enter your custom question here', 'miniorange-2-factor-authentication' ) . '"/>';
+					$html .= '<input class="mo2f_kba_ques" type="text" style="width: 100%;" name="mo2f_kbaquestion_' . esc_attr( $i ) . '" id="mo2f_kbaquestion_' . esc_attr( $i ) . '" required="true" placeholder="' . esc_attr__( 'Enter your custom question here', 'miniorange-2-factor-authentication' ) . '"/>';
 					$html .= '</td>';
 				}
 
@@ -1298,20 +1352,32 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$html .= '</table>';
 
 			$html .= '<script>';
-			$html .= 'var mo_option_to_hide1;';
-			$html .= 'var mo_option_to_hide2;';
-			$html .= 'function mo_option_hide(list) {';
-			$html .= 'var list_selected = document.getElementById("mo2f_kbaquestion_" + list).selectedIndex;';
-			$html .= 'if (mo_option_to_hide1 && list == 2) { mo_option_to_hide1.style.display = "block"; }';
-			$html .= 'if (mo_option_to_hide2 && list == 1) { mo_option_to_hide2.style.display = "block"; }';
-			$html .= 'if (list == 1 && list_selected != 0) {';
-			$html .= 'mo_option_to_hide2 = document.getElementById("mq" + list_selected + "_2");';
-			$html .= 'mo_option_to_hide2.style.display = "none";';
+			$html .= 'function mo_option_hide(question_no) {';
+			$html .= 'var dropdowns = document.querySelectorAll(".mo2f_kba_ques");';
+			$html .= 'if (!dropdowns.length) return;';
+			$html .= 'var selectedOptions = [];';
+			$html .= 'dropdowns.forEach(function(dropdown) {';
+			$html .= 'if (dropdown && dropdown.options && dropdown.selectedIndex !== -1) {';
+			$html .= 'var selectedValue = dropdown.options[dropdown.selectedIndex].value;';
+			$html .= 'if (selectedValue) selectedOptions.push(selectedValue);';
 			$html .= '}';
-			$html .= 'if (list == 2 && list_selected != 0) {';
-			$html .= 'mo_option_to_hide1 = document.getElementById("mq" + list_selected + "_1");';
-			$html .= 'mo_option_to_hide1.style.display = "none";';
+			$html .= '});';
+			$html .= 'dropdowns.forEach(function(dropdown) {';
+			$html .= 'if (dropdown && dropdown.options) {';
+			$html .= 'for (var i = 0; i < dropdown.options.length; i++) {';
+			$html .= 'dropdown.options[i].style.display = "block";';
 			$html .= '}';
+			$html .= '}';
+			$html .= '});';
+			$html .= 'dropdowns.forEach(function(dropdown) {';
+			$html .= 'if (dropdown && dropdown.options) {';
+			$html .= 'for (var i = 0; i < dropdown.options.length; i++) {';
+			$html .= 'if (selectedOptions.includes(dropdown.options[i].value)) {';
+			$html .= 'dropdown.options[i].style.display = "none";';
+			$html .= '}';
+			$html .= '}';
+			$html .= '}';
+			$html .= '});';
 			$html .= '}';
 			$html .= '</script>';
 
@@ -1325,21 +1391,10 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return string
 		 */
 		public function mo2f_kba_question_set( $question_no ) {
-			$question_set = array(
-				'What is your first company name?',
-				'What was your childhood nickname?',
-				'In what city did you meet your spouse/significant other?',
-				'What is the name of your favorite childhood friend?',
-				'What school did you attend for sixth grade?',
-				'In what city or town was your first job?',
-				'What is your favorite sport?',
-				'Who is your favorite sports player?',
-				'What is your grandmother\'s maiden name?',
-				'What was your first vehicle\'s registration number?',
-			);
-
-			$html  = '<select name="mo2f_kbaquestion_' . esc_attr( $question_no ) . '" id="mo2f_kbaquestion_' . esc_attr( $question_no ) . '" class="mo2f_kba_ques" required onchange="mo_option_hide(' . esc_attr( $question_no ) . ')">';
-			$html .= '<option value="" selected>' . esc_html__( 'Select your question', 'miniorange-2-factor-authentication' ) . '</option>';
+			$question_set = isset( $GLOBALS['mo2f_default_kba_question_set'] ) ? $GLOBALS['mo2f_default_kba_question_set'] : array();
+			$question_set = apply_filters( 'mo2f_enterprise_plan_settings_filter', $question_set, 'mo2f_check_for_custom_security_questions', $question_set );
+			$html         = '<select name="mo2f_kbaquestion_' . esc_attr( $question_no ) . '" id="mo2f_kbaquestion_' . esc_attr( $question_no ) . '" class="mo2f_kba_ques" required onchange="mo_option_hide(' . esc_attr( $question_no ) . ')">';
+			$html        .= '<option value="" selected>' . esc_html__( 'Select your question', 'miniorange-2-factor-authentication' ) . '</option>';
 
 			foreach ( $question_set as $index => $question ) {
 				$option_id = 'mq' . ( $index + 1 ) . '_' . esc_attr( $question_no );
@@ -1366,9 +1421,9 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'SUCCESS' === $customer_key['status'] ) {
 					if ( isset( $customer_key['phone'] ) ) {
-						update_option( 'mo_wpns_admin_phone', $customer_key['phone'] );
+						update_site_option( 'mo_wpns_admin_phone', $customer_key['phone'] );
 					}
-					update_option( 'mo2f_email', $email );
+					update_site_option( 'mo2f_email', $email );
 					$id         = isset( $customer_key['id'] ) ? $customer_key['id'] : '';
 					$api_key    = isset( $customer_key['apiKey'] ) ? $customer_key['apiKey'] : '';
 					$token      = isset( $customer_key['token'] ) ? $customer_key['token'] : '';
@@ -1376,9 +1431,9 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					$this->mo2f_save_customer_configurations( $id, $api_key, $token, $app_secret );
 					update_site_option( base64_encode( 'totalUsersCloud' ), get_site_option( base64_encode( 'totalUsersCloud' ) ) + 1 ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- We need to obfuscate the option as it will be stored in database.
 					$mocurl  = new MocURL();
-					$content = json_decode( $mocurl->get_customer_transactions( get_option( 'mo2f_customerKey' ), get_option( 'mo2f_api_key' ), 'PREMIUM' ), true );
+					$content = json_decode( $mocurl->get_customer_transactions( 'otp_recharge_plan', 'PREMIUM' ), true );
 					if ( 'SUCCESS' !== $content['status'] ) {
-						$content = json_decode( $mocurl->get_customer_transactions( get_option( 'mo2f_customerKey' ), get_option( 'mo2f_api_key' ), 'DEMO' ), true );
+						$content = json_decode( $mocurl->get_customer_transactions( '-1', 'DEMO' ), true );
 					}
 					update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', isset( $content['smsRemaining'] ) ? $content['smsRemaining'] : 0 );
 					update_site_option( 'cmVtYWluaW5nT1RQ', get_site_option( 'cmVtYWluaW5nT1RQ', 30 ) );
@@ -1402,11 +1457,11 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return void
 		 */
 		public function mo2f_save_customer_configurations( $id, $api_key, $token, $app_secret ) {
-			update_option( 'mo2f_customerKey', $id );
-			update_option( 'mo2f_api_key', $api_key );
-			update_option( 'mo2f_customer_token', $token );
-			update_option( 'mo2f_app_secret', $app_secret );
-			update_option( 'mo2f_miniorange_admin', $id );
+			update_site_option( 'mo2f_customerKey', $id );
+			update_site_option( 'mo2f_api_key', $api_key );
+			update_site_option( 'mo2f_customer_token', $token );
+			update_site_option( 'mo2f_app_secret', $app_secret );
+			update_site_option( 'mo2f_miniorange_admin', $id );
 			update_site_option( 'mo_2factor_admin_registration_status', 'MO_2_FACTOR_CUSTOMER_REGISTERED_SUCCESS' );
 		}
 
@@ -1416,7 +1471,9 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return string
 		 */
 		public function mo2f_get_test_script() {
-			$script = '<script>			jQuery("#mo2f_validate").click(function() {
+			$common_helper = new Mo2f_Common_Helper();
+			$script        = '<script>			jQuery("#mo2f_validate").click(function() {
+			    ' . $common_helper->mo2f_show_loader() . '
 				var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
 				var data = {
 					action: "mo_two_factor_ajax",
@@ -1430,6 +1487,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					nonce: nonce,
 				};
 				jQuery.post(ajaxurl, data, function(response) {
+				    ' . $common_helper->mo2f_hide_loader() . '
 					if (response.success) {
 						jQuery("#mo2f_2fa_popup_dashboard").fadeOut();
 						closeVerification = true;
@@ -1457,12 +1515,12 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return string
 		 */
 		public function mo2f_get_login_script( $twofa_method ) {
-
-			$script = '<script>		
+			$common_helper = new Mo2f_Common_Helper();
+			$script        = '<script>		
 			var twofa_method = "' . esc_js( $twofa_method ) . '";
 			var attemptleft = 3;	
 			jQuery("#mo2f_validate").click(function() {
-				
+				' . $common_helper->mo2f_show_loader() . '
 				var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
 				var ajaxurl = "' . esc_js( admin_url( 'admin-ajax.php' ) ) . '";
 
@@ -1478,6 +1536,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					nonce: nonce,
 				};
 				jQuery.post(ajaxurl, data, function(response) {
+				    ' . $common_helper->mo2f_hide_loader() . '
 					if (response.success) {
 						jQuery("#mo2f_inline_otp_validated_form").submit();
 					} else if(response.data == "LIMIT_EXCEEDED"){
@@ -1507,11 +1566,36 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return string
 		 */
 		public function mo2f_customize_logo() {
-			$html = '<div style="float:right;"><img
+			$custom_logo_enabled = get_site_option( 'mo2f_custom_logo', 'miniOrange2.png' );
+			$html                = '<div style="float:right;"><img
 							alt="logo"
-							src="' . esc_url( plugins_url( 'includes/images/miniOrange2.png', dirname( __FILE__ ) ) ) . '"/></div>';
+							src="' . esc_url( plugins_url( 'includes/images/' . $custom_logo_enabled, dirname( __FILE__ ) ) ) . '"/></div>';
 			return $html;
 
+		}
+
+		/**
+		 * This function used to include css and js files.
+		 *
+		 * @return void
+		 */
+		public function mo2f_echo_js_css_files() {
+			if ( is_user_logged_in() ) {
+				wp_register_style( 'mo2f_style_settings', plugins_url( 'includes/css/twofa_style_settings.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
+				wp_print_styles( 'mo2f_style_settings' );
+			} else {
+				wp_register_style( 'mo2f_bootstrap_settings', plugins_url( 'includes/css/bootstrap.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
+				wp_print_styles( 'mo2f_bootstrap_settings' );
+			}
+			wp_register_style( 'mo2f_main_css', plugins_url( 'includes/css/mo2f-main.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
+			wp_print_styles( 'mo2f_main_css' );
+			wp_register_script( 'mo2f_bootstrap_js', plugins_url( 'includes/js/bootstrap.min.js', dirname( __FILE__ ) ), array(), MO2F_VERSION, true );
+			wp_print_scripts( 'jquery' );
+			wp_print_scripts( 'mo2f_bootstrap_js' );
+			if ( get_site_option( 'mo2f_enable_login_popup_customization' ) ) {
+				wp_register_style( 'mo2f_custom-login-popup', plugins_url( 'includes/css/mo2f_login_popup_ui.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
+				wp_print_styles( 'mo2f_custom-login-popup' );
+			}
 		}
 
 		/**
@@ -1533,6 +1617,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				<div class="mo2f-modal-backdrop">
 				</div>
 				<div class="mo2f_modal-dialog mo2f_modal-lg">
+				<div id="mo2f_2fa_popup_dashboard_loader" class="modal" hidden></div>
 					<div class="login mo_customer_validation-modal-content">';
 					$html .= '<h4>';
 
@@ -1552,7 +1637,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 						
 												<select id="authenticator_type">';
 			foreach ( $auth_app_links as $auth_app => $auth_app_link ) {
-				$html .= '<option data-apptype="' . esc_attr( $auth_app ) . '" data-playstorelink="' . esc_attr( $auth_app_link['Android'] ) . '" data-appstorelink="' . esc_attr( $auth_app_link['Ios'] ) . '">' . esc_html( $auth_app_link['app_name'] ) . '</option>';
+				$html .= '<option data-apptype="' . esc_attr( $auth_app ) . '" data-playstorelink="' . esc_attr( $auth_app_link['Android'] ) . '" data-appstorelink="' . esc_attr( $auth_app_link['Ios'] ) . '">' . esc_html( MoWpnsConstants::mo2f_convert_method_name( $auth_app_link['app_name'], 'cap_to_small' ) ) . '</option>';
 			}
 						$html .= '</select>
 											</div>';
@@ -1584,7 +1669,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 																</form>';
 																$html .= '<div style="display:flex;">';
 
-													$html .= '<button name="mo2f_validate_gauth" id="mo2f_save_otp_ga_tour" class="button button-primary button-large" style="margin-left:5px;height: 10%;"/>Verify</button>';
+													$html .= '<button name="mo2f_validate_gauth" id="mo2f_save_otp_ga_tour" class="mo2f-save-settings-button" style="margin-left:5px;height: 10%;"/>Verify</button>';
 													$html .= '</div>';
 													$html .= '</div>';
 													$html .= '</div>';
@@ -1635,13 +1720,14 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 													esc_html__( ' is selected', 'miniorange-2-factor-authentication' ) . '.
 												</li>
 						
-												<li>' . esc_html__( 'Tap Add.' ) . '</li>
+												<li>' . esc_html__( 'Tap Add.', 'miniorange-2-factor-authentication' ) . '</li>
 											</ol>
 										</div><br>';
-													$html .= '<div>
-											<a href="https://faq.miniorange.com/knowledgebase/sync-mobile-app/" target="_blank">Sync your server time with authenticator app time</a>
-											<h4 style="color: red; text-align: center;">Current Server Time: <span id="mo2f_server_time">--</span></h4>
-										</div>';
+			if ( 'dashboard' === $prev_screen ) {
+						$html .= '<div><a href="https://faq.miniorange.com/knowledgebase/sync-mobile-app/" target="_blank">Sync your server time with authenticator app time</a>
+						<h4 class="mo_mmp_red text-center">Current Server Time: <span id="mo2f_server_time">--</span></h4>
+						</div>';
+			}
 													$html .= '<div id="links_to_apps_tour" style="background-color:white;padding:5px;width:90%;">
 											<span id="links_to_apps"></span>
 										</div>';
@@ -1671,7 +1757,10 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 							var ga_secret = "' . esc_js( $secret ) . '";
 							var session_id = "' . esc_js( $session_id ) . '";
 							var redirect_to = "' . esc_js( $redirect_to ) . '";
-							document.getElementById("mo2f_server_time").innerHTML = server_time;
+							var twofaFlow = "' . esc_js( $prev_screen ) . '";
+							if ( twofaFlow == "dashboard"){
+								document.getElementById("mo2f_server_time").innerHTML = server_time;
+		                    }
 							jQuery("#google_auth_code").keypress(function(event) {
 								if (event.which === 13) {
 									event.preventDefault();
@@ -1774,7 +1863,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					<br>Please test the login flow once with 2nd factor in another browser or in an incognito window of the same browser to ensure you don\'t get locked out of your site.</p>
 				</div>
 				<div class="mo2f_modal-footer">
-					<button type="button" id="test-methods-button" class="button button-primary button-large" data-dismiss="modal">Test it!</button>
+					<button type="button" id="test-methods-button" class="mo2f-save-settings-button" data-dismiss="modal">Test</button>
 				</div>
 					</div>
 			</div>
@@ -1807,7 +1896,9 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			wp_register_style( 'mo2f_bootstrap', plugins_url( 'includes/css/bootstrap.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
 			wp_register_style( 'mo2f_front_end_login', plugins_url( 'includes/css/front_end_login.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
 			wp_register_style( 'mo2f_style_setting', plugins_url( 'includes/css/style_settings.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
-			wp_register_style( 'mo2f_hide-login', plugins_url( 'includes/css/hide-login.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
+			if ( file_exists( plugin_dir_path( dirname( __FILE__ ) ) . 'includes/css/hide-login.min.css' ) ) {
+				wp_register_style( 'mo2f_hide-login', plugins_url( 'includes/css/hide-login.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
+			}
 			wp_print_styles( 'mo2f_bootstrap' );
 			wp_print_styles( 'mo2f_front_end_login' );
 			wp_print_styles( 'mo2f_style_setting' );
@@ -1819,6 +1910,10 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			wp_print_scripts( 'mo2f_phone_js' );
 			wp_register_style( 'mo2f_phone', plugins_url( 'includes/css/phone.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
 			wp_print_styles( 'mo2f_phone' );
+			if ( get_site_option( 'mo2f_enable_login_popup_customization' ) ) {
+				wp_register_style( 'mo2f_custom-login-popup', plugins_url( 'includes/css/mo2f_login_popup_ui.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
+				wp_print_styles( 'mo2f_custom-login-popup' );
+			}
 
 		}
 
@@ -1830,13 +1925,248 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 */
 		public function fetch_methods( $current_user = null ) {
 			$methods = array( MoWpnsConstants::OTP_OVER_SMS, MoWpnsConstants::OUT_OF_BAND_EMAIL, MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SECURITY_QUESTIONS, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OTP_OVER_TELEGRAM );
-			if ( ! is_null( $current_user ) && ( 'administrator' !== $current_user->roles[0] ) && ! get_option( 'mo2f_email' ) || ! get_option( 'mo2f_customerKey' ) ) {
+			if ( ! is_null( $current_user ) && ( 'administrator' !== $current_user->roles[0] ) && ! get_site_option( 'mo2f_email' ) || ! get_site_option( 'mo2f_customerKey' ) ) {
 				$methods = array( MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SECURITY_QUESTIONS, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OTP_OVER_TELEGRAM, MoWpnsConstants::OUT_OF_BAND_EMAIL );
 			}
 			if ( get_site_option( 'duo_credentials_save_successfully' ) ) {
 				array_push( $methods, 'DUO' );
 			}
 			return $methods;
+		}
+
+		/**
+		 * Removes account details.
+		 *
+		 * @return void
+		 */
+		public function mo2f_remove_account_details() {
+			delete_site_option( 'mo2f_customerKey' );
+			delete_site_option( 'mo2f_api_key' );
+			delete_site_option( 'mo2f_customer_token' );
+			delete_site_option( 'mo_wpns_transactionId' );
+			delete_site_option( 'mo_wpns_registration_status' );
+			delete_site_option( 'mo_2factor_admin_registration_status' );
+			delete_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' );
+		}
+
+		/**
+		 * Shows message.
+		 *
+		 * @param boolean $is_ajax Ajax call.
+		 * @return bool
+		 */
+		public function mo2f_ilvn( $is_ajax = true ) {
+			$data         = apply_filters( 'mo2f_is_lv_needed', false );
+			$show_message = new MoWpnsMessages();
+			if ( $data && ! get_site_option( 'mo2fa_lk' ) ) {
+				if ( current_user_can( 'manage_options' ) ) {
+					$message = 'Please <a href="' . admin_url() . 'admin.php?page=mo_2fa_my_account" target="_blank">click here</a> to verify your license before configuring the plugin.';
+				} else {
+					$message = MoWpnsMessages::ERROR_DURING_PROCESS;
+				}
+				if ( $is_ajax ) {
+					wp_send_json_error( MoWpnsMessages::lang_translate( $message ) );
+				} else {
+					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( $message ), 'ERROR' );
+					return true;
+				}
+			}
+		}
+
+		/**
+		 * Function to show Login Transactions
+		 *
+		 * @param array $usertranscations - Database entries that needs to be shown.
+		 * @return void
+		 */
+		public function mo2f_show_login_transactions_report( $usertranscations ) {
+			foreach ( $usertranscations as $usertranscation ) {
+					echo '<tr><td>' . esc_html( $usertranscation->ip_address ) . '</td><td>' . esc_html( $usertranscation->username ) . '</td><td>';
+				if ( MoWpnsConstants::FAILED === $usertranscation->status || MoWpnsConstants::PAST_FAILED === $usertranscation->status ) {
+					echo '<span style=color:red>' . esc_html( MoWpnsConstants::FAILED ) . '</span>';
+				} elseif ( MoWpnsConstants::SUCCESS === $usertranscation->status ) {
+					echo '<span style=color:green>' . esc_html( MoWpnsConstants::SUCCESS ) . '</span>';
+				} else {
+					echo 'N/A';
+				}
+				echo '</td><td>' . esc_html( gmdate( 'M j, Y, g:i:s a', $usertranscation->created_timestamp ) ) . '</td></tr>';
+			}
+		}
+
+		/**
+		 * This function redirect user to given url.
+		 *
+		 * @param object $user object containing user details.
+		 * @param string $redirect_to redirect url.
+		 * @return void
+		 */
+		public function mo2f_redirect_user_to( $user, $redirect_to ) {
+			$roles            = $user->roles;
+			$current_role     = array_shift( $roles );
+			$redirection_type = get_site_option( 'mo2f_redirect_url_for_users', 'redirect_all' );
+			if ( get_site_option( 'mo2f_enable_custom_redirect' ) ) {
+				if ( 'redirect_all' === $redirection_type ) {
+					$redirect_url = get_option( 'mo2f_custom_redirect_url', ! empty( $redirect_to ) ? $redirect_to : home_url() );
+				} else {
+					$redirect_url = isset( get_option( 'mo2f_custom_login_urls' )[ 'mo2fa_' . $current_role ] ) ? get_option( 'mo2f_custom_login_urls' )[ 'mo2fa_' . $current_role ] : ( ! empty( $redirect_to ) ? $redirect_to : home_url() );
+				}
+			} else {
+				if ( is_multisite() && is_super_admin( $user->ID ) ) {
+					$redirect_url = isset( $redirect_to ) && ! empty( $redirect_to ) ? $redirect_to : admin_url();
+				} else {
+					if ( 'administrator' === $current_role ) {
+						$redirect_url = isset( $redirect_to ) && ! empty( $redirect_to ) ? $redirect_to : admin_url();
+					} else {
+						$redirect_url = isset( $redirect_to ) && ! empty( $redirect_to ) ? $redirect_to : home_url();
+					}
+				}
+			}
+			if ( MO2f_Utility::get_index_value( 'GLOBALS', 'mo2f_is_ajax_request' ) ) {
+				$redirect = array(
+					'redirect' => $redirect_url,
+				);
+				wp_send_json_success( $redirect );
+			} else {
+				wp_safe_redirect( $redirect_url );
+				exit();
+			}
+		}
+
+		/**
+		 * CheckS url validation.
+		 *
+		 * @param string $url Url.
+		 * @return bool
+		 */
+		public function mo2f_check_url_validation( $url ) {
+			$path = wp_parse_url( $url, PHP_URL_PATH );
+			$path = rtrim( $path, '/' );
+			$slug = basename( $path );
+			$page = get_page_by_path( $slug );
+			if ( $page || rtrim( home_url(), '/' ) === rtrim( $url, '/' ) || rtrim( admin_url(), '/' ) === rtrim( $url, '/' ) ) {
+				return true;
+			}
+			return false;
+		}
+
+		/**
+		 * Gets default page.
+		 *
+		 * @param bool $is_lv_needed LV needed.
+		 * @return string
+		 */
+		public function mo2f_get_default_page( $is_lv_needed ) {
+			$page = ( $is_lv_needed && ! get_site_option( 'mo2f_customerKey' ) ) || ! current_user_can( 'manage_options' ) ? 'mo_2fa_my_account' : 'mo_2fa_two_fa';
+			return $page;
+		}
+
+		/**
+		 * Function to show user details
+		 *
+		 * @return void
+		 */
+		public function mo2f_show_unregistered_user_details() {
+			global $mo2fdb_queries;
+			$users = get_users();
+			echo ' <table  id="mo2f_unregistered_user_details" class="display" cellspacing="0" width="100%" style="display:none">
+      <thead> 
+        <tr>
+			<th>Username</th>
+			<th>Email</th>
+			<th>Role</th>
+			<th>Method Selected</th>
+			<th>Reset 2-Factor</th>             
+        </tr>
+      </thead><tbody>';
+			$entries = false;
+			foreach ( $users as $user ) {
+				$user_role                     = $user->roles[0];
+				$wp_user                       = get_user_by( 'id', $user->ID );
+				$mo2f_user_registration_status = $mo2fdb_queries->get_user_detail( 'mo_2factor_user_registration_status', $user->ID );
+				$mo2f_method_selected          = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
+				if ( 'MO_2_FACTOR_PLUGIN_SETTINGS' !== $mo2f_user_registration_status ) {
+					$entries = true;
+					echo '<tr><td>' . esc_html( $wp_user->user_login ) .
+					'</td><td>' . esc_html( $user->user_email ) .
+					'</td><td>' . esc_html( $user_role ) .
+					'</td><td>' .
+					'<span>';
+					echo esc_html( ( empty( $mo2f_method_selected ) ) ? 'None' : $mo2f_method_selected );
+					echo '</span>';
+					echo '</td><td>';
+					echo '</td> </tr>';
+				} else {
+					continue;
+				}
+			}
+			echo '
+	</tbody></table>';
+		}
+
+		/**
+		 * Shows 2FA registered user entries.
+		 *
+		 * @return void
+		 */
+		public function mo2f_show_registered_user_details() {
+			global $mo2fdb_queries;
+			$users = get_users();
+			echo ' <table  id="mo2f_registered_user_details" class="display" cellspacing="0" width="100%" style="display:none">
+      <thead > 
+        <tr>
+			<th>Username</th>
+			<th>Email</th>
+			<th>Role</th>
+			<th>Method Selected</th>
+			<th>Reset 2-Factor</th>      
+        </tr>
+      </thead><tbody>';
+			foreach ( $users as $user ) {
+				$user_role                     = $user->roles[0];
+				$wp_user                       = get_user_by( 'id', $user->ID );
+				$mo2f_user_registration_status = $mo2fdb_queries->get_user_detail( 'mo_2factor_user_registration_status', $user->ID );
+				if ( 'MO_2_FACTOR_PLUGIN_SETTINGS' === $mo2f_user_registration_status ) {
+						$mo2f_method_selected = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
+						echo '<tr class="mo2f-registered-row" ><td>' . esc_html( $wp_user->user_login ) .
+						'</td><td>' . esc_html( $user->user_email ) .
+						'</td><td>' . esc_html( $user_role ) .
+						'</td><td>' .
+						'<span>';
+						echo esc_html( ( empty( $mo2f_method_selected ) ) ? 'None' : $mo2f_method_selected );
+						echo '</span>';
+						echo '</td><td>';
+					?>
+				<form action="<?php echo esc_url( wp_nonce_url( 'users.php?page=reset&amp;action=reset_edit&amp;user_id=' . esc_attr( $user->ID ), 'reset_edit', 'mo2f_reset-2fa' ) ); ?>" method="post" name="reset2fa" id="reset2fa">
+					<input type="submit" name="mo2f_reset_2fa" id="mo2f_reset_2fa" value="Reset 2FA" class="mo2f-reset-settings-button" />
+				</form>
+					<?php
+						echo '</td> </tr>';
+				} else {
+					continue;
+				}
+			}
+
+			echo '
+</tbody></table>';
+		}
+
+		/**
+		 * Return Loader html.
+		 *
+		 * @return string
+		 */
+		public function mo2f_show_loader() {
+			return 'jQuery("#mo2f_2fa_popup_dashboard_loader").html("<span class=\'mo2f_loader\' id=\'mo2f_loader\'></span>");
+				jQuery("#mo2f_2fa_popup_dashboard_loader").css("display", "block");';
+		}
+
+		/**
+		 * Return Loader html.
+		 *
+		 * @return string
+		 */
+		public function mo2f_hide_loader() {
+			return 'jQuery("#mo2f_2fa_popup_dashboard_loader").css("display", "none");';
 		}
 	}
 

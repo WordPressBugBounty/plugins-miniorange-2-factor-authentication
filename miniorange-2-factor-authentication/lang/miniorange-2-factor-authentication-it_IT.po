@@ -1158,7 +1158,7 @@ msgstr ""
 
 #: controllers/class-mo2f-ajax-dashboard.php:86
 #: controllers/class-mo2f-ajax-dashboard.php:113
-#: controllers/feedback-footer.php:20 controllers/ip-blocking.php:16
+#: controllers/feedback-footer.php:20 controllers/ip-blocking-old.php:16
 #: controllers/navbar.php:14 handler/class-ajaxhandler.php:34
 #: handler/class-feedbackhandler.php:34 handler/class-feedbackhandler.php:157
 #: handler/user-profile-2fa-update.php:16
@@ -1597,7 +1597,7 @@ msgstr ""
 
 #: controllers/class-mo2f-ajax-dashboard.php:86
 #: controllers/class-mo2f-ajax-dashboard.php:113
-#: controllers/feedback-footer.php:20 controllers/ip-blocking.php:16
+#: controllers/feedback-footer.php:20 controllers/ip-blocking-old.php:16
 #: controllers/navbar.php:14 handler/class-ajaxhandler.php:34
 #: handler/class-feedbackhandler.php:34 handler/class-feedbackhandler.php:157
 #: handler/user-profile-2fa-update.php:16

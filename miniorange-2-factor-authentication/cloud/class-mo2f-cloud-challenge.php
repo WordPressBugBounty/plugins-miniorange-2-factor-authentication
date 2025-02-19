@@ -20,7 +20,7 @@
 
 namespace TwoFA\Cloud;
 
-use TwoFA\Onprem\MO2f_Utility;
+use TwoFA\Handler\Twofa\MO2f_Utility;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.

@@ -5,8 +5,8 @@
  * @package miniorange-2-factor-authentication/controllers
  */
 
-use TwoFA\Onprem\Miniorange_Password_2Factor_Login;
-use TwoFA\Onprem\Miniorange_Authentication;
+use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
+use TwoFA\Handler\Twofa\Miniorange_Authentication;
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\MocURL;
 
@@ -81,7 +81,7 @@ if ( ! class_exists( 'Wpns_Ajax' ) ) {
 						wp_send_json_error(
 							array(
 								'loggedin' => false,
-								'message'  => __( 'Wrong username or password.' ),
+								'message'  => __( 'Wrong username or password.', 'miniorange-2-factor-authentication' ),
 							)
 						);
 					}
@@ -166,11 +166,11 @@ if ( ! class_exists( 'Wpns_Ajax' ) ) {
 			if ( 'addon_plan' === $mo2f_all_plannames ) {
 				update_site_option( 'mo2f_planname', 'addon_plan' );
 				update_site_option( 'mo_2fa_addon_plan_type', $mo_2fa_plan_type );
-				update_option( 'mo2f_customer_selected_plan', $mo_2fa_plan_type );
+				update_site_option( 'mo2f_customer_selected_plan', $mo_2fa_plan_type );
 			} elseif ( '2fa_plan' === $mo2f_all_plannames ) {
 				update_site_option( 'mo2f_planname', '2fa_plan' );
 				update_site_option( 'mo_2fa_plan_type', $mo_2fa_plan_type );
-				update_option( 'mo2f_customer_selected_plan', $mo_2fa_plan_type );
+				update_site_option( 'mo2f_customer_selected_plan', $mo_2fa_plan_type );
 			}
 		}
 	}

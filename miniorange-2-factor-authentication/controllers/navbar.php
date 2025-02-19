@@ -8,6 +8,7 @@
 // Needed in both.
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsHandler;
+use TwoFA\Handler\Mo2fa_Security_Features;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -28,14 +29,14 @@ if ( ! wp_verify_nonce( $nonce, 'mo_2fa_security_features_nonce' ) ) {
 		}
 	}
 }
-$network_security_features = MoWpnsUtility::get_mo2f_db_option( 'mo_wpns_2fa_with_network_security', 'get_option' ) ? 'checked' : '';
+$network_security_features = MoWpnsUtility::get_mo2f_db_option( 'mo_wpns_2fa_with_network_security', 'site_option' ) ? 'checked' : '';
 
 if ( isset( $_GET['page'] ) ) {
 	$tab_count = get_site_option( 'mo2f_tab_count', 0 );
 	switch ( sanitize_text_field( wp_unslash( $_GET['page'] ) ) ) {
 
 		case 'mo_2fa_advancedblocking':
-			update_option( 'mo_2f_switch_adv_block', 1 );
+			update_site_option( 'mo_2f_switch_adv_block', 1 );
 			if ( $tab_count < 5 && ! get_site_option( 'mo_2f_switch_adv_block' ) ) {
 				update_site_option( 'mo2f_tab_count', get_site_option( 'mo2f_tab_count' ) + 1 );
 			}

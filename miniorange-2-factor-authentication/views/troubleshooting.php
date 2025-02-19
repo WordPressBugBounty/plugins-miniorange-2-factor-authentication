@@ -5,9 +5,6 @@
  * @package miniorange-2-factor-authentication/views
  */
 
-// Needed in both.
-use TwoFA\Helper\MoWpnsConstants;
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -20,28 +17,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<table class="mo_wpns_help">
 						<tbody><tr>
 							<td class="mo_wpns_help_cell">
-								<div id="mo_wpns_help_curl_title" class="mo_wpns_title_panel">
-									<div class="mo_wpns_help_title">How to enable PHP cURL extension? (Pre-requisite)</div>
-								</div>
-								<span hidden="" id="mo_wpns_help_curl_desc" class="mo_wpns_help_desc" style="display: none;">
-								<ol>
-								<li>Open php.ini file located under the PHP installation folder.</li>
-								<li>Search for extension=curl.dll.</li>
-								<li>Uncomment it by removing the semi-colon(;) in front of it.
-								Restart the Apache Server.</li></ol>
-								For any further queries, please <a href="mailto:mfasupport@xecurify.com" target="blank">contact us</a>. 
-								</span>
-							</td>
-						</tr><tr>
-							<td class="mo_wpns_help_cell">
 								<div id="mo_wpns_issue_in_scanning_QR" class="mo_wpns_title_panel">
 									<div class="mo_wpns_help_title">I am facing issue in scanning QR code, what is the reason behind the error?</div>
 								</div>
-								<span hidden="" id="mo_wpns_issue_in_scanning_QR_solution" class="mo_wpns_help_desc" style="display: none;">
-									<ol><li>Make sure that the bar-code you are scanning and the bar-code scanning app that you are using is suitable.</li>
-									<li>If you are configuring the Google Authenticator method, you will need the Google Authenticator App.</li>
-									<li>If you are configuring miniOrange authentication methods that are Push Notifications, Qr Code Authentication, or Soft Token you will need the miniOrange app and accordingly.</li><ul>					
-								</span>
+								<div id="mo_wpns_issue_in_scanning_QR_solution" class="mo_wpns_help_desc hidden">
+								   <ol><li>Make sure that the bar-code you are scanning and the bar-code scanning app that you are using is suitable.</li>
+								   <li>If you are configuring the Google Authenticator method, you will need the Google Authenticator App.</li>
+								</div>
 							</td>
 						</tr>
 						<tr>
@@ -49,9 +31,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<div id="mo_wpns_help_particular_use_role" class="mo_wpns_title_panel">
 									<div class="mo_wpns_help_title">I want to enable 2-factor for particular user roles in WordPress, how do I do that?</div>
 								</div>
-								<div hidden="" id="mo_wpns_help_particular_use_role_solution" class="mo_wpns_help_desc" style="display: none;">
-								We are providing 2-factor authentication for 3 admin users in the free version if you want to add it for more user roles, please upgrade to the paid version.</br> You can check our pricing from here: <a href="' . esc_url( MoWpnsConstants::MO2F_PLUGINS_PAGE_URL ) . '"/2-factor-authentication-for-wordpress">https://plugins.miniorange.com/2-factor-authentication-for-wordpress</a>.</br>
-								OR </br>If you have paid version of the plugin, your solution is right here: <a href="https://docs.miniorange.com/documentation/enable-two-factor-based-roles" target="blank">click here</a>.</div>
+								<div id="mo_wpns_help_particular_use_role_solution" class="mo_wpns_help_desc hidden">
+		                            <ol><li>Click on Login Settings tab present under the Two Factor Authentication tab.</li>
+								   <li>Go to Enable 2FA Settings.</li>
+								   <li>Select the user roles for 2FA and click on Save Settings button</li></ol>
 							</td>
 						</tr>
 						<tr>
@@ -59,9 +42,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<div id="mo_wpns_help_enforce_MFA" class="mo_wpns_title_panel">
 									<div class="mo_wpns_help_title">I want to Enforce my users to configure the Two-factor authentication method how I do that?</div>
 								</div>
-								<div hidden="" id="mo_wpns_help_enforce_MFA_solution" class="mo_wpns_help_desc" style="display: none;">
-								   This feature is supported in paid plugin. Please checkout out pricing from here: <a href="' . esc_url( MoWpnsConstants::MO2F_PLUGINS_PAGE_URL ) . '"/2-factor-authentication-for-wordpress" target="blank">https://plugins.miniorange.com/2-factor-authentication-for-wordpress</a>
-								   </br>OR</br>If you have paid version of the plugin, your solution is right here: <a href="https://docs.miniorange.com/documentation/enforce-2fa-users" target="blank">click here</a>.
+								<div id="mo_wpns_help_enforce_MFA_solution" class="mo_wpns_help_desc hidden">
+	                               <ol><li>Click on <b>Login Settings</b> tab present under the Two Factor Authentication tab.</li>
+								   <li>Keep the <b>Prevent Prevent 2FA Configuration on Login </b>Settings unchecked</li>
 								</div>
 							</td>
 						</tr>
@@ -70,10 +53,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<div id="mo_wpns_help_reset_MFA" class="mo_wpns_title_panel">
 									<div class="mo_wpns_help_title">I want to reset Two Factor for my users, how I do that?</div>
 								</div>
-								<div hidden="" id="mo_wpns_help_reset_MFA_solution" class="mo_wpns_help_desc" style="display: none;">
-								   <ol><li>Go to the WordPress <b>Users</b> tab.</li>
-								   <li>Hover over the Username of which you want to reset two-factor. You will see �Reset 2 Factor� option, Click on that.</li>
-								   <li>Now, whenever your user logs in again to their account user will able to reconfigure Two Factor.</li>
+								<div id="mo_wpns_help_reset_MFA_solution" class="mo_wpns_help_desc hidden">
+								   <ol><li>Click on the <b>Advanced Features</b> tab.</li>
+								   <li>Click on Users 2FA Status tab</li>
+								   <li>Click on Reset 2FA button whose 2FA you want to reset.</li><ol>
 								</div>
 							</td>
 						</tr>
@@ -82,20 +65,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<div id="mo_wpns_help_get_back_to_account" class="mo_wpns_title_panel">
 									<div class="mo_wpns_help_title">How do I gain access to my website if I get locked out?</div>
 								</div>
-								<div hidden="" id="mo_wpns_help_get_back_to_account_solution" class="mo_wpns_help_desc" style="display: none;">
-									We provides many alternet solutions to get back to account, <a href="https://faq.miniorange.com/knowledgebase/how-to-gain-access-to-my-website-if-i-get-locked-out/" tager="blank">click here</a>. 
-									</div>
+								<div id="mo_wpns_help_get_back_to_account_solution" class="mo_wpns_help_desc hidden">
+									Please use the following link to gain access to your site. <a href="https://faq.miniorange.com/knowledgebase/how-to-gain-access-to-my-website-if-i-get-locked-out/" tager="_blank">click here</a>. 
+								</div>
 							</td>
 						</tr>
 						<tr>
 							<td class="mo_wpns_help_cell">
 								<div id="mo_wpns_help_multisite" class="mo_wpns_title_panel">
-									<div class="mo_wpns_help_title">Does the miniOrange 2FA plugin support multi-site support?</div>
+									<div class="mo_wpns_help_title">Does the miniOrange 2FA plugin support multi-site network?</div>
 								</div>
-								<div hidden="" id="mo_wpns_help_multisite_solution" class="mo_wpns_help_desc" style="display: none;">
-									The miniOrange Two-factor free plugin does not provide Multisite support. Please upgrade to the premium plan for the multi-site support.
-
-							
+								<div id="mo_wpns_help_multisite_solution" class="mo_wpns_help_desc hidden">
+									Yes. This plugin does support the 2FA on multisite network.
 								</div>
 							</td>
 						</tr>
@@ -104,7 +85,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<div id="mo_wpns_help_forgot_password" class="mo_wpns_title_panel">
 									<div class="mo_wpns_help_title">I forgot the password of my miniOrange account. How can I reset it?</div>
 								</div>
-								<div hidden="" id="mo_wpns_help_forgot_password_solution" class="mo_wpns_help_desc" style="display: none;">
+								<div id="mo_wpns_help_forgot_password_solution" class="mo_wpns_help_desc hidden">
 									To reset the password of your miniOrange account, please <a href="' . esc_url( MO_HOST_NAME ) . '/moas/idp/resetpassword" target="blank">click here</a> and reset your password using the email address registered with miniOrange.
 
 								
@@ -116,8 +97,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<div id="mo_wpns_help_MFA_propmted" class="mo_wpns_title_panel">
 									<div class="mo_wpns_help_title">My Users are not being prompted for 2-factor during login. Why?</div>
 								</div>
-								<div hidden="" id="mo_wpns_help_MFA_propmted_solution" class="mo_wpns_help_desc" style="display: none;">
-									The miniOrange Two-Factor free plugin provides the 2-factor  for three users (Administrator) forever. To enable 2FA for more users, please upgrade to the Premium plan. for more details <a href="https://faq.miniorange.com/knowledgebase/users-are-not-prompted-for-2-factor-during-login/" target="blank">click here</a>.
+								<div id="mo_wpns_help_MFA_propmted_solution" class="mo_wpns_help_desc hidden">
+									If you are on Free plan, you can configure the 2FA upto only 3 users. Otherwise, please check the following settings.
+                                   <ol><li>Click on <b>Login Settings</b> tab.</li>
+								   <li>Make sure that your have checked the <b>Enable 2FA</b> settings and the user roles for 2FA</li>
+								   <li>Scroll down the page and confirm if you have kept the Prevent 2FA Configuration On Login settings unchecked.</li><ol>
 
 								</div>
 							</td>
@@ -126,29 +110,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<div id="mo_wpns_help_redirect_back" class="mo_wpns_title_panel">
 									<div class="mo_wpns_help_title">When I enter my authentication code and click on Validate, I got redirected back to the login page, Why is this happening?</div>
 								</div>
-								<div hidden="" id="mo_wpns_help_redirect_back_solution" class="mo_wpns_help_desc" style="display: none;">
-									It might be the case that the plugin is not able to write the PHP session info (into the /var/lib/php/sessions directory ) because of permission issues, and hence it is failing at the authentication step.                   Please update to the latest plugin version(5.8.1) which has the bug fix for this.								
+								<div id="mo_wpns_help_redirect_back_solution" class="mo_wpns_help_desc hidden">
+									It might be the case that the plugin is not able to write the PHP session info (into the /var/lib/php/sessions directory ) because of permission issues, and hence it is failing at the authentication step.                   Please update to the latest plugin version(Free- 6.0.4/Premium- 18.0) which has the bug fix for this.								
 								</div>
 							</td>
 						</tr>
 						<tr>
 							<td class="mo_wpns_help_cell">
-								<div id="mo_wpns_help_alternet_login" class="mo_wpns_title_panel">
-									<div class="mo_wpns_help_title">I had setup QR Code Authentication/Push Notification as my 2-factor method. My phone has no internet connectivity, how can I login?</div>
+								<div id="mo_wpns_help_curl_title" class="mo_wpns_title_panel">
+									<div class="mo_wpns_help_title">How to enable PHP cURL extension?</div>
 								</div>
-								<div hidden="" id="mo_wpns_help_alternet_login_solution" class="mo_wpns_help_desc" style="display: none;">
-									You can login using our alternate login method. Please <a href="https://faq.miniorange.com/knowledgebase/login-issue-for-two-factor/" target="blank">Click here</a>.						
-								</div>
-							</td>
-						</tr>
-						<tr>
-							<td class="mo_wpns_help_cell">
-								<div id="mo_wpns_help_lost_ability" class="mo_wpns_title_panel">
-									<div class="mo_wpns_help_title">My phone is lost, stolen or discharged. How can I login?</div>
-								</div>
-								<div hidden="" id="mo_wpns_help_lost_ability_solution" class="mo_wpns_help_desc" style="display: none;">
-									To login and reconfigure authentication method <a href="" target="blank">click here</a>.
-													
+								<div id="mo_wpns_help_curl_desc" class="mo_wpns_help_desc hidden">
+								   <ol><li>Open php.ini file located under the PHP installation folder.</li>
+								   <li>Search for extension=curl.dll.</li>
+								   <li>Uncomment it by removing the semi-colon(;) in front of it. Restart the Apache Server.</li>
 								</div>
 							</td>
 						</tr>
@@ -157,7 +132,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<div id="mo_wpns_help_translate" class="mo_wpns_title_panel">
 									<div class="mo_wpns_help_title">How do I translate the plugin in a language of my choice?</div>
 								</div>
-								<div hidden="" id="mo_wpns_help_translate_solution" class="mo_wpns_help_desc" style="display: none;">
+								<div id="mo_wpns_help_translate_solution" class="mo_wpns_help_desc hidden">
 								Please follow the below steps:
 								<ol><li>Download & open POEDIT software.</li>
 								<li>Click on Create New Translation.</li>
@@ -167,6 +142,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 								Do the translations and Save them.</li>
 								<li>Select the WordPress site language as the same you selected in the software. ( Germany )</li></ol>
 													
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td class="mo_wpns_help_cell">
+								<div id="mo_wpns_help_refund_title" class="mo_wpns_title_panel">
+									<div class="mo_wpns_help_title">What is your refund policy & end user license agreement?</div>
+								</div>
+								<div id="mo_wpns_help_refund_desc" class="mo_wpns_help_desc hidden">
+						            <li><a href="https://plugins.miniorange.com/end-user-license-agreement/#v5-software-warranty-refund-policy" target="_blank">click here</a> to read our refund policy.</li>
+									<li><a href="https://plugins.miniorange.com/end-user-license-agreement" target="_blank">click here</a> to read our end user license agreement.</li>
 								</div>
 							</td>
 						</tr>

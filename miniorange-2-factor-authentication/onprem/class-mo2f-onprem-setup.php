@@ -21,12 +21,12 @@
 namespace TwoFA\OnPrem;
 
 use TwoFA\Traits\Instance;
-use TwoFA\Onprem\Google_Auth_Onpremise;
+use TwoFA\Handler\Twofa\Google_Auth_Onpremise;
 use TwoFA\Onprem\Mo2f_OnPremRedirect;
 use TwoFA\Helper\MocURL;
 use TwoFA\Helper\MoWpnsConstants;
-use TwoFA\Onprem\Miniorange_Password_2Factor_Login;
-use TwoFA\Onprem\MO2f_Utility;
+use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
+use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\TwoFAMoSessions;
 if ( ! defined( 'ABSPATH' ) ) {
@@ -92,13 +92,16 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 					'desc'  => 'Configure and Answer Three Security Questions to login',
 					'crown' => false,
 				),
-				MoWpnsConstants::OTP_OVER_WHATSAPP    => array(
+			);
+			$lv_needed                  = apply_filters( 'mo2f_is_lv_needed', false );
+			if ( ! $lv_needed ) { // To do - Remove this after adding OTP Over Whatsapp functionaly.
+				$two_factor_methods_details[ MoWpnsConstants::OTP_OVER_WHATSAPP ] = array(
 					'doc'   => MoWpnsConstants::OTP_OVER_WA_DOCUMENT_LINK,
 					'video' => null,
 					'desc'  => 'Enter the One Time Passcode sent to your WhatsApp account.',
 					'crown' => true,
-				),
-			);
+				);
+			}
 			return $two_factor_methods_details;
 		}
 
@@ -203,24 +206,21 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		 * Register KbA details on onpremise.
 		 *
 		 * @param string $email user email.
-		 * @param string $question1 kba question 1.
-		 * @param string $question2 kba question 2.
-		 * @param string $question3 kba question 3.
-		 * @param string $answer1 KBA answer 1.
-		 * @param string $answer2 KBA answer 2.
-		 * @param string $answer3 KBA answer 3.
+		 * @param array  $kba_ques_ans questions and answers.
 		 * @param string $user_id User ID.
 		 * @return mixed
 		 */
-		public function mo2f_cloud_register_kba( $email, $question1, $question2, $question3, $answer1, $answer2, $answer3, $user_id = null ) {
-			$answer1         = md5( strtolower( $answer1 ) );
-			$answer2         = md5( strtolower( $answer2 ) );
-			$answer3         = md5( strtolower( $answer3 ) );
-			$question_answer = array(
-				$question1 => $answer1,
-				$question2 => $answer2,
-				$question3 => $answer3,
-			);
+		public function mo2f_cloud_register_kba( $email, $kba_ques_ans, $user_id = null ) {
+			$question_answer = array();
+			$total_questions = count( $kba_ques_ans ) / 2;
+			for ( $i = 1; $i <= $total_questions; $i++ ) {
+				$question_key = 'kba_q' . $i;
+				$answer_key   = 'kba_a' . $i;
+				if ( isset( $kba_ques_ans[ $question_key ] ) && isset( $kba_ques_ans[ $answer_key ] ) ) {
+					$answer = md5( strtolower( $kba_ques_ans[ $answer_key ] ) );
+					$question_answer[ $kba_ques_ans[ $question_key ] ] = $answer;
+				}
+			}
 			update_user_meta( $user_id, 'mo2f_kba_challenge', $question_answer );
 			global $mo2fdb_queries;
 			$mo2fdb_queries->update_user_details( $user_id, array( 'mo2f_configured_2FA_method' => MoWpnsConstants::SECURITY_QUESTIONS ) );
@@ -306,7 +306,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 				calls = calls + 1;
 				var data = {\'mo2f_out_of_band_email\':\'test_polling\'};
 				jQuery.ajax({
-					url: "' . esc_url( get_site_option( 'siteurl' ) ) . '/wp-login.php",
+					url: ajax_url ,
 					type: "POST",
 					data: data,
 					success: function (result) {
@@ -382,12 +382,13 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 			if(flow=="direct_login"){
 				emailVerificationPoll();
 			}
+			var ajax_url = "' . esc_url( admin_url( 'admin-ajax.php' ) ) . '";
 			function emailVerificationPoll()
 			{
 				calls = calls + 1;
 				var data = {\'mo2f_out_of_band_email\':\'login_polling\'};
 				jQuery.ajax({
-					url: "' . esc_url( get_site_option( 'siteurl' ) ) . '/wp-login.php",
+					url: ajax_url,
 					type: "POST",
 					data: data,
 					success: function (result) {
@@ -510,13 +511,6 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_set_user_two_fa( $current_user, $selected_method ) {
-			global $mo2fdb_queries;
-			$mo2fdb_queries->update_user_details(
-				$current_user->ID,
-				array(
-					'mo2f_configured_2fa_method' => $selected_method,
-				)
-			);
 			$response = array(
 				'mo2fa_login_status'  => MoWpnsConstants::MO_2_FACTOR_PROMPT_USER_FOR_2FA_METHODS,
 				'mo2fa_login_message' => '',
@@ -550,35 +544,6 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 				echo '</div>';
 				return $ga_secret;
 		}
-		/**
-		 * Function to register the kba information with miniOrange.
-		 *
-		 * @param string $email Email id of user.
-		 * @param string $question1 Question 1 selected by user.
-		 * @param string $answer1 Answer 1 given by the user.
-		 * @param string $question2 Question 2 selected by user.
-		 * @param string $answer2 Answer 2 given by the user.
-		 * @param string $question3 Question 3 selected by user.
-		 * @param string $answer3 Answer 3 given by the user.
-		 * @param int    $user_id Id of user.
-		 * @return string
-		 */
-		public function mo2f_register_kba_details( $email, $question1, $answer1, $question2, $answer2, $question3, $answer3, $user_id = null ) {
-			$answer1         = md5( strtolower( $answer1 ) );
-			$answer2         = md5( strtolower( $answer2 ) );
-			$answer3         = md5( strtolower( $answer3 ) );
-			$question_answer = array(
-				$question1 => $answer1,
-				$question2 => $answer2,
-				$question3 => $answer3,
-			);
-			update_user_meta( $user_id, 'mo2f_kba_challenge', $question_answer );
-			global $mo2fdb_queries;
-			$mo2fdb_queries->update_user_details( $user_id, array( 'mo2f_configured_2FA_method' => MoWpnsConstants::SECURITY_QUESTIONS ) );
-			$response = wp_json_encode( array( 'status' => 'SUCCESS' ) );
-			return $response;
-		}
-
 		/**
 		 * Get 2FA method of a user.
 		 *

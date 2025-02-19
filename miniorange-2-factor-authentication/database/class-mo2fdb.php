@@ -8,6 +8,7 @@
 namespace TwoFA\Database;
 
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Traits\Instance;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -23,6 +24,8 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 	 * Class Mo2fDB
 	 */
 	class Mo2fDB {
+
+		use Instance;
 
 		/**
 		 * User details table variable.
@@ -47,8 +50,8 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 */
 		public function __construct() {
 			global $wpdb;
-			$this->user_details_table    = $wpdb->prefix . 'mo2f_user_details';
-			$this->user_login_info_table = $wpdb->prefix . 'mo2f_user_login_info';
+			$this->user_details_table    = $wpdb->base_prefix . 'mo2f_user_details';
+			$this->user_login_info_table = $wpdb->base_prefix . 'mo2f_user_login_info';
 		}
 
 		/**
@@ -57,14 +60,14 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 * @return void
 		 */
 		public function mo_plugin_activate() {
-			if ( ! get_option( 'mo2f_dbversion' ) ) {
-				update_option( 'mo2f_dbversion', MoWpnsConstants::DB_VERSION );
+			if ( ! get_site_option( 'mo2f_dbversion' ) ) {
+				update_site_option( 'mo2f_dbversion', MoWpnsConstants::DB_VERSION );
 				$this->generate_tables();
 			} else {
-				$current_db_version = get_option( 'mo2f_dbversion' );
+				$current_db_version = get_site_option( 'mo2f_dbversion' );
 				if ( $current_db_version < MoWpnsConstants::DB_VERSION ) {
 
-					update_option( 'mo2f_dbversion', MoWpnsConstants::DB_VERSION );
+					update_site_option( 'mo2f_dbversion', MoWpnsConstants::DB_VERSION );
 					$this->generate_tables();
 				}
 				// update the tables based on DB_VERSION.
@@ -172,6 +175,38 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 
 			}
 
+		}
+
+		/**
+		 * Fetches all users RBA details.
+		 *
+		 * @return mixed
+		 */
+		public function mo2f_get_all_users_rba_details() {
+			global $wpdb;
+			$rba_datails        = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %1s WHERE meta_key = %s;', array( $wpdb->base_prefix . 'usermeta', 'mo2f_rba_device_details' ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- DB Direct Query is necessary here.
+			$all_users_rba_data = array();
+			foreach ( $rba_datails as $rba_detail ) {
+				foreach ( maybe_unserialize( $rba_detail->meta_value ) as $value ) {
+					array_push( $all_users_rba_data, $value );
+				}
+			}
+			return $all_users_rba_data;
+		}
+
+		/**
+		 * Return RBA data from tables.
+		 *
+		 * @return mixed
+		 */
+		public function mo2f_get_all_device_details() {
+			global $wpdb;
+			$does_table_exist = $wpdb->query( $wpdb->prepare( 'SHOW TABLES LIKE %s;', array( $wpdb->base_prefix . 'mo2f_user_device_details' ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- DB Direct Query is necessary here.
+			if ( $does_table_exist ) {
+				$value = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %1s', array( $wpdb->base_prefix . 'mo2f_user_device_details' ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- DB Direct Query is necessary here.
+				return $value;
+			}
+			return false;
 		}
 
 		/**
@@ -422,7 +457,7 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 */
 		public function mo2f_delete_cloud_meta_on_account_remove() {
 			global $wpdb;
-			$tablename = $wpdb->prefix . 'usermeta';
+			$tablename = $wpdb->base_prefix . 'usermeta';
 			$prefix    = 'mo2f_%';
 			$wpdb->query( $wpdb->prepare( 'DELETE FROM %1s  WHERE `meta_key` LIKE %s', $tablename, $prefix ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- DB Direct Query is necessary here.
 		}

@@ -8,6 +8,8 @@ namespace TwoFA\Helper;
 
 use TwoFA\Traits\Instance;
 use TwoFA\Objects\Mo2f_TabDetails;
+use TwoFA\Handler\Mo2f_Main_Handler;
+use TwoFA\Database\Mo2fDB;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -71,19 +73,12 @@ if ( ! class_exists( 'Mo2f_MenuItems' ) ) {
 		 * Adding MainMenu.
 		 */
 		private function add_main_menu() {
-			$user         = wp_get_current_user();
-			$user_id      = $user->ID;
-			$onprem_admin = get_option( 'mo2f_onprem_admin' );
-			$roles        = (array) $user->roles;
-			$flag         = 0;
-			foreach ( $roles as $role ) {
-				if ( get_option( 'mo2fa_' . $role ) === '1' ) {
-					$flag = 1;
-				}
-			}
-
-			$is_2fa_enabled = ( ( $flag ) || ( $user_id === (int) $onprem_admin ) );
-			if ( $is_2fa_enabled ) {
+			global $mo2fdb_queries;
+			$user                = wp_get_current_user();
+			$main_handler        = new Mo2f_Main_Handler();
+			$flag                = $main_handler->mo2f_check_if_twofa_is_enabled( $user );
+			$user_limit_exceeded = apply_filters( 'mo2f_basic_plan_settings_filter', $mo2fdb_queries->check_alluser_limit_exceeded( $user->ID ), 'is_user_limit_exceeded', array() );
+			if ( ( $flag || current_user_can( 'manage_options' ) ) && ! $user_limit_exceeded ) {
 				add_menu_page(
 					'miniOrange 2-Factor',
 					'miniOrange 2-Factor',
@@ -101,7 +96,7 @@ if ( ! class_exists( 'Mo2f_MenuItems' ) ) {
 		 */
 		private function add_sub_menus() {
 			foreach ( $this->tab_details as $tab_detail ) {
-				if ( $tab_detail->show_in_nav ) {
+				if ( $tab_detail->show_in_nav && 'mo_2fa_upgrade' !== $tab_detail->menu_slug ) {
 					add_submenu_page(
 						$this->menu_slug,
 						$tab_detail->page_title,
@@ -146,7 +141,7 @@ if ( ! class_exists( 'Mo2f_MenuItems' ) ) {
 				if ( is_numeric( $user_id ) && $user_info ) {
 					?>
 				<div class="wrap">
-					<form method="post" name="reset2fa" id="reset2fa" action="<?php echo esc_url( 'users.php' ); ?>">
+					<form method="post" name="reset2fa" id="reset2fa" action="<?php echo esc_url( admin_url() . 'admin.php?page=mo_2fa_reports&subpage=users2fastatus' ); ?>">
 						<h1>Reset 2nd Factor</h1>
 
 						<p>You have specified this user for reset:</p>

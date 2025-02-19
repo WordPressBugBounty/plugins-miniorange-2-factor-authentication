@@ -8,7 +8,9 @@
  * @copyright  Copyright 2015 miniOrange. All Rights Reserved.
  */
 
-namespace TwoFA\Handler;
+namespace TwoFA\Handler\Twofa;
+
+use TwoFA\Traits\Instance;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -19,6 +21,8 @@ if ( ! class_exists( 'Mo2f_GAuth_AESEncryption' ) ) {
 	 * Class mo2f_GAuth_AESEncryption
 	 */
 	class Mo2f_GAuth_AESEncryption {
+
+		use Instance;
 
 		/**
 		 * Encrypts data.

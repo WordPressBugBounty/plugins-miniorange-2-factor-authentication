@@ -18,7 +18,7 @@
  * @package        miniorange-2-factor-authentication/helper
  */
 
-namespace TwoFA;
+namespace TwoFA\Helper;
 
 use TwoFA\Helper\MoWpnsUtility;
 

@@ -5,25 +5,33 @@
  * @package miniorange-2-factor-authentication/controllers/twofa
  */
 
-use TwoFA\Onprem\MO2f_Utility;
+namespace TwoFA\Controllers\Twofa;
+
+use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Onprem\Two_Factor_Setup_Onprem_Cloud;
 use TwoFA\Database\Mo2fDB;
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\MocURL;
-use TwoFA\Onprem\MO2f_Cloud_Onprem_Interface;
-use TwoFA\Onprem\Miniorange_Password_2Factor_Login;
-use TwoFA\Onprem\Google_Auth_Onpremise;
+use TwoFA\Handler\Twofa\MO2f_Cloud_Onprem_Interface;
+use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
+use TwoFA\Handler\Twofa\Google_Auth_Onpremise;
+use TwoFA\Traits\Instance;
+use WP_Error;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
+
 	/**
 	 * Class Mo_2f_Ajax
 	 */
 	class Mo_2f_Ajax {
+
+		use Instance;
+
 		/**
 		 * Class Mo2f_Cloud_Onprem_Interface object
 		 *
@@ -241,6 +249,5 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 			apply_filters( 'authenticate', null, $username, $password );
 		}
 	}
-	new Mo_2f_Ajax();
 }
 

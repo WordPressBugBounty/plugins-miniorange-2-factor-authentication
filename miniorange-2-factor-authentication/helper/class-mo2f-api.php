@@ -5,7 +5,9 @@
  * @package miniorange-2-factor-authentication/api
  */
 
-namespace TwoFA\Onprem;
+namespace TwoFA\Helper;
+
+use TwoFA\Helper\MoWpnsMessages;
 
 use TwoFA\Traits\Instance;
 
@@ -29,7 +31,7 @@ if ( ! class_exists( 'Mo2f_Api' ) ) {
 			if ( ! is_wp_error( $response ) ) {
 				return $response['body'];
 			} else {
-				$message = 'Please enable curl extension. <a href="admin.php?page=mo_2fa_troubleshooting">Click here</a> for the steps to enable curl.';
+				$message = MoWpnsMessages::SOMETHING_WENT_WRONG;
 				return wp_json_encode(
 					array(
 						'status'  => 'ERROR',
@@ -93,8 +95,8 @@ if ( ! class_exists( 'Mo2f_Api' ) ) {
 		 */
 		public function get_http_header_array() {
 
-			$customer_key = get_option( 'mo2f_customerKey' );
-			$api_key      = get_option( 'mo2f_api_key' );
+			$customer_key = get_site_option( 'mo2f_customerKey' );
+			$api_key      = get_site_option( 'mo2f_api_key' );
 
 			/* Current time in milliseconds since midnight, January 1, 1970 UTC. */
 			$current_time_in_millis = self::get_timestamp();

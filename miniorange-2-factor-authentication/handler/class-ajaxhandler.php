@@ -1,22 +1,32 @@
 <?php
 /**
- * This file is a part of GAuth plugin.
+ * This file is part of GAuth plugin.
  *
  * @package miniOrange-2-factor-authentication/handler
  */
 
+namespace TwoFA\Handler;
+
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\MoWpnsHandler;
+use TwoFA\Traits\Instance;
+use WP_Error;
+use DateTimeZone;
+use DateTime;
+use Exception;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
 if ( ! class_exists( 'AjaxHandler' ) ) {
+
 	/**
 	 * Class Ajaxhandler
 	 */
 	class AjaxHandler {
+
+		use Instance;
 
 		/**
 		 * Class Ajaxhandler constructor

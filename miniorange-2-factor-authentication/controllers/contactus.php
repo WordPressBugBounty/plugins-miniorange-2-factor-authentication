@@ -15,8 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 global $mo2f_dir_name;
 
 $current_user_info = wp_get_current_user();
-$email             = get_option( 'mo2f_email' );
-$phone             = get_option( 'mo_wpns_admin_phone' );
+$email             = get_site_option( 'mo2f_email' );
+$phone             = get_site_option( 'mo_wpns_admin_phone' );
 
 if ( empty( $email ) ) {
 	$email = $current_user_info->user_email;

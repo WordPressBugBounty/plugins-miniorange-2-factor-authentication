@@ -1,8 +1,8 @@
 <?php
 /**
- * This file is controller for twofactor/loginsettings/controllers/login-settings.php.
+ * This file is controller for controllers/controllers/emailtemplates.php.
  *
- * @package miniorange-2-factor-authentication/twofactor/loginsettings/controllers/
+ * @package miniorange-2-factor-authentication/controllers/whitelabelling
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

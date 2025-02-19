@@ -5,6 +5,10 @@
  * @package miniOrange-2-factor-authentication/handler
  */
 
+namespace TwoFA\Handler;
+
+use TwoFA\Traits\Instance;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -14,6 +18,8 @@ if ( ! class_exists( 'Handle_Migration' ) ) {
 	 * Class Handle_Migration
 	 */
 	class Handle_Migration {
+
+		use Instance;
 		/**
 		 * Handle_Migration class constructor
 		 */
@@ -34,7 +40,18 @@ if ( ! class_exists( 'Handle_Migration' ) ) {
 				$this->mo2f_handle_mfa_migration();
 				$this->mo2f_handle_new_release_email_migration();
 				$this->mo2f_handle_backup_code_enable();
+				$this->mo2f_handle_session_management_migration();
 			}
+		}
+
+		/**
+		 * Handle Session Management migration.
+		 *
+		 * @return void
+		 */
+		public function mo2f_handle_session_management_migration() {
+			$session_type = get_site_option( 'mo2f_session_allowed_type', 1 );
+			update_site_option( 'mo2f_session_allowed_type', $session_type ? 'allow_access' : 'deny_access' );
 		}
 
 		/**
@@ -65,8 +82,10 @@ if ( ! class_exists( 'Handle_Migration' ) ) {
 		 * @return void
 		 */
 		public function mo2f_handle_mfa_migration() {
-			$mfa_option = get_site_option( 'mo2f_nonce_enable_configured_methods' );
-			update_site_option( 'mo2f_multi_factor_authentication', $mfa_option );
+			if ( get_site_option( 'mo2f_nonce_enable_configured_methods' ) ) {
+				$mfa_option = get_site_option( 'mo2f_nonce_enable_configured_methods' );
+				update_site_option( 'mo2f_multi_factor_authentication', $mfa_option );
+			}
 		}
 
 		/**
@@ -88,5 +107,5 @@ if ( ! class_exists( 'Handle_Migration' ) ) {
 			add_option( 'mo2f_enable_backup_methods', true );
 			add_option( 'mo2f_enabled_backup_methods', array( 'mo2f_reconfig_link_show', 'mo2f_back_up_codes' ) );
 		}
-	}new Handle_Migration();
+	}
 }

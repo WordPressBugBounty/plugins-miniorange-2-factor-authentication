@@ -5,11 +5,12 @@
  * @package miniOrange-2-factor-authentication/handler
  */
 
-namespace TwoFA\Onprem;
+namespace TwoFA\Helper;
 
 use TwoFA\Helper\Mo2f_Common_Helper;
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\MocURL;
+use TwoFA\Traits\Instance;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -21,9 +22,10 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 	 */
 	class Mo2f_Inline_Popup {
 
+		use Instance;
 
 		/**
-		 * This user shows popup to select inline method.
+		 * Show iniline 2FA form.
 		 *
 		 * @param string $current_user_id user id of current user of current user.
 		 * @param string $login_message Login message.
@@ -36,6 +38,30 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 			$current_user     = get_userdata( $current_user_id );
 			$common_helper    = new Mo2f_Common_Helper();
 			$selected_methods = $common_helper->fetch_methods( $current_user );
+			$selected_methods = apply_filters( 'mo2f_basic_plan_settings_filter', $selected_methods, 'fetch_twofa_methods', array( 'user' => $current_user ) );
+			if ( count( $selected_methods ) > 1 ) {
+				$this->mo2f_get_inline_select_method_form( $current_user, $login_message, $redirect_to, $session_id, $selected_methods );
+			} else {
+				$selected_method = $selected_methods[0];
+				$inline_popup    = new Mo2f_Common_Helper();
+				$show_method     = $inline_popup->mo2f_get_object( $selected_method );
+				$show_method->mo2f_prompt_2fa_setup_inline( $session_id, $redirect_to, $current_user_id, '' );
+				exit;
+			}
+		}
+
+		/**
+		 * Gets iniline 2fa method form.
+		 *
+		 * @param object $current_user Current user.
+		 * @param string $login_message Login message.
+		 * @param string $redirect_to redirect url.
+		 * @param string $session_id session id.
+		 * @param array  $selected_methods Selected method.
+		 * @return void
+		 */
+		public function mo2f_get_inline_select_method_form( $current_user, $login_message, $redirect_to, $session_id, $selected_methods ) {
+			$common_helper = new Mo2f_Common_Helper();
 			?>  
 		<html>
 			<head>
@@ -58,9 +84,11 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 							</div>
 							<div class="mo2f_modal-body">
 							<b>
+							<span  class="mo2f_modal-title">
 						<?php
 							esc_html_e( 'Configure a Two-Factor method to protect your account', 'miniorange-2-factor-authentication' );
 						?>
+						</span>
 							</b>
 							<?php
 							if ( isset( $login_message ) && ! empty( $login_message ) ) {
@@ -104,20 +132,6 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 								<br>
 								</span>
 								<span class="
-										<?php
-										if ( ! ( in_array( MoWpnsConstants::OUT_OF_BAND_EMAIL, $selected_methods, true ) ) ) {
-											echo 'mo2f_td_hide';
-										} else {
-											echo 'mo2f_td_show'; }
-										?>
-								" >
-									<label title="<?php esc_attr_e( 'You will receive an email with link. You have to click the ACCEPT or DENY link to verify your email. Supported in Desktops, Laptops, Smartphones.', 'miniorange-2-factor-authentication' ); ?>">
-												<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::OUT_OF_BAND_EMAIL ); ?>"  />
-										<?php esc_html_e( MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OUT_OF_BAND_EMAIL, 'cap_to_small' ), 'miniorange-2-factor-authentication' ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?>
-									</label>
-									<br>
-								</span> 
-								<span class="
 								<?php
 								if ( ! ( in_array( MoWpnsConstants::OTP_OVER_SMS, $selected_methods, true ) ) ) {
 									echo 'mo2f_td_hide';
@@ -130,6 +144,48 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 									<?php esc_html_e( MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OTP_OVER_SMS, 'cap_to_small' ), 'miniorange-2-factor-authentication' ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?>
 										</label>
 									<br>
+								</span>
+								<span class="
+								<?php
+								if ( ! ( in_array( MoWpnsConstants::OTP_OVER_EMAIL, $selected_methods, true ) ) ) {
+									echo 'mo2f_td_hide';
+								} else {
+									echo 'mo2f_td_show'; }
+								?>
+								">
+									<label title="<?php esc_attr_e( 'You will receive a one time passcode on your email. You have to enter the otp on your screen to login. Supported in Smartphones, Feature Phones.', 'miniorange-2-factor-authentication' ); ?>" >
+									<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::OTP_OVER_EMAIL ); ?>"  />
+										<?php esc_html_e( MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OTP_OVER_EMAIL, 'cap_to_small' ), 'miniorange-2-factor-authentication' ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?>
+											</label>
+											<br>
+								</span>
+								<span class="
+										<?php
+										if ( ! ( in_array( MoWpnsConstants::OUT_OF_BAND_EMAIL, $selected_methods, true ) ) ) {
+											echo 'mo2f_td_hide';
+										} else {
+											echo 'mo2f_td_show'; }
+										?>
+								" >
+									<label title="<?php esc_attr_e( 'You will receive an email with link. You have to click the ACCEPT or DENY link to verify your email. Supported in Desktops, Laptops, Smartphones.', 'miniorange-2-factor-authentication' ); ?>">
+												<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::OUT_OF_BAND_EMAIL ); ?>"  />
+										<?php esc_html_e( MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OUT_OF_BAND_EMAIL, 'cap_to_small' ) . ' Via Link', 'miniorange-2-factor-authentication' ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?>
+									</label>
+									<br>
+								</span> 
+								<span class="
+								<?php
+								if ( ! ( in_array( MoWpnsConstants::SECURITY_QUESTIONS, $selected_methods, true ) ) ) {
+									echo 'mo2f_td_hide';
+								} else {
+									echo 'mo2f_td_show'; }
+								?>
+								">
+									<label title="<?php esc_attr_e( 'You have to answers some knowledge based security questions which are only known to you to authenticate yourself. Supported in Desktops, Laptops, Smartphones.', 'miniorange-2-factor-authentication' ); ?>" >
+									<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::SECURITY_QUESTIONS ); ?>"  />
+										<?php esc_html_e( 'Security Questions ( KBA )', 'miniorange-2-factor-authentication' ); ?>
+											</label>
+											<br>
 								</span>
 								<span class="
 								<?php
@@ -159,35 +215,6 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 											</label>
 											<br>
 								</span>
-								<span class="
-								<?php
-								if ( ! ( in_array( MoWpnsConstants::SECURITY_QUESTIONS, $selected_methods, true ) ) ) {
-									echo 'mo2f_td_hide';
-								} else {
-									echo 'mo2f_td_show'; }
-								?>
-								">
-									<label title="<?php esc_attr_e( 'You have to answers some knowledge based security questions which are only known to you to authenticate yourself. Supported in Desktops,Laptops,Smartphones.', 'miniorange-2-factor-authentication' ); ?>" >
-									<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::SECURITY_QUESTIONS ); ?>"  />
-										<?php esc_html_e( 'Security Questions ( KBA )', 'miniorange-2-factor-authentication' ); ?>
-											</label>
-											<br>
-								</span>
-								<span class="
-								<?php
-								if ( ! ( in_array( MoWpnsConstants::OTP_OVER_EMAIL, $selected_methods, true ) ) ) {
-									echo 'mo2f_td_hide';
-								} else {
-									echo 'mo2f_td_show'; }
-								?>
-								">
-									<label title="<?php esc_attr_e( 'You will receive a one time passcode on your email. You have to enter the otp on your screen to login. Supported in Smartphones, Feature Phones.', 'miniorange-2-factor-authentication' ); ?>" >
-									<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::OTP_OVER_EMAIL ); ?>"  />
-										<?php esc_html_e( MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OTP_OVER_EMAIL, 'cap_to_small' ), 'miniorange-2-factor-authentication' ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?>
-											</label>
-											<br>
-								</span>
-
 								<?php
 
 								$check_grace_period = new Mo2f_Common_Helper();
@@ -196,8 +223,8 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 
 									?>
 								<br>
-										<a href="#skiptwofactor" style="color:#F4D03F ;font-weight:bold;margin-left:35%;"><?php esc_html_e( 'Skip Two Factor', 'miniorange-2-factor-authentication' ); ?></a>
-										<br>
+										<a href="#skiptwofactor" class="mo2f_footer_text" style="color:#F4D03F ;font-weight:bold;margin-left:35%;"><?php esc_html_e( 'Skip Two Factor', 'miniorange-2-factor-authentication' ); ?></a>
+										<br> 
 										<?php } ?>
 
 										<?php
@@ -320,9 +347,9 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 						</div>
 						<div class="mo2f_modal-body center">
 
-							<h3> <?php esc_html_e( 'Please download the backup codes for account recovery.', 'miniorange-2-factor-authentication' ); ?></h3>
+							<h3 class="mo2f_modal-title"> <?php esc_html_e( 'Please download the backup codes for account recovery.', 'miniorange-2-factor-authentication' ); ?></h3>
 
-							<h4> 
+							<h4 class="mo2f_middle_text"> 
 								<?php
 								esc_html_e(
 									'You will receive the backup codes via email if you have your SMTP configured.',
@@ -337,7 +364,7 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 										);
 										?>
 									</h4>
-							<h4> 
+							<h4 class="mo2f_middle_text"> 
 										<?php
 										esc_html_e(
 											'Backup Codes can be used to login into user account in case you forget your phone or get locked out.',
@@ -354,7 +381,7 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 									</h4>
 							<div>   
 								<div style="display: inline-flex;width: 350px; ">
-									<div id="clipboard" style="border: solid;width: 55%;float: left;">
+									<div id="clipboard" class="mo2f_footer_text" style="border: solid;width: 55%;float: left;">
 										<?php
 										$size = count( $codes );
 										for ( $x = 0; $x < $size; $x++ ) {
@@ -379,7 +406,7 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 											<input type="hidden" name="mo2f_inline_backup_codes" value="<?php echo esc_attr( $str1 ); ?>" />
 											<input type="hidden" name="session_id" value="<?php echo esc_attr( $session_id_encrypt ); ?>"/>
 											<input type="hidden" name="miniorange_inline_save_2factor_method_nonce" value="<?php echo esc_attr( wp_create_nonce( 'miniorange-2-factor-inline-save-2factor-method-nonce' ) ); ?>" />
-											<input type="submit" name="Generate Codes1" id="codes" style="display:inline;width:100%;margin-left: 20%;margin-bottom: 37%;margin-top: 29%" class="miniorange_button button button-primary button-large" value="<?php esc_attr_e( 'Download Codes', 'miniorange-2-factor-authentication' ); ?>" />
+											<input type="submit" name="Generate Codes1" id="codes" style="display:inline;width:100%;margin-left: 20%;margin-bottom: 37%;margin-top: 29%" class="mo2f-save-settings-button" value="<?php esc_attr_e( 'Download Codes', 'miniorange-2-factor-authentication' ); ?>" />
 										</form>
 									</div>
 
@@ -388,7 +415,7 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 										<input type="hidden" name="miniorange_inline_save_2factor_method_nonce" value="<?php echo esc_attr( wp_create_nonce( 'miniorange-2-factor-inline-save-2factor-method-nonce' ) ); ?>" />
 										<input type="hidden" name="redirect_to" value="<?php echo esc_url( $redirect_to ); ?>"/>
 										<input type="hidden" name="session_id" value="<?php echo esc_attr( $session_id_encrypt ); ?>"/>
-										<input type="submit" name="login_page" id="login_page" style="display:inline;margin-left:-198%;margin-top: 289% !important;margin-right: 24% !important;width: 209%" class="miniorange_button button button-primary button-large" value="<?php esc_attr_e( 'Finish', 'miniorange-2-factor-authentication' ); ?>"  /><br>
+										<input type="submit" name="login_page" id="login_page" style="display:inline;margin-left:-198%;margin-top: 289% !important;margin-right: 24% !important;width: 209%" class="mo2f-reset-settings-button" value="<?php esc_attr_e( 'Finish', 'miniorange-2-factor-authentication' ); ?>"  /><br>
 									</form>
 								</div>
 							</div>

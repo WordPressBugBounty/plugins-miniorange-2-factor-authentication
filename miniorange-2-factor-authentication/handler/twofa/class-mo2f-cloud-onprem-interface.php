@@ -19,10 +19,11 @@
  * @license        http://www.gnu.org/copyleft/gpl.html MIT/Expat, see LICENSE.php
  */
 
-namespace TwoFA\Onprem;
+namespace TwoFA\Handler\Twofa;
 
 use TwoFA\Traits\Instance;
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -160,17 +161,12 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		 * Function to register the kba information with miniOrange.
 		 *
 		 * @param string $email Email id of user.
-		 * @param string $question1 Question 1 selected by user.
-		 * @param string $answer1 Answer 1 given by the user.
-		 * @param string $question2 Question 2 selected by user.
-		 * @param string $answer2 Answer 2 given by the user.
-		 * @param string $question3 Question 3 selected by user.
-		 * @param string $answer3 Answer 3 given by the user.
+		 * @param array  $kba_ques_ans questions and answers.
 		 * @param int    $user_id Id of user.
 		 * @return string
 		 */
-		public function mo2f_register_kba_details( $email, $question1, $answer1, $question2, $answer2, $question3, $answer3, $user_id = null ) {
-			$response = $this->class_object->mo2f_cloud_register_kba( $email, $question1, $question2, $question3, $answer1, $answer2, $answer3, $user_id );
+		public function mo2f_register_kba_details( $email, $kba_ques_ans, $user_id = null ) {
+			$response = $this->class_object->mo2f_cloud_register_kba( $email, $kba_ques_ans, $user_id );
 
 			return $response;
 

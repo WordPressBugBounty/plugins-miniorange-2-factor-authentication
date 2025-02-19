@@ -9,9 +9,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$range_count = is_numeric( get_option( 'mo_wpns_iprange_count' ) ) && intval( get_option( 'mo_wpns_iprange_count' ) ) !== 0 ? intval( get_option( 'mo_wpns_iprange_count' ) ) : 1;
+$range_count = is_numeric( get_site_option( 'mo_wpns_iprange_count' ) ) && intval( get_site_option( 'mo_wpns_iprange_count' ) ) !== 0 ? intval( get_site_option( 'mo_wpns_iprange_count' ) ) : 1;
 for ( $i = 1; $i <= $range_count; $i++ ) {
-	$ip_range = get_option( 'mo_wpns_iprange_range_' . $i );
+	$ip_range = get_site_option( 'mo_wpns_iprange_range_' . $i );
 	if ( $ip_range ) {
 		$a = explode( '-', $ip_range );
 

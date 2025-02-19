@@ -10,16 +10,19 @@ namespace TwoFA\Helper;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-use TwoFA\Onprem\MO2f_Utility;
+use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\MoWpnsHandler;
 use TwoFA\Helper\MoWpnsUtility;
-use TwoFA\Onprem\Mo2f_Inline_Popup;
+use TwoFA\Helper\Mo2f_Inline_Popup;
+use TwoFA\Traits\Instance;
 
 if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 	/**
 	 * Class Mo2f_Login_Popup
 	 */
 	class Mo2f_Login_Popup {
+
+		use Instance;
 
 		/**
 		 * Gets skeleton values according to the 2fa method.
@@ -40,25 +43,28 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 				MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT => 'Something Went Wrong!',
 				MoWpnsConstants::MO_2_FACTOR_USE_BACKUP_CODES => 'Validate Backup Code',
 				MoWpnsConstants::MO2F_USER_BLOCKED_PROMPT  => 'Access Denied!',
+				MoWpnsConstants::MO2F_RBA_GET_USER_CONSENT => 'Remember Device',
+				MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OOB_EMAIL => 'Verify Link',
 
 			);
 			if ( ! TwoFAMoSessions::get_session_var( 'mo2f_attempts_before_redirect' ) ) {
 				TwoFAMoSessions::add_session_var( 'mo2f_attempts_before_redirect', 3 );
 			}
-			$attempts        = TwoFAMoSessions::get_session_var( 'mo2f_attempts_before_redirect' );
-			$backup_methods  = (array) get_site_option( 'mo2f_enabled_backup_methods' );
-			$skeleton_blocks = array(
-				'login_prompt_title'   => __( ( ! empty( $prompt_title[ $login_status ] ) ? $prompt_title[ $login_status ] : 'Validate OTP' ), 'miniorange-2-factor-authentication' ), // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- This is a string literal.
-				'login_prompt_message' => $login_message . '<br>',
-				'attempt_left'         => 'test_2fa' === $validation_flow ? '' : '<br><span><b>Attempts left</b>:</span><span id="mo2f_attempt_span">' . esc_html( $attempts ) . '</span><br><br>',
-				'enter_otp'            => '<br><div class="mo2fa_text-align-center">
+			$attempts            = TwoFAMoSessions::get_session_var( 'mo2f_attempts_before_redirect' );
+			$backup_methods      = (array) get_site_option( 'mo2f_enabled_backup_methods' );
+			$custom_logo_enabled = get_site_option( 'mo2f_custom_logo', 'miniOrange2.png' );
+			$skeleton_blocks     = array(
+				'login_prompt_title'     => __( ( ! empty( $prompt_title[ $login_status ] ) ? $prompt_title[ $login_status ] : 'Validate OTP' ), 'miniorange-2-factor-authentication' ), // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- This is a string literal.
+				'login_prompt_message'   => $login_message . '<br>',
+				'attempt_left'           => 'test_2fa' === $validation_flow ? '' : '<br><span class="mo2f_middle_text"><b>Attempts left</b>:</span><span class="mo2f_middle_text" id="mo2f_attempt_span">' . esc_html( $attempts ) . '</span><br><br>',
+				'enter_otp'              => '<br><div class="mo2fa_text-align-center">
                                         <input type="text" name="mo2fa_softtoken" style="height:28px !important;"
                                         placeholder="' . esc_attr__( 'Enter code', 'miniorange-2-factor-authentication' ) . '"
                                         id="mo2fa_softtoken" required="true" class="mo_otp_token" autofocus="true"
                                         pattern="[0-9]{4,8}"
                                         title="' . esc_attr__( 'Only digits within range 4-8 are allowed.', 'miniorange-2-factor-authentication' ) . '"/>
                                     </div><br>',
-				'enter_answers'        => '<p style="font-size:15px;"> ' .
+				'enter_answers'          => '<p style="font-size:15px;"> ' .
 											esc_html( $kba_question1 ) . '
                                             <br>
                                             <br><input class="mo_otp_token" type="password" name="mo2f_answer_1" id="mo2f_answer_1" placeholder="' . esc_attr__( 'Enter Answer 1', 'miniorange-2-factor-authentication' ) . '"
@@ -71,33 +77,39 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
                                                 title="Only alphanumeric letters with special characters(_@.$#&amp;+-) are allowed."
                                                 autocomplete="off">
                                     </p>',
-				'resend_otp'           => '<span style="color:#1F618D;"></span><span><a href="#resend" style="color:#a7a7a8 ;text-decoration:none;">' . esc_html__( 'Resend OTP', 'miniorange-2-factor-authentication' ) . '</a></span>&nbsp;<br><br>',
-				'validate_button'      => ' <input type="button" name="miniorange_otp_token_submit" id="mo2f_validate" class="miniorange_otp_token_submit" value="' . esc_attr__( 'Validate', 'miniorange-2-factor-authentication' ) . '"/>',
-				'backtologin'          => MoWpnsConstants::MO2F_USER_BLOCKED_PROMPT === $login_status ? 'mo2f_login_form' : 'mo2f_inline_form',
-				'email_loader'         => '	<div id="showPushImage"><br>
+				'resend_otp'             => '<span style="color:#1F618D;"></span><span><a href="#resend" style="color:#a7a7a8 ;text-decoration:none;">' . esc_html__( 'Resend OTP', 'miniorange-2-factor-authentication' ) . '</a></span>&nbsp;<br><br>',
+				'validate_button'        => ' <input type="button" name="mo2f-save-settings-button" id="mo2f_validate" class="mo2f-save-settings-button" value="' . esc_attr__( 'Validate', 'miniorange-2-factor-authentication' ) . '"/>',
+				'backtologin'            => MoWpnsConstants::MO2F_USER_BLOCKED_PROMPT === $login_status ? 'mo2f_login_form' : 'mo2f_inline_form',
+				'email_loader'           => '	<div id="showPushImage"><br>
 				<div class="mo2fa_text-align-center">We are waiting for your approval...</div>
 				                                <div class="mo2fa_text-align-center">
-					                               <img src="' . esc_url( plugins_url( 'includes/images/ajax-loader-login.gif', dirname( __FILE__ ) ) ) . '"/>
+					                               <img src="' . esc_url( plugins_url( 'includes/images/email-loader.gif', dirname( __FILE__ ) ) ) . '"/>
 											</div>',
-				'use_backup_codes'     => 'test_2fa' === $validation_flow || ! in_array( 'mo2f_back_up_codes', $backup_methods, true ) ? '' : '<div> <a href="#mo2f_backup_option">
-                                     <p style="font-size:14px;">' . esc_html__( 'Use Backup Codes', 'miniorange-2-factor-authentication' ) . '</p>
+				'use_backup_codes'       => 'test_2fa' === $validation_flow || ! in_array( 'mo2f_back_up_codes', $backup_methods, true ) ? '' : '<div> <a href="#mo2f_backup_option">
+                                     <p style="font-size:14px;" class="mo2f_footer_text">' . esc_html__( 'Use Backup Codes', 'miniorange-2-factor-authentication' ) . '</p>
                                      </a>
                                     </div>',
-				'send_backup_codes'    => 'test_2fa' === $validation_flow || ! in_array( 'mo2f_back_up_codes', $backup_methods, true ) || ! get_site_option( 'mo2f_enable_backup_methods' ) ? '' : '<div> <a href="#mo2f_backup_generate">
+				'send_backup_codes'      => 'test_2fa' === $validation_flow || ! in_array( 'mo2f_back_up_codes', $backup_methods, true ) || ! get_site_option( 'mo2f_enable_backup_methods' ) ? '' : '<div> <a href="#mo2f_backup_generate">
                                          <p style="font-size:14px;">' . esc_html__( 'Send backup codes on email', 'miniorange-2-factor-authentication' ) . '</p>
                                          </a>
                                     </div>',
-				'backup_code_input'    => '<div id="mo2f_kba_content">
+				'backup_code_input'      => '<div id="mo2f_kba_content">
 									<p style="font-size:15px;">
 										<input class="mo2f-textbox" type="text" name="mo2f_backup_code" id="mo2f_backup_code" required="true" autofocus="true"  title="' . esc_attr__( 'Only alphanumeric letters with special characters(_@.$#&amp;+-) are allowed.', 'miniorange-2-factor-authentication' ) . '" autocomplete="off" ><br/>
 									</p>
 								</div>',
-				'send_reconfig_link'   => 'test_2fa' === $validation_flow || ! in_array( 'mo2f_reconfig_link_show', $backup_methods, true ) || ! get_site_option( 'mo2f_enable_backup_methods' ) ? '' : '<div> <a href="#mo2f_send_reconfig_link">
-									<p style="font-size:14px;">' . esc_html__( 'Locked out? Click to reconfigure 2FA', 'miniorange-2-factor-authentication' ) . '</p>
+				'send_reconfig_link'     => 'test_2fa' === $validation_flow || ! in_array( 'mo2f_reconfig_link_show', $backup_methods, true ) || ! get_site_option( 'mo2f_enable_backup_methods' ) ? '' : '<div> <a href="#mo2f_send_reconfig_link">
+									<p style="font-size:14px;" class="mo2f_footer_text">' . esc_html__( 'Locked out? Click to recover your account using email verification', 'miniorange-2-factor-authentication' ) . '</p>
 									</a>
 							   </div>',
-				'custom_logo'          => '	<div style="float:right;"><a target="_blank" href="http://miniorange.com/2-factor-authentication"><img
-                                     alt="logo"  src="' . esc_url( plugins_url( 'includes/images/miniOrange2.png', dirname( __FILE__ ) ) ) . '"/></a></div>',
+				'kba_backup_method_link' => 'test_2fa' === $validation_flow || ! in_array( 'backup_kba', $backup_methods, true ) || ! get_site_option( 'mo2f_enable_backup_methods' ) || ! get_user_meta( $user_id, 'mo2f_backup_method_set', true ) ? '' : '<div> <a href="#kba_backup_method_link">
+							   <p style="font-size:14px;" class="mo2f_footer_text">' . esc_html__( 'Login with alternate 2FA method', 'miniorange-2-factor-authentication' ) . '</p>
+							   </a>
+						</div>',
+				'custom_logo'            => '<div class="mo2f-powerby-logo"><img
+                                     alt="logo"  src="' . esc_url( plugins_url( 'includes/images/' . $custom_logo_enabled, dirname( __FILE__ ) ) ) . '"/></a></div>',
+				'rba_consent'            => '<br><input type="button" name="miniorange_trust_device_yes" id="miniorange_trust_device_yes" class="mo2f-save-settings-button" style="margin-right:5%;" value="' . esc_attr__( 'Yes', 'miniorange-2-factor-authentication' ) . '"/>
+						                    <input type="button" name="miniorange_trust_device_no" id="miniorange_trust_device_no" class="mo2f-reset-settings-button" value="' . esc_attr__( 'No', 'miniorange-2-factor-authentication' ) . '"/>',
 
 			);
 			$login_status_blocks = array();
@@ -133,10 +145,12 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					'##emailloader##'      => '',
 					'##backtologin##'      => $skeleton_blocks['backtologin'],
 					'##validatebutton##'   => $skeleton_blocks['validate_button'],
+					'##rbaconsent##'       => '',
 					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
 					'##sendbackupcodes##'  => $skeleton_blocks['send_backup_codes'],
 					'##sendreconfiglink##' => $skeleton_blocks['send_reconfig_link'],
 					'##customlogo##'       => $skeleton_blocks['custom_logo'],
+					'##backupmethod##'     => $skeleton_blocks['kba_backup_method_link'],
 				),
 				MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OOB_EMAIL => array(
 					'##mo2f_title##'       => $skeleton_blocks['login_prompt_title'],
@@ -149,10 +163,12 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					'##emailloader##'      => $skeleton_blocks['email_loader'],
 					'##backtologin##'      => $skeleton_blocks['backtologin'],
 					'##validatebutton##'   => '',
+					'##rbaconsent##'       => '',
 					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
 					'##sendbackupcodes##'  => $skeleton_blocks['send_backup_codes'],
 					'##sendreconfiglink##' => $skeleton_blocks['send_reconfig_link'],
 					'##customlogo##'       => $skeleton_blocks['custom_logo'],
+					'##backupmethod##'     => $skeleton_blocks['kba_backup_method_link'],
 				),
 				MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OTP_OVER_TELEGRAM => array(
 					'##mo2f_title##'       => $skeleton_blocks['login_prompt_title'],
@@ -165,10 +181,12 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					'##emailloader##'      => '',
 					'##backtologin##'      => $skeleton_blocks['backtologin'],
 					'##validatebutton##'   => $skeleton_blocks['validate_button'],
+					'##rbaconsent##'       => '',
 					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
 					'##sendbackupcodes##'  => $skeleton_blocks['send_backup_codes'],
 					'##sendreconfiglink##' => $skeleton_blocks['send_reconfig_link'],
 					'##customlogo##'       => $skeleton_blocks['custom_logo'],
+					'##backupmethod##'     => $skeleton_blocks['kba_backup_method_link'],
 				),
 				MoWpnsConstants::MO_2_FACTOR_CHALLENGE_GOOGLE_AUTHENTICATION => array(
 					'##mo2f_title##'       => $skeleton_blocks['login_prompt_title'],
@@ -181,10 +199,12 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					'##emailloader##'      => '',
 					'##backtologin##'      => $skeleton_blocks['backtologin'],
 					'##validatebutton##'   => $skeleton_blocks['validate_button'],
+					'##rbaconsent##'       => '',
 					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
 					'##sendbackupcodes##'  => $skeleton_blocks['send_backup_codes'],
 					'##sendreconfiglink##' => $skeleton_blocks['send_reconfig_link'],
 					'##customlogo##'       => $skeleton_blocks['custom_logo'],
+					'##backupmethod##'     => $skeleton_blocks['kba_backup_method_link'],
 				),
 				MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OTP_OVER_SMS => array(
 					'##mo2f_title##'       => $skeleton_blocks['login_prompt_title'],
@@ -197,10 +217,12 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					'##emailloader##'      => '',
 					'##backtologin##'      => $skeleton_blocks['backtologin'],
 					'##validatebutton##'   => $skeleton_blocks['validate_button'],
+					'##rbaconsent##'       => '',
 					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
 					'##sendbackupcodes##'  => $skeleton_blocks['send_backup_codes'],
 					'##sendreconfiglink##' => $skeleton_blocks['send_reconfig_link'],
 					'##customlogo##'       => $skeleton_blocks['custom_logo'],
+					'##backupmethod##'     => $skeleton_blocks['kba_backup_method_link'],
 				),
 				MoWpnsConstants::MO_2_FACTOR_CHALLENGE_KBA_AUTHENTICATION => array(
 					'##mo2f_title##'       => $skeleton_blocks['login_prompt_title'],
@@ -213,10 +235,12 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					'##emailloader##'      => '',
 					'##backtologin##'      => $skeleton_blocks['backtologin'],
 					'##validatebutton##'   => $skeleton_blocks['validate_button'],
+					'##rbaconsent##'       => '',
 					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
 					'##sendbackupcodes##'  => $skeleton_blocks['send_backup_codes'],
 					'##sendreconfiglink##' => $skeleton_blocks['send_reconfig_link'],
 					'##customlogo##'       => $skeleton_blocks['custom_logo'],
+					'##backupmethod##'     => '',
 				),
 				MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT => array(
 					'##mo2f_title##'       => $skeleton_blocks['login_prompt_title'],
@@ -229,10 +253,12 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					'##emailloader##'      => '',
 					'##backtologin##'      => $skeleton_blocks['backtologin'],
 					'##validatebutton##'   => '',
+					'##rbaconsent##'       => '',
 					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
 					'##sendbackupcodes##'  => $skeleton_blocks['send_backup_codes'],
 					'##sendreconfiglink##' => $skeleton_blocks['send_reconfig_link'],
 					'##customlogo##'       => $skeleton_blocks['custom_logo'],
+					'##backupmethod##'     => $skeleton_blocks['kba_backup_method_link'],
 				),
 				MoWpnsConstants::MO2F_USER_BLOCKED_PROMPT  => array(
 					'##mo2f_title##'       => $skeleton_blocks['login_prompt_title'],
@@ -245,10 +271,12 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					'##emailloader##'      => '',
 					'##backtologin##'      => $skeleton_blocks['backtologin'],
 					'##validatebutton##'   => '',
-					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
-					'##sendbackupcodes##'  => $skeleton_blocks['send_backup_codes'],
-					'##sendreconfiglink##' => $skeleton_blocks['send_reconfig_link'],
+					'##rbaconsent##'       => '',
+					'##usebackupcodes##'   => '',
+					'##sendbackupcodes##'  => '',
+					'##sendreconfiglink##' => '',
 					'##customlogo##'       => $skeleton_blocks['custom_logo'],
+					'##backupmethod##'     => '',
 				),
 				MoWpnsConstants::MO_2_FACTOR_RECONFIGURATION_LINK_SENT => array(
 					'##mo2f_title##'       => $skeleton_blocks['login_prompt_title'],
@@ -261,10 +289,12 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					'##emailloader##'      => '',
 					'##backtologin##'      => $skeleton_blocks['backtologin'],
 					'##validatebutton##'   => '',
+					'##rbaconsent##'       => '',
 					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
 					'##sendbackupcodes##'  => $skeleton_blocks['send_backup_codes'],
 					'##sendreconfiglink##' => '',
 					'##customlogo##'       => $skeleton_blocks['custom_logo'],
+					'##backupmethod##'     => '',
 				),
 				MoWpnsConstants::MO_2_FACTOR_USE_BACKUP_CODES => array(
 					'##mo2f_title##'       => $skeleton_blocks['login_prompt_title'],
@@ -277,10 +307,30 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					'##emailloader##'      => '',
 					'##backtologin##'      => $skeleton_blocks['backtologin'],
 					'##validatebutton##'   => $skeleton_blocks['validate_button'],
+					'##rbaconsent##'       => '',
 					'##usebackupcodes##'   => '',
 					'##sendbackupcodes##'  => '',
 					'##sendreconfiglink##' => '',
 					'##customlogo##'       => $skeleton_blocks['custom_logo'],
+					'##backupmethod##'     => $skeleton_blocks['kba_backup_method_link'],
+				),
+				MoWpnsConstants::MO2F_RBA_GET_USER_CONSENT => array(
+					'##mo2f_title##'       => $skeleton_blocks['login_prompt_title'],
+					'##login_message##'    => $skeleton_blocks['login_prompt_message'],
+					'##attemptleft##'      => '',
+					'##enterotp##'         => '',
+					'##enterbackupcode##'  => '',
+					'##enteranswers##'     => '',
+					'##resendotp##'        => '',
+					'##emailloader##'      => '',
+					'##backtologin##'      => $skeleton_blocks['backtologin'],
+					'##validatebutton##'   => '',
+					'##rbaconsent##'       => $skeleton_blocks['rba_consent'],
+					'##usebackupcodes##'   => '',
+					'##sendbackupcodes##'  => '',
+					'##sendreconfiglink##' => '',
+					'##customlogo##'       => $skeleton_blocks['custom_logo'],
+					'##backupmethod##'     => '',
 				),
 			);
 			return $login_status_blocks[ $login_status ];
@@ -327,6 +377,7 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_get_validation_popup_script( $twofa_flow, $twofa_method, $redirect_to, $session_id_encrypt ) {
+			$common_helper = new Mo2f_Common_Helper();
 			if ( 'login_2fa' === $twofa_flow ) {
 				$resend_script = 'prompt_2fa_popup_login( twofa_method );';
 			} else {
@@ -351,6 +402,7 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 
 			});';
 			$html .= "function prompt_2fa_popup_login(methodName) {
+			'" . esc_js( $common_helper->mo2f_show_loader() ) . " '
 				var data = {
 					'action'                    : 'mo_two_factor_ajax',
 					'mo_2f_two_factor_ajax'     : 'mo2f_resend_otp_login',
@@ -366,25 +418,24 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					data: data,
 					dataType: 'json',
 					success: function(response) {
+					'" . esc_js( $common_helper->mo2f_hide_loader() ) . "'
 						if (response.success) {
 							mo2f_show_message(response.data);
 						} else {
-							mo2f_show_message('Unknown error occured. Please try again.');
+							mo2f_show_message(response.data);
 						}
 					},
 					error: function (o, e, n) {
-						console.log('error' + n);
 					},
 				});
 			}";
 			$html .= "function mo2f_show_message(response) {
 				var html = '<div id=\"otpMessage\"><p class=\"mo2fa_display_message_frontend\">' + response + '</p></div>';
 				jQuery('#otpMessage').empty();
-				jQuery('#otpMessaghide').after(html);
+				jQuery('#otpMessagehide').after(html);
 			}</script>";
 			return $html;
 		}
-
 
 		/**
 		 * Shows two factor authentication skeleton values.
@@ -398,7 +449,8 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 		 * @param string $twofa_flow Twofa flow.
 		 */
 		public function mo2f_get_twofa_skeleton_html( $login_status, $login_message, $redirect_to, $session_id_encrypt, $skeleton_values, $twofa_method, $twofa_flow ) {
-			$html                          = '<div class="mo2f_setup_popup_dashboard">';
+			$html                          = '<div id="mo2f_2fa_popup_dashboard_loader" class="modal" hidden></div>';
+			$html                         .= '<div class="mo2f_setup_popup_dashboard">';
 			$html                         .= '<div class="login mo_customer_validation-modal-content">
 			<div class="mo2f_modal-header">
 			<h4 class="mo2f_modal-title"><button type="button" class="mo2f_close" data-dismiss="modal" aria-label="Close" title="' . esc_attr__( 'Back to login', 'miniorange-2-factor-authentication' ) . '" onclick="mologinback();"><span aria-hidden="true">&times;</span></button>';
@@ -406,7 +458,7 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 			$html                         .= '</h4>
 			</div>
 					<div class="mo2f_modal-body center">';
-					$html                 .= '	<div id="otpMessaghide" style="display: none;">
+					$html                 .= '	<div id="otpMessagehide" style="display: none;">
 					<p class="mo2fa_display_message_frontend" style="text-align: left !important; ">' . wp_kses( $login_message, array( 'b' => array() ) ) . '</p>
 				</div>';
 				$html                     .= '<div id="otpMessage">
@@ -434,6 +486,7 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 								'span' => array(
 									'style' => array(),
 									'id'    => array(),
+									'class' => array(),
 								),
 							)
 						);
@@ -561,6 +614,21 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 
 										)
 									);
+									$html .= wp_kses(
+										$skeleton_values['##rbaconsent##'],
+										array(
+											'br'    => array(),
+											'input' => array(
+												'type'  => array(),
+												'name'  => array(),
+												'value' => array(),
+												'id'    => array(),
+												'class' => array(),
+												'style' => array(),
+											),
+
+										)
+									);
 
 									$html .= '
 									<input type="hidden" name="request_origin_method" value="' . esc_attr( $login_status ) . '"/>
@@ -580,6 +648,7 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 											),
 											'p' => array(
 												'style' => array(),
+												'class' => array(),
 
 											),
 
@@ -595,6 +664,7 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 											),
 											'p' => array(
 												'style' => array(),
+												'class' => array(),
 
 											),
 
@@ -610,6 +680,23 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 											),
 											'p' => array(
 												'style' => array(),
+												'class' => array(),
+
+											),
+
+										)
+									);
+									$html .= wp_kses(
+										$skeleton_values['##backupmethod##'],
+										array(
+
+											'a' => array(
+												'href' => array(),
+
+											),
+											'p' => array(
+												'style' => array(),
+												'class' => array(),
 
 											),
 
@@ -635,7 +722,7 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 							array(
 
 								'div' => array(
-									'style' => array(),
+									'class' => array(),
 
 								),
 								'a'   => array(
@@ -665,37 +752,22 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 		/**
 		 * It will help to display the email verification
 		 *
-		 * @param string $head It will carry the header .
-		 * @param string $body It will carry the body .
-		 * @param string $color It will carry the color .
+		 * @param array $popup_args Popup args.
 		 * @return void
 		 */
-		public function mo2f_display_email_verification( $head, $body, $color ) {
-			global $main_dir;
-
-			echo "<div  style='background-color: #d5e3d9; height:850px;' >
-		    <div style='height:350px; background-color: #3CB371; border-radius: 2px; padding:2%;  '>
-		        <div class='mo2f_tamplate_layout' style='background-color: #ffffff;border-radius: 5px;box-shadow: 0 5px 15px rgba(0,0,0,.5); width:850px;height:350px; align-self: center; margin: 180px auto; ' >
-		            <img  alt='logo'  style='margin-left:400px ;
-		        margin-top:10px;' src='" . esc_url( $main_dir ) . "includes/images/miniorange_logo.png'>
-		            <div><hr></div>
-
-		            <tbody>
-		            <tr>
-		                <td>
-
-		                    <p style='margin-top:0;margin-bottom:10px'>
-		                    <p style='margin-top:0;margin-bottom:10px'> <h1 style='color:" . esc_attr( $color ) . ";text-align:center;font-size:50px'>" . esc_attr( $head ) . "</h1></p>
-		                    <p style='margin-top:0;margin-bottom:10px'>
-		                    <p style='margin-top:0;margin-bottom:10px;text-align:center'><h2 style='text-align:center'>" . esc_html( $body ) . "</h2></p>
-		                    <p style='margin-top:0;margin-bottom:0px;font-size:11px'>
-
-		                </td>
-		            </tr>
-
-		        </div>
-		    </div>
-		</div>";
+		public function mo2f_display_email_verification( $popup_args ) {
+			echo "<div style='" . esc_attr( $popup_args['branding_img'] ) . " height: 790px;'>
+				<div style='height: 710px; display: flex; align-items: center; justify-content: center;'>
+					<div style='background-color: " . esc_attr( $popup_args['bg_color'] ) . "; border-radius: 5px; padding: 2%; width: 850px; height: 350px; box-shadow: 0 5px 15px rgba(0,0,0,.5); align-self: center; margin: 180px auto;'>
+						<img alt='logo' style='margin-left: 400px; margin-top: 10px;' src='" . esc_url( ( $popup_args['logo_url'] ) ) . "'>
+						<div><hr></div>
+						<div style='text-align: center;'>
+							<h1 style='color:" . esc_attr( $popup_args['color'] ) . "; text-align: center; font-size: 50px;'>" . esc_attr( $popup_args['head'] ) . "</h1>
+							<h2 style='text-align: center; margin-top: 20px;'>" . esc_html( $popup_args['body'] ) . '</h2>
+						</div>
+					</div>
+				</div>
+			</div>';
 		}
 
 		/**

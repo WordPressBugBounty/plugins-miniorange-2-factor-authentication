@@ -75,11 +75,8 @@ echo '
                 </div> 
 
                 <div id="mo_2fa_plugin_configuration" class="mo-input-wrapper">
-                    <input type="hidden" name="mo_2fa_plugin_configuration" value="mo2f_send_plugin_configuration"/>
-                                <input type="checkbox" id="mo2f_send_configuration"
-                                    name="mo2f_send_configuration" 
-                                    value="1" checked
-                                <h3>Send plugin Configuration</h3>
+                    <input type="checkbox" id="mo2f_send_configuration" name="mo2f_send_configuration" value="1" checked />
+                                Send plugin Configuration
                     <br/>
                 </div>
 

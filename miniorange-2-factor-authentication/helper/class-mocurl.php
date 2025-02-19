@@ -22,8 +22,10 @@ namespace TwoFA\Helper;
 
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\MoWpnsUtility;
-use TwoFA\Onprem\Mo2f_Api;
-use TwoFA\Onprem\Miniorange_Authentication;
+use TwoFA\Helper\Mo2f_Api;
+use TwoFA\Handler\Twofa\Miniorange_Authentication;
+use TwoFA\Traits\Instance;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -33,6 +35,8 @@ if ( ! class_exists( 'MocURL' ) ) {
 	 * Contains Request Calls to Customer service.
 	 **/
 	class MocURL {
+
+		use Instance;
 
 		/**
 		 * Instantiation of Mo2f_Api class.
@@ -108,8 +112,8 @@ if ( ! class_exists( 'MocURL' ) ) {
 		public function submit_contact_us( $q_email, $q_phone, $query, $call_setup = false ) {
 			$current_user      = wp_get_current_user();
 			$url               = MO_HOST_NAME . '/moas/rest/customer/contact-us';
-			$is_nc_with_1_user = MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'get_option' ) && MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NNC', 'get_option' );
-			$is_ec_with_1_user = ! MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'get_option' );
+			$is_nc_with_1_user = MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'site_option' ) && MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NNC', 'site_option' );
+			$is_ec_with_1_user = ! MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'site_option' );
 			$onprem            = MO2F_IS_ONPREM ? 'O' : 'C';
 
 			$customer_feature = '';
@@ -165,8 +169,8 @@ if ( ! class_exists( 'MocURL' ) ) {
 		 * @return mixed.
 		 */
 		public function send_otp_token( $auth_type, $phone = null, $email = null ) {
-			$c_key       = get_option( 'mo2f_customerKey' );
-			$api_key     = get_option( 'mo2f_api_key' );
+			$c_key       = get_site_option( 'mo2f_customerKey' );
+			$api_key     = get_site_option( 'mo2f_api_key' );
 			$url         = MO_HOST_NAME . '/moas/api/auth/challenge';
 			$fields      = array(
 				'customerKey'     => $c_key,
@@ -182,9 +186,13 @@ if ( ! class_exists( 'MocURL' ) ) {
 			$content     = json_decode( $response, true );
 			if ( 'SUCCESS' === $content['status'] ) {
 				$cmvtywluaw5nt1rqsms = get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' );
-				update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', $cmvtywluaw5nt1rqsms - 1 );
+				if ( $cmvtywluaw5nt1rqsms > 0 ) {
+					update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', $cmvtywluaw5nt1rqsms - 1 );
+				}
 				$cmvtywluaw5nt1rq = get_site_option( 'cmVtYWluaW5nT1RQ' );
-				update_site_option( 'cmVtYWluaW5nT1RQ', $cmvtywluaw5nt1rq - 1 );
+				if ( $cmvtywluaw5nt1rq > 0 ) {
+					update_site_option( 'cmVtYWluaW5nT1RQ', $cmvtywluaw5nt1rq - 1 );
+				}
 				if ( '4' === get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' ) && MoWpnsConstants::OTP_OVER_SMS === $auth_type ) {
 					Miniorange_Authentication::mo2f_low_otp_alert( 'sms' );
 				}
@@ -239,8 +247,8 @@ if ( ! class_exists( 'MocURL' ) ) {
 		 */
 		public function validate_otp_token( $transaction_id, $otp_token, $username, $auth_type ) {
 			$url          = MO_HOST_NAME . '/moas/api/auth/validate';
-			$customer_key = get_option( 'mo2f_customerKey' );
-			$api_key      = get_option( 'mo2f_api_key' );
+			$customer_key = get_site_option( 'mo2f_customerKey' );
+			$api_key      = get_site_option( 'mo2f_api_key' );
 			$fields       = array(
 				'customerKey' => $customer_key,
 				'username'    => $username,
@@ -285,9 +293,9 @@ if ( ! class_exists( 'MocURL' ) ) {
 		 */
 		public function mo_wpns_forgot_password() {
 			$url          = MO_HOST_NAME . '/moas/rest/customer/password-reset';
-			$email        = get_option( 'mo2f_email' );
-			$customer_key = get_option( 'mo2f_customerKey' );
-			$api_key      = get_option( 'mo2f_api_key' );
+			$email        = get_site_option( 'mo2f_email' );
+			$customer_key = get_site_option( 'mo2f_customerKey' );
+			$api_key      = get_site_option( 'mo2f_api_key' );
 
 			$fields      = array(
 				'email' => $email,
@@ -324,17 +332,17 @@ if ( ! class_exists( 'MocURL' ) ) {
 			);
 		}
 
-		// added for feedback.
 		/**
 		 * Send the email alert
 		 *
-		 * @param string $email .
-		 * @param string $phone .
-		 * @param string $message .
-		 * @param string $feedback_option .
+		 * @param string $email email.
+		 * @param string $phone phone.
+		 * @param string $message message.
+		 * @param string $feedback_option feedback_option.
+		 * @param bool   $mo2f_contact_back Contact back.
 		 * @return string
 		 */
-		public function send_email_alert( $email, $phone, $message, $feedback_option ) {
+		public function mo2f_send_email_alert( $email, $phone, $message, $feedback_option, $mo2f_contact_back ) {
 			global $mo_wpns_utility;
 			global $user;
 			$url          = MO_HOST_NAME . '/moas/api/notify/send';
@@ -352,8 +360,8 @@ if ( ! class_exists( 'MocURL' ) ) {
 			}
 
 			$user              = wp_get_current_user();
-			$is_nc_with_1_user = MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'get_option' ) && MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NNC', 'get_option' );
-			$is_ec_with_1_user = ! MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'get_option' );
+			$is_nc_with_1_user = MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'site_option' ) && MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NNC', 'site_option' );
+			$is_ec_with_1_user = ! MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'site_option' );
 			$onprem            = MO2F_IS_ONPREM ? 'O' : 'C';
 
 			$customer_feature = '';
@@ -363,7 +371,12 @@ if ( ! class_exists( 'MocURL' ) ) {
 			} elseif ( $is_nc_with_1_user ) {
 				$customer_feature = 'V3';
 			}
-			$query   = '[WordPress 2 Factor Authentication Plugin: ' . $onprem . $customer_feature . ' - V ' . MO2F_VERSION . ']: ' . $message;
+			$query = '[WordPress 2 Factor Authentication Plugin: ' . $onprem . $customer_feature . ' - V ' . MO2F_VERSION . ']: ' . $message;
+			if ( $mo2f_contact_back ) {
+				$query .= ' <strong>Contact me: Yes</strong>';
+			} else {
+				$query .= ' <strong>Contact me: No</strong>';
+			}
 			$company = isset( $_SERVER['SERVER_NAME'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_NAME'] ) ) : '';
 			$content = '<div >Hello, <br><br>First Name :' . $user->user_firstname . '<br><br>Last  Name :' . $user->user_lastname . '   <br><br>Company :<a href="' . $company . '" target="_blank" >' . sanitize_text_field( wp_unslash( $_SERVER['SERVER_NAME'] ) ) . '</a><br><br>Phone Number :' . $phone . '<br><br>Email :<a href="mailto:' . esc_html( $email ) . '" target="_blank">' . esc_html( $email ) . '</a><br><br>Query :' . wp_kses_post( $query ) . '</div>';
 
@@ -447,10 +460,10 @@ if ( ! class_exists( 'MocURL' ) ) {
 		 * @param string $site_url Domain of the user.
 		 * @return mixed
 		 */
-		public function mo_2f_generate_backup_codes( $mo2f_user_email, $site_url ) {
+		public function mo2f_get_backup_codes( $mo2f_user_email, $site_url ) {
 			$url = MoWpnsConstants::GENERATE_BACK_CODE;
 
-			$data = $this->mo_2f_authentication_backup_code_request( $mo2f_user_email, $site_url );
+			$data = $this->mo2f_generate_backup_codes( $mo2f_user_email, $site_url );
 
 			$postdata = array(
 				'mo2f_email'                 => $mo2f_user_email,
@@ -471,7 +484,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 		public function mo2f_validate_backup_codes( $mo2f_backup_code, $mo2f_user_email ) {
 			$url      = MoWpnsConstants::VALIDATE_BACKUP_CODE;
 			$site_url = site_url();
-			$data     = $this->mo_2f_authentication_backup_code_request( $mo2f_user_email, $site_url );
+			$data     = $this->mo2f_generate_backup_codes( $mo2f_user_email, $site_url );
 
 			$postdata = array(
 				'mo2f_otp_token'     => $mo2f_backup_code,
@@ -501,7 +514,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 		 * @param string $site_url Domain of the user.
 		 * @return array
 		 */
-		public function mo_2f_authentication_backup_code_request( $mo2f_user_email, $site_url ) {
+		public function mo2f_generate_backup_codes( $mo2f_user_email, $site_url ) {
 			$url = MoWpnsConstants::AUTHENTICATE_REQUEST;
 
 			$postdata = array(
@@ -526,7 +539,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 		 */
 		public function mo2f_update_user_info( $email, $auth_type, $phone, $transaction_name, $enable_admin_second_factor ) {
 			$url          = MO_HOST_NAME . '/moas/api/admin/users/update';
-			$customer_key = get_option( 'mo2f_customerKey' );
+			$customer_key = get_site_option( 'mo2f_customerKey' );
 
 			$fields = array(
 				'customerKey'            => $customer_key,
@@ -552,7 +565,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 		public function mo2f_get_userinfo( $email ) {
 
 			$url               = MO_HOST_NAME . '/moas/api/admin/users/get';
-			$customer_key      = get_option( 'mo2f_customerKey' );
+			$customer_key      = get_site_option( 'mo2f_customerKey' );
 			$fields            = array(
 				'customerKey' => $customer_key,
 				'username'    => $email,
@@ -605,7 +618,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 		public function mo_check_user_already_exist( $email ) {
 
 			$url               = MO_HOST_NAME . '/moas/api/admin/users/search';
-			$customer_key      = get_option( 'mo2f_customerKey' );
+			$customer_key      = get_site_option( 'mo2f_customerKey' );
 			$fields            = array(
 				'customerKey' => $customer_key,
 				'username'    => $email,
@@ -625,7 +638,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 		public function mo_create_user( $currentuser, $email ) {
 
 			$url               = MO_HOST_NAME . '/moas/api/admin/users/create';
-			$customer_key      = get_option( 'mo2f_customerKey' );
+			$customer_key      = get_site_option( 'mo2f_customerKey' );
 			$fields            = array(
 				'customerKey' => $customer_key,
 				'username'    => $email,
@@ -638,33 +651,21 @@ if ( ! class_exists( 'MocURL' ) ) {
 		}
 
 		/**
-		 * Function to get remaining otp transactions of the user.
+		 * Gets license details.
 		 *
-		 * @param int    $c_key Customer key of the user.
-		 * @param string $api_key Api key of the user.
+		 * @param string $application_name Api key of the user.
 		 * @param string $license_type License type assigned by miniOrange to check whether the user is onPremise or cloud.
 		 * @return string
 		 */
-		public function get_customer_transactions( $c_key, $api_key, $license_type ) {
+		public function get_customer_transactions( $application_name, $license_type ) {
 			$url = MO_HOST_NAME . '/moas/rest/customer/license';
 
-			$customer_key = $c_key;
-			$api_key      = $api_key;
-
-			$fields = '';
-			if ( 'DEMO' === $license_type ) {
-				$fields = array(
-					'customerId'      => $customer_key,
-					'applicationName' => '-1',
-					'licenseType'     => $license_type,
-				);
-			} else {
-				$fields = array(
-					'customerId'      => $customer_key,
-					'applicationName' => 'otp_recharge_plan',
-					'licenseType'     => $license_type,
-				);
-			}
+			$customer_key = get_site_option( 'mo2f_customerKey' );
+			$fields       = array(
+				'customerId'      => $customer_key,
+				'applicationName' => $application_name,
+				'licenseType'     => $license_type,
+			);
 
 			$field_string = wp_json_encode( $fields );
 

@@ -5,12 +5,18 @@
  * @package miniorange-2-factor-authentication/twofactor/loginsettings/handler
  */
 
+namespace TwoFA\Handler;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 use TwoFA\Helper\MoWpnsHandler;
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\MoWpnsMessages;
+use TwoFA\Traits\Instance;
+use Exception;
+use DateTime;
+use DateTimeZone;
 
 if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 
@@ -18,6 +24,8 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 	 * Class Mo2f_IP_Blocking_Handler
 	 */
 	class Mo2f_IP_Blocking_Handler {
+
+		use Instance;
 
 		/**
 		 * Mo2f_IP_Blocking_Handler class custructor.
@@ -374,7 +382,7 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 						$range .= '-';
 						$range .= sanitize_text_field( $posted_value[ 'end_' . $i ] );
 						$added_mappings_ranges++;
-						update_option( 'mo_wpns_iprange_range_' . $added_mappings_ranges, $range );
+						update_site_option( 'mo_wpns_iprange_range_' . $added_mappings_ranges, $range );
 
 					} else {
 						$flag = 1;
@@ -385,9 +393,9 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 			}
 
 			if ( 0 === $added_mappings_ranges ) {
-				update_option( 'mo_wpns_iprange_range_1', '' );
+				update_site_option( 'mo_wpns_iprange_range_1', '' );
 			}
-			update_option( 'mo_wpns_iprange_count', $added_mappings_ranges );
+			update_site_option( 'mo_wpns_iprange_count', $added_mappings_ranges );
 			if ( 0 === $flag ) {
 				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::IP_BLOCK_RANGE_ADDED ), 'SUCCESS' );
 			}

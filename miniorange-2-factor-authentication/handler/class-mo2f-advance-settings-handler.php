@@ -5,10 +5,14 @@
  * @package miniorange-2-factor-authentication/twofactor/customloginforms/handler
  */
 
+namespace TwoFA\Handler;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 use TwoFA\Helper\MoWpnsMessages;
+use TwoFA\Helper\Mo2f_Common_Helper;
+use TwoFA\Traits\Instance;
 
 if ( ! class_exists( 'Mo2f_Advance_Settings_Handler' ) ) {
 
@@ -16,6 +20,8 @@ if ( ! class_exists( 'Mo2f_Advance_Settings_Handler' ) ) {
 	 * Class Mo2f_Advance_Settings_Handler
 	 */
 	class Mo2f_Advance_Settings_Handler {
+
+		use Instance;
 
 		/**
 		 * Mo2f_Advance_Settings_Handler class custructor.
@@ -40,8 +46,10 @@ if ( ! class_exists( 'Mo2f_Advance_Settings_Handler' ) ) {
 		public function mo2f_advance_settings_ajax() {
 
 			if ( ! check_ajax_referer( 'mo-two-factor-ajax-nonce', 'nonce', false ) || ! current_user_can( 'manage_options' ) ) {
-				wp_send_json_error( 'class-wpns-ajax' );
+				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::SOMETHING_WENT_WRONG ) );
 			}
+			$common_helper = new Mo2f_Common_Helper();
+			$common_helper->mo2f_ilvn();
 			$GLOBALS['mo2f_is_ajax_request'] = true;
 			$option                          = isset( $_POST['option'] ) ? sanitize_text_field( wp_unslash( $_POST['option'] ) ) : '';
 			switch ( $option ) {
@@ -50,6 +58,22 @@ if ( ! class_exists( 'Mo2f_Advance_Settings_Handler' ) ) {
 					break;
 				case 'mo2f_enable_transactions_report':
 					$this->mo2f_enable_transactions_report( $_POST );
+					break;
+				case 'mo2f_passwordless_login_settings':
+					do_action( 'mo2f_enterprise_plan_settings_action', 'mo2f_passwordless_login_settings', $_POST );
+					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					break;
+				case 'mo2f_save_rba_settings':
+					do_action( 'mo2f_enterprise_plan_settings_action', 'mo2f_save_rba_settings', $_POST );
+					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					break;
+				case 'mo2f_remove_remembered_device':
+					do_action( 'mo2f_enterprise_plan_settings_action', 'mo2f_remove_remembered_device', $_POST );
+					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					break;
+				case 'mo2f_save_session_management_settings':
+					do_action( 'mo2f_enterprise_plan_settings_action', 'mo2f_save_session_management_settings', $_POST );
+					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
 					break;
 
 			}
@@ -63,9 +87,10 @@ if ( ! class_exists( 'Mo2f_Advance_Settings_Handler' ) ) {
 		public function mo_wpns_manual_clear() {
 			global $wpns_db_queries;
 			$wpns_db_queries->mo_wpns_clear_login_report();
-			wp_send_json( 'success' );
+			wp_send_json_success();
 
 		}
+
 
 		/**
 		 * Enable/disables the login transactions report.
@@ -80,6 +105,7 @@ if ( ! class_exists( 'Mo2f_Advance_Settings_Handler' ) ) {
 			wp_send_json( $is_transaction_report_enabled );
 
 		}
+
 
 	}
 	new Mo2f_Advance_Settings_Handler();

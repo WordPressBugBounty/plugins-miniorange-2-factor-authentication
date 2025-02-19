@@ -8,6 +8,7 @@
 namespace TwoFA\Helper;
 
 use TwoFA\Helper\MoWpnsUtility;
+use TwoFA\Traits\Instance;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -18,6 +19,8 @@ if ( ! class_exists( 'TwoFAMoSessions' ) ) {
 	 * This class has function to set/ fetch transient functions
 	 */
 	class TwoFAMoSessions {
+
+		use Instance;
 		/**
 		 * Set cookie and transient variable.
 		 *

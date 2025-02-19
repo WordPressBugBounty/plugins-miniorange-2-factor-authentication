@@ -5,8 +5,11 @@
  * @package miniorange-2-factor-authentication/controllers/twofa
  */
 
+namespace TwoFA\Handler;
+
 use TwoFA\Helper\MoWpnsHandler;
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Traits\Instance;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -17,6 +20,8 @@ if ( ! class_exists( 'Mo2f_Logger' ) ) {
 	 * Class for log login transactions
 	 */
 	class Mo2f_Logger {
+
+		use Instance;
 
 		/**
 		 * Cunstructor for Mo2f_Logger

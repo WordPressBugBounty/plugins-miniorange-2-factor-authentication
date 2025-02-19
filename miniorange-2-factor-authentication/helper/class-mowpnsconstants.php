@@ -20,7 +20,7 @@
 
 namespace TwoFA\Helper;
 
-use TwoFA\Onprem\MO2f_Cloud_Onprem_Interface;
+use TwoFA\Handler\Twofa\MO2f_Cloud_Onprem_Interface;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Traits\Instance;
 use TwoFA\Database\MoWpnsDB;
@@ -95,6 +95,7 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const MO_2_FACTOR_USE_BACKUP_CODES                = 'MO_2_FACTOR_USE_BACKUP_CODES';
 		const MO2F_ERROR_MESSAGE_PROMPT                   = 'MO2F_ERROR_MESSAGE_PROMPT';
 		const MO2F_USER_BLOCKED_PROMPT                    = 'MO2F_USER_BLOCKED_PROMPT';
+		const MO2F_RBA_GET_USER_CONSENT                   = 'MO2F_RBA_GET_USER_CONSENT';
 		const MO_2_FACTOR_CHALLENGE_OTP_OVER_EMAIL        = 'MO_2_FACTOR_CHALLENGE_OTP_OVER_EMAIL';
 		const MO_2_FACTOR_CHALLENGE_OTP_OVER_TELEGRAM     = 'MO_2_FACTOR_CHALLENGE_OTP_OVER_TELEGRAM';
 		const MO_2_FACTOR_CHALLENGE_GOOGLE_AUTHENTICATION = 'MO_2_FACTOR_CHALLENGE_GOOGLE_AUTHENTICATION';
@@ -105,6 +106,20 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const MSFT_AUTH                                   = 'msft_authenticator';
 		const SETUPWIZARD_2FA_FLOW                        = 'mo2f_setupwizard_flow';
 		const DASHBOARD_2FA_FLOW                          = 'mo2f_dashboard_flow';
+		const INVALIDE_CREDS                              = 'Invalid Credentials';
+		const VALIDATED                                   = 'Validated';
+		const ERROR                                       = 'error';
+		const TWOFA_NOT_CONFIGURED                        = 'Two Factor not configured';
+		const SESSION_LIMIT_REACHED                       = 'Session limit reached';
+		const PREMIUM_CROWN                               = '<svg width="18" class="ml-mo-4 -mb-mo-0.5" height="18" viewBox="0 0 24 24" fill="none">
+		<g id="d4a43e0162b45f718f49244b403ea8f4">
+			<g id="4ea4c3dca364b4cff4fba75ac98abb38">
+				<g id="2413972edc07f152c2356073861cb269">
+					<path id="2deabe5f8681ff270d3f37797985a977" d="M20.8007 20.5644H3.19925C2.94954 20.5644 2.73449 20.3887 2.68487 20.144L0.194867 7.94109C0.153118 7.73681 0.236091 7.52728 0.406503 7.40702C0.576651 7.28649 0.801941 7.27862 0.980492 7.38627L7.69847 11.4354L11.5297 3.72677C11.6177 3.54979 11.7978 3.43688 11.9955 3.43531C12.1817 3.43452 12.3749 3.54323 12.466 3.71889L16.4244 11.3598L23.0197 7.38654C23.1985 7.27888 23.4233 7.28702 23.5937 7.40728C23.7641 7.52754 23.8471 7.73707 23.8056 7.94136L21.3156 20.1443C21.2652 20.3887 21.0501 20.5644 20.8007 20.5644Z" fill="orange"></path>
+				</g>
+			</g>
+		</g>
+		</svg>';
 
 		// arrays .
 		/**
@@ -125,7 +140,8 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const DATABASE                          = 'db';
 		const CLOUDLOCKOUT                      = 'https://faq.miniorange.com/knowledgebase/how-to-gain-access-to-my-website-if-i-get-locked-out/';
 		const ONPREMISELOCKEDOUT                = 'https://faq.miniorange.com/knowledgebase/i-am-locked-cant-access-my-account-what-do-i-do/';
-		const RECHARGELINK                      = 'https://portal.miniorange.com/initializePayment?requestOrigin=otp_recharge_plan';
+		const PORTAL_LINK                       = 'https://portal.miniorange.com/';
+		const RECHARGELINK                      = self::PORTAL_LINK . 'initializePayment?requestOrigin=otp_recharge_plan';
 		const CUSTOMSMSGATEWAY                  = 'https://idp.miniorange.com/steps-to-setup-sms-gateway-with-miniorange-idp/';
 		const SETUPGUIDE                        = 'https://www.youtube.com/watch?v=GRIYI_Gl3Ng';
 		const DOCUMENT_LINK                     = 'https://developers.miniorange.com/docs/security/wordpress/wp-security';

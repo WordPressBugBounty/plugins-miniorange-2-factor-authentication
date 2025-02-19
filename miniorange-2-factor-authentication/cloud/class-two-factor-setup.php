@@ -20,7 +20,8 @@
 
 namespace TwoFA\Cloud;
 
-use TwoFA\Onprem\Mo2f_Api;
+use TwoFA\Helper\Mo2f_Api;
+use TwoFA\Traits\Instance;
 
 /**
  * This library is miniOrange Authentication Service.
@@ -34,6 +35,9 @@ if ( ! class_exists( 'Two_Factor_Setup' ) ) {
 	 * Class contains function to create, update users and to check curl is enabled or not.
 	 */
 	class Two_Factor_Setup {
+
+		use Instance;
+
 		/**
 		 * Email id of user.
 		 *
@@ -57,7 +61,7 @@ if ( ! class_exists( 'Two_Factor_Setup' ) ) {
 		public function mo2f_register_kba_details( $email, $question1, $answer1, $question2, $answer2, $question3, $answer3, $user_id = null ) {
 
 			$url          = MO_HOST_NAME . '/moas/api/auth/register';
-			$customer_key = get_option( 'mo2f_customerKey' );
+			$customer_key = get_site_option( 'mo2f_customerKey' );
 			$q_and_a_list = '[{"question":"' . $question1 . '","answer":"' . $answer1 . '" },{"question":"' . $question2 . '","answer":"' . $answer2 . '" },{"question":"' . $question3 . '","answer":"' . $answer3 . '" }]';
 			$field_string = '{"customerKey":"' . $customer_key . '","username":"' . $email . '","questionAnswerList":' . $q_and_a_list . '}';
 

@@ -19,12 +19,14 @@
  * @license        http://www.gnu.org/copyleft/gpl.html MIT/Expat, see LICENSE.php
  */
 
-namespace TwoFA\Onprem;
+namespace TwoFA\Handler\Twofa;
 
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MocURL;
 use TwoFA\Helper\MoWpnsConstants;
 use DateTime;
+use TwoFA\Traits\Instance;
+use TwoFA\Helper\Mo2f_Filesystem;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -36,6 +38,8 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 	 * Contains Request Calls to Customer service.
 	 **/
 	class MO2f_Utility {
+
+		use Instance;
 
 		/**
 		 * This function get hidden phone detail
@@ -154,7 +158,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		 */
 		public static function set_user_values( $user_session_id, $variable, $value ) {
 			global $mo2fdb_queries;
-			$key         = get_option( 'mo2f_encryption_key' );
+			$key         = get_site_option( 'mo2f_encryption_key' );
 			$data_option = null;
 
 			if ( empty( $data_option ) ) {
@@ -261,7 +265,10 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		 */
 		public static function mo2f_set_transient( $session_id, $key, $value, $expiration = 300 ) {
 			set_transient( $session_id . $key, $value, $expiration );
-			$transient_array         = get_site_option( $session_id, array() );
+			$transient_array = get_site_option( $session_id );
+			if ( false === $transient_array ) { // PHP Deprecated:  Automatic conversion of false to array is deprecated.
+				$transient_array = array();
+			}
 			$transient_array[ $key ] = $value;
 			update_site_option( $session_id, $transient_array );
 			self::mo2f_set_session_value( $session_id, $transient_array );
@@ -316,7 +323,8 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		public static function mo2f_start_session() {
 			if ( ! session_id() || '' === session_id() || ! isset( $_SESSION ) ) {
 				$session_path = ini_get( 'session.save_path' );
-				if ( is_writable( $session_path ) && is_readable( $session_path ) && ! headers_sent() ) {
+				$file_system  = new Mo2f_Filesystem();
+				if ( $file_system->mo2f_is_writable( $session_path ) && $file_system->mo2f_is_readable( $session_path ) && ! headers_sent() ) {
 					if ( session_status() !== PHP_SESSION_DISABLED ) {
 						session_start();
 					}
@@ -337,7 +345,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 				if ( isset( $_SESSION[ $variable ] ) && ! empty( $_SESSION[ $variable ] ) ) {
 					return $_SESSION[ $variable ];
 				} else {
-					$key          = get_option( 'mo2f_encryption_key' );
+					$key          = get_site_option( 'mo2f_encryption_key' );
 					$cookie_value = false;
 					if ( 'mo_2_factor_kba_questions' === $variable ) {
 						if ( isset( $_COOKIE['kba_question1'] ) && ! empty( $_COOKIE['kba_question1'] ) ) {
@@ -365,7 +373,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 					return $_SESSION[ $variable ];
 				}
 			} elseif ( ! empty( $data_option ) && 'cookies' === $data_option ) {
-				$key          = get_option( 'mo2f_encryption_key' );
+				$key          = get_site_option( 'mo2f_encryption_key' );
 				$cookie_value = false;
 
 				if ( 'mo_2_factor_kba_questions' === $variable ) {
@@ -383,7 +391,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 					return $cookie_value;
 				}
 			} elseif ( ! empty( $data_option ) && 'tables' === $data_option ) {
-				$key             = get_option( 'mo2f_encryption_key' );
+				$key             = get_site_option( 'mo2f_encryption_key' );
 				$session_id      = self::decrypt_data( $session_id, $key );
 				$session_id_hash = md5( $session_id );
 				$db_value        = $mo2fdb_queries->get_user_login_details( $variable, $session_id_hash );
@@ -402,7 +410,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		 * @return string
 		 */
 		public static function mo2f_get_cookie_values( $cookiename ) {
-			$key = get_option( 'mo2f_encryption_key' );
+			$key = get_site_option( 'mo2f_encryption_key' );
 			if ( isset( $_COOKIE[ $cookiename ] ) ) {
 				$decrypted_data = self::decrypt_data( base64_decode( sanitize_key( wp_unslash( $_COOKIE[ $cookiename ] ) ) ), $key ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Not using for obfuscation
 
@@ -453,7 +461,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		 * @return void
 		 */
 		public static function mo2f_set_cookie_values( $cookiename, $cookievalue ) {
-			$key = get_option( 'mo2f_encryption_key' );
+			$key = get_site_option( 'mo2f_encryption_key' );
 
 			$current_time = new DateTime( 'now' );
 			$current_time = $current_time->format( 'Y-m-d H:i:sP' );
@@ -499,25 +507,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 				}
 			}
 		}
-		/**
-		 * This function is invoke to unset the cookie variable .
-		 *
-		 * @param mixed $variables .
-		 * @return void
-		 */
-		public static function unset_cookie_variables( $variables ) {
-			if ( 'array' === gettype( $variables ) ) {
-				foreach ( $variables as $variable ) {
-					if ( isset( $_COOKIE[ $variable ] ) ) {
-						setcookie( $variable, '', time() - 3600, null, null, null, true );
-					}
-				}
-			} else {
-				if ( isset( $_COOKIE[ $variables ] ) ) {
-					setcookie( $variables, '', time() - 3600, null, null, null, true );
-				}
-			}
-		}
+
 		/**
 		 * This function is invoke to unset the temporaray user detail
 		 *
@@ -528,7 +518,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		 */
 		public static function unset_temp_user_details_in_table( $variables, $session_id, $command = '' ) {
 			global $mo2fdb_queries;
-			$key             = get_option( 'mo2f_encryption_key' );
+			$key             = get_site_option( 'mo2f_encryption_key' );
 			$session_id      = self::decrypt_data( $session_id, $key );
 			$session_id_hash = md5( $session_id );
 			if ( 'destroy' === $command ) {
@@ -623,11 +613,12 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		/**
 		 * This function will invoke at the time of download backup code
 		 *
-		 * @param string   $id It will carry the user id .
-		 * @param string[] $codes It will carry the code .
+		 * @param string $id It will carry the user id.
+		 * @param mixed  $codes It will carry the code.
 		 * @return void
 		 */
 		public static function mo2f_download_backup_codes( $id, $codes ) {
+			$codes = is_array( $codes ) ? $codes : explode( ' ', $codes );
 			update_user_meta( $id, 'mo_backup_code_downloaded', 1 );
 			header( 'Content-Disposition: attachment; filename=miniOrange2-factor-BackupCodes.txt' );
 			echo 'Two Factor Backup Codes:' . PHP_EOL . PHP_EOL;
@@ -656,42 +647,6 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 				fwrite( $handle, $data ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite -- fclose
 				fclose( $handle ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose -- fclose
 			}
-		}
-		/**
-		 * It will call when the backup code is download and sent over email
-		 *
-		 * @return string
-		 */
-		public static function mo2f_mail_and_download_codes() {
-			global $mo2fdb_queries;
-
-			$id              = get_current_user_id();
-			$mo2f_user_email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $id );
-			if ( empty( $mo2f_user_email ) ) {
-				$currentuser     = get_user_by( 'id', $id );
-				$mo2f_user_email = $currentuser->user_email;
-			}
-			$generate_backup_code = new MocURL();
-			if ( get_transient( 'mo2f_generate_backup_code' ) === '1' ) {
-				return 'TransientActive';
-			}
-			$codes = $generate_backup_code->mo_2f_generate_backup_codes( $mo2f_user_email, site_url() );
-
-			if ( 'LimitReached' === $codes || 'UserLimitReached' === $codes || 'AllUsed' === $codes || 'invalid_request' === $codes ) {
-				update_user_meta( $id, 'mo_backup_code_limit_reached', 1 );
-				return $codes;
-			}
-			if ( 'InternetConnectivityError' === $codes ) {
-				return $codes;
-			}
-
-			$codes  = explode( ' ', $codes );
-			$result = self::mo2f_email_backup_codes( $codes, $mo2f_user_email );
-			update_user_meta( $id, 'mo_backup_code_generated', 1 );
-			update_user_meta( $id, 'mo_backup_code_downloaded', 1 );
-
-			set_transient( 'mo2f_generate_backup_code', '1', 30 );
-			self::mo2f_download_backup_codes( $id, $codes );
 		}
 
 		/**

@@ -8,6 +8,7 @@
 namespace TwoFA\Database;
 
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Traits\Instance;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -23,6 +24,8 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 	 * Class used to perform DB operation on security functions.
 	 */
 	class MoWpnsDB {
+
+		use Instance;
 
 		/**
 		 * Transaction table name.
@@ -84,13 +87,13 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 * @return void
 		 */
 		public function mo_plugin_activate() {
-			if ( ! get_option( 'mo_wpns_dbversion' ) || get_option( 'mo_wpns_dbversion' ) < MoWpnsConstants::DB_VERSION ) {
-				update_option( 'mo_wpns_dbversion', MoWpnsConstants::DB_VERSION );
+			if ( ! get_site_option( 'mo_wpns_dbversion' ) || get_site_option( 'mo_wpns_dbversion' ) < MoWpnsConstants::DB_VERSION ) {
+				update_site_option( 'mo_wpns_dbversion', MoWpnsConstants::DB_VERSION );
 				$this->generate_tables();
 			} else {
-				$current_db_version = get_option( 'mo_wpns_dbversion' );
+				$current_db_version = get_site_option( 'mo_wpns_dbversion' );
 				if ( $current_db_version < MoWpnsConstants::DB_VERSION ) {
-					update_option( 'mo_wpns_dbversion', MoWpnsConstants::DB_VERSION );
+					update_site_option( 'mo_wpns_dbversion', MoWpnsConstants::DB_VERSION );
 				}
 			}
 		}
@@ -215,8 +218,10 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 */
 		public function mo_wpns_clear_login_report() {
 			global $wpdb;
-			$wpdb->query( 'DELETE FROM ' . $wpdb->prefix . "mo2f_network_transactions WHERE Status='success' or Status= 'pastfailed' or Status='failed' " ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery, Direct database call without caching detected -- DB Direct Query is necessary here.
+			$wpdb->query( 'DELETE FROM ' . $wpdb->base_prefix . "mo2f_network_transactions WHERE Status='success' or Status= 'pastfailed' or Status='failed' " ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery, Direct database call without caching detected -- DB Direct Query is necessary here.
 		}
+
+
 
 		/**
 		 * Returns if IP blocked
@@ -421,16 +426,6 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 			global $wpdb;
 
 			return $wpdb->get_results( $wpdb->prepare( "SELECT ip_address, username, status, created_timestamp FROM %1s WHERE type='User Login' order by id desc limit 5000", array( $this->transaction_table ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery , WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring the warnings related to DB caching, Dirct DB access, and complex placeholder
-		}
-
-		/**
-		 * Get error transaction report.
-		 *
-		 * @return object
-		 */
-		public function get_error_transaction_report() {
-			global $wpdb;
-			return $wpdb->get_results( $wpdb->prepare( "SELECT ip_address, username, url, type, created_timestamp FROM %1s WHERE type <> 'User Login' order by id desc limit 5000", array( $this->transaction_table ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery , WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring the warnings related to DB caching, Dirct DB access, and complex placeholder
 		}
 
 		/**

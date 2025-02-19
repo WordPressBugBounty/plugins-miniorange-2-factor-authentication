@@ -20,7 +20,7 @@
 
 namespace TwoFA\Cloud;
 
-use TwoFA\OnPrem\Mo2f_Api;
+use TwoFA\Helper\Mo2f_Api;
 use TwoFA\Helper\MoWpnsMessages;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -60,7 +60,7 @@ if ( ! class_exists( 'Mo2f_Cloud_Validate' ) ) {
 		public static function mo2f_get_g_a_parameters( $user ) {
 			global $mo2fdb_queries;
 			$email           = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID );
-			$gauth_name      = get_option( 'mo2f_google_appname' );
+			$gauth_name      = get_site_option( 'mo2f_google_appname' );
 			$gauth_name      = $gauth_name ? $gauth_name : 'miniOrangeAu';
 			$gauth_setup     = new Mo2f_Cloud_Utility();
 			$google_response = json_decode( $gauth_setup->mo2f_google_auth_service( $email, $gauth_name ), true );
@@ -88,7 +88,7 @@ if ( ! class_exists( 'Mo2f_Cloud_Validate' ) ) {
 		public function mo2f_google_auth_service( $useremail, $google_authenticator_name = '' ) {
 
 			$url          = MO_HOST_NAME . '/moas/api/auth/google-auth-secret';
-			$customer_key = get_option( 'mo2f_customerKey' );
+			$customer_key = get_site_option( 'mo2f_customerKey' );
 			$field_string = array(
 				'customerKey'       => $customer_key,
 				'username'          => $useremail,
@@ -114,7 +114,7 @@ if ( ! class_exists( 'Mo2f_Cloud_Validate' ) ) {
 		 */
 		public function mo2f_cloud_register_kba( $email, $question1, $question2, $question3, $answer1, $answer2, $answer3 ) {
 			$url          = MO_HOST_NAME . '/moas/api/auth/register';
-			$customer_key = get_option( 'mo2f_customerKey' );
+			$customer_key = get_site_option( 'mo2f_customerKey' );
 			$q_and_a_list = '[{"question":"' . $question1 . '","answer":"' . $answer1 . '" },{"question":"' . $question2 . '","answer":"' . $answer2 . '" },{"question":"' . $question3 . '","answer":"' . $answer3 . '" }]';
 			$field_string = '{"customerKey":"' . $customer_key . '","username":"' . $email . '","questionAnswerList":' . $q_and_a_list . '}';
 

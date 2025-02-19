@@ -5,9 +5,9 @@
  * @package miniOrange-2-factor-authentication/handler
  */
 
-namespace TwoFA\Onprem;
+namespace TwoFA\Handler;
 
-use TwoFA\Onprem\MO2f_Utility;
+use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\Mo2f_Login_Popup;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsConstants;
@@ -15,6 +15,8 @@ use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\Mo2f_Common_Helper;
 use WP_REST_Request;
 use TwoFA\Helper\MocURL;
+use TwoFA\Traits\Instance;
+use TwoFA\Handler\Twofa\Miniorange_Authentication;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -25,6 +27,8 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 	 * Class Mo2f_Admin_Action_Handler
 	 */
 	class Mo2f_Admin_Action_Handler {
+
+		use Instance;
 
 		/**
 		 * Cunstructor for Mo2f_Admin_Action_Handler
@@ -101,9 +105,9 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 			if ( MoWpnsUtility::check_empty_or_null( $email ) || MoWpnsUtility::check_empty_or_null( $password ) || MoWpnsUtility::check_empty_or_null( $confirm_password ) ) {
 				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::REQUIRED_FIELDS ) );
 			}
-			update_option( 'mo2f_email', $email );
-			update_option( 'mo_wpns_company', $company );
-			update_option( 'mo_wpns_password', $password );
+			update_site_option( 'mo2f_email', $email );
+			update_site_option( 'mo_wpns_company', $company );
+			update_site_option( 'mo_wpns_password', $password );
 			$customer      = new MocURL();
 			$content       = json_decode( $customer->check_customer( $email ), true );
 			$common_helper = new Mo2f_Common_Helper();
@@ -137,19 +141,14 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 		 */
 		public function mo2f_remove_miniorange_account() {
 			global $mo_wpns_utility, $mo2fdb_queries;
-			if ( ! $mo_wpns_utility->check_empty_or_null( get_option( 'mo_wpns_registration_status' ) ) ) {
-				delete_option( 'mo2f_email' );
+			if ( ! $mo_wpns_utility->check_empty_or_null( get_site_option( 'mo_wpns_registration_status' ) ) ) {
+				delete_site_option( 'mo2f_email' );
 			}
-			delete_option( 'mo2f_customerKey' );
-			delete_option( 'mo2f_api_key' );
-			delete_option( 'mo2f_customer_token' );
-			delete_option( 'mo_wpns_transactionId' );
-			delete_option( 'mo_wpns_registration_status' );
-			delete_site_option( 'mo_2factor_admin_registration_status' );
-			delete_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' );
+			do_action( 'mo2f_rld' );
+			$common_helper = new Mo2f_Common_Helper();
+			$common_helper->mo2f_remove_account_details();
 			if ( ! MO2F_IS_ONPREM ) {
 				$mo2fdb_queries->mo2f_delete_cloud_meta_on_account_remove();
-
 			}
 			$two_fa_settings = new Miniorange_Authentication();
 			$two_fa_settings->mo2f_auth_deactivate();
@@ -163,12 +162,12 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 		 */
 		public function mo2f_check_transactions() {
 			$mocurl  = new MocURL();
-			$content = json_decode( $mocurl->get_customer_transactions( get_option( 'mo2f_customerKey' ), get_option( 'mo2f_api_key' ), 'WP_OTP_VERIFICATION_PLUGIN)' ), true );
+			$content = json_decode( $mocurl->get_customer_transactions( 'otp_recharge_plan', 'WP_OTP_VERIFICATION_PLUGIN' ), true );
 			if ( 'SUCCESS' === $content['status'] ) {
 				update_site_option( 'mo2f_license_type', 'PREMIUM' );
 			} else {
 				update_site_option( 'mo2f_license_type', 'DEMO' );
-				$content = json_decode( $mocurl->get_customer_transactions( get_option( 'mo2f_customerKey' ), get_option( 'mo2f_api_key' ), 'DEMO' ), true );
+				$content = json_decode( $mocurl->get_customer_transactions( '-1', 'DEMO' ), true );
 			}
 			if ( isset( $content['smsRemaining'] ) ) {
 				update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', $content['smsRemaining'] );
@@ -216,8 +215,8 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::SUPPORT_FORM_VALUES ) );
 			}
 			$contact_us = new MocURL();
-			if ( $send_configuration ) {
-				$query = $query . MoWpnsUtility::mo_2fa_send_configuration( true );
+			if ( 'true' === $send_configuration ) {
+				$query = $query . MoWpnsUtility::mo_2fa_send_configuration();
 			}
 			if ( ! filter_var( $email, FILTER_VALIDATE_EMAIL ) ) {
 				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::SUPPORT_FORM_ERROR ) );
@@ -232,7 +231,6 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::SUPPORT_FORM_ERROR ) );
 			}
 		}
-
 	}
 	new Mo2f_Admin_Action_Handler();
 }

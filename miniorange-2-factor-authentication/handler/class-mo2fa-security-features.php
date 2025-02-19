@@ -18,6 +18,8 @@
  * @package        miniorange-2-factor-authentication/handler
  */
 
+namespace TwoFA\Handler;
+
 use TwoFA\Helper\MoWpnsMessages;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -37,8 +39,8 @@ if ( ! class_exists( 'Mo2fa_Security_Features' ) ) {
 		 * @return void
 		 */
 		public function wpns_2fa_features_only() {
-			update_option( 'mo_wpns_2fa_with_network_security', 0 );
-			update_option( 'mo_wpns_2fa_with_network_security_popup_visible', 0 );
+			update_site_option( 'mo_wpns_2fa_with_network_security', 0 );
+			update_site_option( 'mo_wpns_2fa_with_network_security_popup_visible', 0 );
 			?><script>window.location.href="admin.php?page=mo_2fa_two_fa";</script>
 			<?php
 
@@ -54,13 +56,13 @@ if ( ! class_exists( 'Mo2fa_Security_Features' ) ) {
 			$nonce        = isset( $_POST['mo_security_features_nonce'] ) ? sanitize_key( wp_unslash( $_POST['mo_security_features_nonce'] ) ) : '';
 			if ( wp_verify_nonce( $nonce, 'mo_2fa_security_features_nonce' ) ) {
 				$enable_newtwork_security_features = isset( $postvalue['mo_wpns_2fa_with_network_security'] ) ? true : false;
-				update_option( 'mo_wpns_2fa_with_network_security', $enable_newtwork_security_features );
+				update_site_option( 'mo_wpns_2fa_with_network_security', $enable_newtwork_security_features );
 				if ( $enable_newtwork_security_features ) {
 					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::ALL_ENABLED ), 'SUCCESS' );
 				} else {
 					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::ALL_DISABLED ), 'ERROR' );
 				}
-				update_option( 'mo_wpns_2fa_with_network_security_popup_visible', 0 );
+				update_site_option( 'mo_wpns_2fa_with_network_security_popup_visible', 0 );
 				?>
 			<script>window.location.href="admin.php?page=mo_2fa_two_fa";</script>
 				<?php

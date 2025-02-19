@@ -5,61 +5,18 @@
  * @package miniorange-2-factor-authentication/controllers/twofa
  */
 
-use TwoFA\Onprem\MO2f_Utility;
+use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\MocURL;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsHandler;
-use TwoFA\Onprem\MO2f_Cloud_Onprem_Interface;
-use TwoFA\Onprem\Miniorange_Password_2Factor_Login;
+use TwoFA\Handler\Twofa\MO2f_Cloud_Onprem_Interface;
+use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
 use TwoFA\Helper\MoWpnsConstants;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-
-/**
- * This function redirect user to given url.
- *
- * @param object $user object containing user details.
- * @param string $redirect_to redirect url.
- * @return void
- */
-function redirect_user_to( $user, $redirect_to ) {
-	$roles        = $user->roles;
-	$current_role = array_shift( $roles );
-	$redirect_to  = get_option( 'mo2f_custom_redirect_url' ) ? get_option( 'mo2f_custom_redirect_url' ) : $redirect_to;
-	if ( is_multisite() ) {
-		$blog_id = get_current_blog_id();
-		if ( is_super_admin( $user->ID ) ) {
-
-			$redirect_url = isset( $redirect_to ) && ! empty( $redirect_to ) ? $redirect_to : admin_url();
-
-		} elseif ( 'administrator' === $current_role ) {
-
-			$redirect_url = empty( $redirect_to ) ? admin_url() : $redirect_to;
-
-		} else {
-
-			$redirect_url = empty( $redirect_to ) ? home_url() : $redirect_to;
-		}
-	} else {
-		if ( 'administrator' === $current_role ) {
-			$redirect_url = empty( $redirect_to ) ? admin_url() : $redirect_to;
-		} else {
-			$redirect_url = empty( $redirect_to ) ? home_url() : $redirect_to;
-		}
-	}
-	if ( MO2f_Utility::get_index_value( 'GLOBALS', 'mo2f_is_ajax_request' ) ) {
-		$redirect = array(
-			'redirect' => $redirect_url,
-		);
-		wp_send_json_success( $redirect );
-	} else {
-		wp_safe_redirect( $redirect_url ); // Use wp_redirect() for local testing.
-		exit();
-	}
-}
 
 /**
  * Function checks if 2fa enabled for given user roles (used in shortcode addon)
@@ -245,7 +202,7 @@ function mo2f_get_duo_push_authentication_prompt( $login_status, $login_message,
 						</div>
 						<div id="showPushImage">
 							<div class="mo2fa_text-align-center">
-								<img src="<?php echo esc_url( plugins_url( 'includes/images/ajax-loader-login.gif', dirname( dirname( __FILE__ ) ) ) ); ?>"/>
+								<img src="<?php echo esc_url( plugins_url( 'includes/images/email-loader.gif', dirname( dirname( __FILE__ ) ) ) ); ?>"/>
 					</div>
 						</div>
 
@@ -395,43 +352,4 @@ function mo2f_customize_logo() {
 					src="' . esc_url( plugins_url( 'includes/images/miniOrange2.png', dirname( __FILE__ ) ) ) . '"/></div>';
 					return $html;
 
-}
-
-/**
- * This function used to include css and js files.
- *
- * @return void
- */
-function echo_js_css_files() {
-	wp_register_style( 'mo2f_style_settings', plugins_url( 'includes/css/twofa_style_settings.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
-	wp_print_styles( 'mo2f_style_settings' );
-
-	wp_register_script( 'mo2f_bootstrap_js', plugins_url( 'includes/js/bootstrap.min.js', dirname( __FILE__ ) ), array(), MO2F_VERSION, true );
-	wp_print_scripts( 'jquery' );
-	wp_print_scripts( 'mo2f_bootstrap_js' );
-}
-
-/**
- * Creates and sends backupcodes.
- *
- * @param string $session_id_encrypt Session Id.
- * @return array
- */
-function mo2f_create_and_send_backupcodes_inline( $session_id_encrypt ) {
-
-	global $mo2fdb_queries;
-	$id = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
-	update_site_option( 'mo2f_is_inline_used', '1' );
-	$mo2f_user_email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $id );
-	if ( empty( $mo2f_user_email ) ) {
-		$currentuser     = get_user_by( 'id', $id );
-		$mo2f_user_email = $currentuser->user_email;
-	}
-	$generate_backup_code = new MocURL();
-	$codes                = $generate_backup_code->mo_2f_generate_backup_codes( $mo2f_user_email, site_url() );
-	$codes                = explode( ' ', $codes );
-	$result               = MO2f_Utility::mo2f_email_backup_codes( $codes, $mo2f_user_email );
-	update_user_meta( $id, 'mo_backup_code_generated', 1 );
-	update_user_meta( $id, 'mo_backup_code_screen_shown', 1 );
-	return $codes;
 }

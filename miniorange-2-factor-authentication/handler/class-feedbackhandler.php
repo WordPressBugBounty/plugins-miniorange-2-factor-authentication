@@ -5,10 +5,15 @@
  * @package miniOrange-2-factor-authentication/handler
  */
 
+namespace TwoFA\Handler;
+
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MocURL;
 use TwoFA\Helper\MoWpnsMessages;
-use TwoFA\Onprem\MO2f_Utility;
+use TwoFA\Handler\Twofa\MO2f_Utility;
+use TwoFA\Traits\Instance;
+use TwoFA\Helper\Mo2f_Filesystem;
+use WP_Error;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -19,6 +24,8 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 	 * Class FeedbackHandler
 	 */
 	class FeedbackHandler {
+
+		use Instance;
 
 		/**
 		 * FeedbackHandler class constructor
@@ -75,6 +82,7 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 				$message        .= ', Plugin selected - ' . $plugin . '.';
 			}
 			$send_configuration        = isset( $postdata['mo2f_get_reply'] ) ? sanitize_text_field( wp_unslash( $postdata['mo2f_get_reply'] ) ) : 0;
+			$mo2f_contact_back         = isset( $postdata['mo2f_contact_back'] ) ? sanitize_text_field( wp_unslash( $postdata['mo2f_contact_back'] ) ) : 0;
 			$deactivate_reason_message = array_key_exists( 'wpns_query_feedback', $postdata ) ? htmlspecialchars( sanitize_text_field( wp_unslash( $postdata['wpns_query_feedback'] ) ) ) : false;
 			$activation_date           = get_site_option( 'mo2f_activated_time' );
 			$current_date              = time();
@@ -86,7 +94,7 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 			}
 			update_site_option( 'No_of_days_active_work', $days, 'yes' );
 			$message .= '[D:' . $days . ',';
-			if ( MoWpnsUtility::get_mo2f_db_option( 'mo_wpns_2fa_with_network_security', 'get_option' ) ) {
+			if ( MoWpnsUtility::get_mo2f_db_option( 'mo_wpns_2fa_with_network_security', 'site_option' ) ) {
 				$message .= '2FA+NS]';
 			} else {
 				$message .= '2FA]';
@@ -107,12 +115,12 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 
 			$email = isset( $postdata['query_mail'] ) ? sanitize_email( wp_unslash( $postdata['query_mail'] ) ) : '';
 			if ( ! filter_var( $email, FILTER_VALIDATE_EMAIL ) ) {
-				$email = get_option( 'mo2f_email' );
+				$email = get_site_option( 'mo2f_email' );
 				if ( empty( $email ) ) {
 					$email = $user->user_email;
 				}
 			}
-			$phone            = get_option( 'mo_wpns_admin_phone' );
+			$phone            = get_site_option( 'mo_wpns_admin_phone' );
 			$feedback_reasons = new MocURL();
 			$show_message     = new MoWpnsMessages();
 			global $mo_wpns_utility;
@@ -121,7 +129,7 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 					deactivate_plugins( dirname( dirname( __FILE__ ) ) . '\\miniorange_2_factor_settings.php' );
 
 				} else {
-					$submitted = json_decode( $feedback_reasons->send_email_alert( $email, $phone, $message, $feedback_option ), true );
+					$submitted = json_decode( $feedback_reasons->mo2f_send_email_alert( $email, $phone, $message, $feedback_option, $mo2f_contact_back ), true );
 					if ( json_last_error() === JSON_ERROR_NONE ) {
 						if ( is_array( $submitted ) && array_key_exists( 'status', $submitted ) && 'ERROR' === $submitted['status'] ) {
 							$show_message->mo2f_show_message( __( $submitted['message'], 'miniorange-2-factor-authentication' ), 'ERROR' ); // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- This is a string literal.
@@ -135,7 +143,7 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 					if ( 'mo_wpns_feedback' === $feedback_option || 'mo_wpns_skip_feedback' === $feedback_option ) {
 						deactivate_plugins( dirname( dirname( __FILE__ ) ) . '\\miniorange_2_factor_settings.php' );
 					}
-					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::FEEDBACK_APPRECIATION ), 'ERROR' );
+					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::FEEDBACK_APPRECIATION ), 'SUCCESS' );
 				}
 			}
 		}
@@ -146,15 +154,9 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_download_log_file() {
-			global $wp_filesystem;
-			if ( empty( $wp_filesystem ) ) {
-				require_once ABSPATH . '/wp-admin/includes/file.php';
-				WP_Filesystem();
-			}
+			WP_Filesystem();
 			ob_start();
-
 			$nonce = isset( $_POST['mo_wpns_feedback_nonce'] ) ? sanitize_key( wp_unslash( $_POST['mo_wpns_feedback_nonce'] ) ) : '';
-
 			if ( ! wp_verify_nonce( $nonce, 'mo-wpns-feedback-nonce' ) || ! current_user_can( 'manage_options' ) ) {
 				$error = new WP_Error();
 				$error->add( 'empty_username', '<strong>' . __( 'ERROR', 'miniorange-2-factor-authentication' ) . '</strong>: ' . __( 'Invalid Request.', 'miniorange-2-factor-authentication' ) );
@@ -163,6 +165,7 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 				$debug_log_path = $debug_log_path['basedir'];
 				$file_name      = 'miniorange_debug_log.txt';
 				$status         = file_exists( $debug_log_path . DIRECTORY_SEPARATOR . $file_name );
+				$file_system    = new Mo2f_Filesystem();
 				if ( $status ) {
 					header( 'Pragma: public' );
 					header( 'Expires: 0' );
@@ -173,7 +176,7 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 					header( 'Content-Length: ' . filesize( $debug_log_path . DIRECTORY_SEPARATOR . $file_name ) );
 					while ( ob_get_level() ) {
 						ob_end_clean();
-						echo esc_html( $wp_filesystem->get_contents( $debug_log_path . DIRECTORY_SEPARATOR . $file_name ) );
+						echo esc_html( $file_system->mo2f_get_contents( $debug_log_path . DIRECTORY_SEPARATOR . $file_name ) );
 						exit;
 					}
 				} else {
@@ -182,5 +185,5 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 				}
 			}
 		}
-	}new FeedbackHandler();
+	}
 }

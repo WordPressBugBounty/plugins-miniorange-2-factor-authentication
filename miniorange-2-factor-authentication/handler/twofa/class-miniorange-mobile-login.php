@@ -4,11 +4,12 @@
  * @package miniorange-2-factor-authentication/handler/twofa
  */
 
-namespace TwoFA\Handler;
+namespace TwoFA\Handler\Twofa;
 
-use TwoFA\Onprem\MO2f_Utility;
-use TwoFA\Onprem\Miniorange_Password_2Factor_Login;
+use TwoFA\Handler\Twofa\MO2f_Utility;
+use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
 use WP_Error;
+use TwoFA\Traits\Instance;
 
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -26,6 +27,8 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 	 * Mobile Login class
 	 */
 	class Miniorange_Mobile_Login {
+
+		use Instance;
 
 
 		/**
@@ -47,46 +50,7 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 			remove_filter( 'login_message', array( $this, 'mo_auth_success_message' ) );
 			add_filter( 'login_message', array( $this, 'mo_auth_error_message' ) );
 		}
-
-		/**
-		 * This function is useful for removing the current activity stoed in sessionand cookie.
-		 *
-		 * @param string $session_id - Encrypted session id.
-		 * @return void
-		 */
-		public function remove_current_activity( $session_id ) {
-
-			$session_variables = array(
-				'mo2f_current_user_id',
-				'mo2f_1stfactor_status',
-				'mo_2factor_login_status',
-				'mo2f-login-qrCode',
-				'mo2f_transactionId',
-				'mo2f_login_message',
-				'mo_2_factor_kba_questions',
-				'mo2f_show_qr_code',
-				'mo2f_google_auth',
-				'mo2f_authy_keys',
-			);
-
-			$cookie_variables = array(
-				'mo2f_current_user_id',
-				'mo2f_1stfactor_status',
-				'mo_2factor_login_status',
-				'mo2f-login-qrCode',
-				'mo2f_transactionId',
-				'mo2f_login_message',
-				'kba_question1',
-				'kba_question2',
-				'mo2f_show_qr_code',
-				'mo2f_google_auth',
-				'mo2f_authy_keys',
-			);
-
-			MO2f_Utility::unset_session_variables( $session_variables );
-			MO2f_Utility::unset_cookie_variables( $cookie_variables );
-			MO2f_Utility::unset_temp_user_details_in_table( null, $session_id, 'destroy' );
-		}
+		
 		/**
 		 * This function enqueues custom login script.
 		 *
@@ -109,8 +73,10 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 
 			$bootstrappath = plugins_url( 'includes/css/bootstrap.min.css', dirname( dirname( __FILE__ ) ) );
 			$bootstrappath = str_replace( '/handler/includes/css', '/includes/css', $bootstrappath );
-			$hidepath      = plugins_url( 'includes/css/hide-login-form.min.css', dirname( dirname( __FILE__ ) ) );
-			$hidepath      = str_replace( '/handler/includes/css', '/includes/css', $hidepath );
+			if ( file_exists( plugin_dir_path( dirname( dirname( __FILE__ ) ) ) . 'includes/css/hide-login-form.min.css' ) ) {
+				$hidepath = plugins_url( 'includes/css/hide-login-form.min.css', dirname( dirname( __FILE__ ) ) );
+			}
+			$hidepath = str_replace( '/handler/includes/css', '/includes/css', $hidepath );
 
 			wp_register_style( 'hide-login', $hidepath, array(), MO2F_VERSION );
 			wp_register_style( 'bootstrap', $bootstrappath, array(), MO2F_VERSION );
@@ -223,7 +189,9 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 		 */
 		public function mo_2_factor_show_login_with_password_when_phonelogin_enabled() {
 
-			wp_register_style( 'show-login', plugins_url( 'includes/css/show-login.min.css', dirname( dirname( __FILE__ ) ) ), array(), MO2F_VERSION );
+			if ( file_exists( plugin_dir_path( dirname( dirname( __FILE__ ) ) ) . 'includes/css/show-login.min.css' ) ) {
+				wp_register_style( 'show-login', plugins_url( 'includes/css/show-login.min.css', dirname( dirname( __FILE__ ) ) ), array(), MO2F_VERSION );
+			}
 			wp_enqueue_style( 'show-login' );
 		}
 		/**
@@ -250,9 +218,12 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 		 */
 		public function mo_2_factor_show_login() {
 
-			$hidepath = plugins_url( 'includes/css/hide-login-form.min.css', dirname( dirname( __FILE__ ) ) );
-
-			$showpath = plugins_url( 'includes/css/show-login.min.css', dirname( dirname( __FILE__ ) ) );
+			if ( file_exists( plugin_dir_path( dirname( dirname( __FILE__ ) ) ) . 'includes/css/hide-login-form.min.css' ) ) {
+				$hidepath = plugins_url( 'includes/css/hide-login-form.min.css', dirname( dirname( __FILE__ ) ) );
+			}
+			if ( file_exists( plugin_dir_path( dirname( dirname( __FILE__ ) ) ) . 'includes/css/show-login.min.css' ) ) {
+				$showpath = plugins_url( 'includes/css/show-login.min.css', dirname( dirname( __FILE__ ) ) );
+			}
 
 			if ( get_option( 'mo2f_enable_login_with_2nd_factor' ) ) {
 				wp_register_style( 'show-login', $hidepath, array(), MO2F_VERSION );
@@ -275,18 +246,18 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 			<?php if ( ! $mo2f_enable_login_with_2nd_factor ) { ?>
 				<div style="position: relative" class="or-container">
 					<div class="login_with_2factor_inner_div"></div>
-					<h2 class="login_with_2factor_h2"><?php esc_html_e( 'or' ); ?></h2>
+					<h2 class="login_with_2factor_h2"><?php esc_html_e( 'or', 'miniorange-2-factor-authentication' ); ?></h2>
 				</div>
 			<?php } ?>			
 			<br>
 			<div class="mo2f-button-container" id="mo2f_button_container">
 				<input type="text" name="mo2fa_usernamekey" id="mo2fa_usernamekey" autofocus="true"
-				placeholder="<?php esc_attr_e( 'Username' ); ?>"/>
+				placeholder="<?php esc_attr_e( 'Username', 'miniorange-2-factor-authentication' ); ?>"/>
 				<p>			
 					<input type="button" name="miniorange_login_submit" style="width:100% !important;"
 						onclick="mouserloginsubmit();" id="miniorange_login_submit"
 						class="button button-primary button-large"
-						value="<?php esc_attr_e( 'Login with 2nd factor' ); ?>"/>
+						value="<?php esc_attr_e( 'Login with 2nd factor', 'miniorange-2-factor-authentication' ); ?>"/>
 				</p>
 				<br><br><br>
 				<?php

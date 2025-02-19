@@ -20,14 +20,14 @@
 
 namespace TwoFA\Cloud;
 
-use TwoFA\Onprem\Mo2f_Api;
-use TwoFA\Onprem\Miniorange_Authentication;
+use TwoFA\Helper\Mo2f_Api;
+use TwoFA\Handler\Twofa\Miniorange_Authentication;
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Traits\Instance;
 use TwoFA\Helper\MocURL;
-use TwoFA\Onprem\Miniorange_Password_2Factor_Login;
-use TwoFA\Onprem\MO2f_Utility;
+use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
+use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\MoWpnsMessages;
 use WP_Error;
 
@@ -141,8 +141,8 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 
 			$url = MO_HOST_NAME . '/moas/rest/customer/key';
 
-			$email        = get_option( 'mo2f_email' );
-			$password     = get_option( 'mo2f_password' );
+			$email        = get_site_option( 'mo2f_email' );
+			$password     = get_site_option( 'mo2f_password' );
 			$fields       = array(
 				'email'    => $email,
 				'password' => $password,
@@ -229,8 +229,8 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 			$url = MO_HOST_NAME . '/moas/rest/customer/contact-us';
 			global $user;
 			$user              = wp_get_current_user();
-			$is_nc_with_1_user = MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'get_option' ) && MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NNC', 'get_option' );
-			$is_ec_with_1_user = ! MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'get_option' );
+			$is_nc_with_1_user = MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'site_option' ) && MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NNC', 'site_option' );
+			$is_ec_with_1_user = ! MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'site_option' );
 
 			$customer_feature = '';
 
@@ -418,7 +418,7 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 				} else {
 					if ( 'SUCCESS' === $response['status'] ) {
 						update_user_meta( $current_user->ID, 'mo2f_transactionId', $response['txId'] );
-						update_option( 'mo2f_transactionId', $response['txId'] );
+						update_site_option( 'mo2f_transactionId', $response['txId'] );
 						$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::VERIFICATION_EMAIL_SENT ) . '<b> ' . $email . '</b>. ' . MoWpnsMessages::lang_translate( MoWpnsMessages::ACCEPT_LINK_TO_VERIFY_EMAIL ), 'SUCCESS' );
 					} else {
 						$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::ERROR_DURING_PROCESS ), 'ERROR' );

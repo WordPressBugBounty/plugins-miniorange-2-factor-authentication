@@ -5,11 +5,11 @@
  * @package miniOrange-2-factor-authentication/handler/twofa
  */
 
-namespace TwoFA\Onprem;
+namespace TwoFA\Handler\Twofa;
 
-use TwoFA\Handler\Mo2f_GAuth_AESEncryption;
+use TwoFA\Handler\Twofa\Mo2f_GAuth_AESEncryption;
 use Exception;
-
+use TwoFA\Traits\Instance;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -24,6 +24,8 @@ if ( ! class_exists( 'Google_Auth_Onpremise' ) ) {
 	 * Class Google_auth_onpremise
 	 */
 	class Google_Auth_Onpremise {
+
+		use Instance;
 
 		/**
 		 * TOTP code length.
@@ -178,7 +180,7 @@ if ( ! class_exists( 'Google_Auth_Onpremise' ) ) {
 			for ( $i = -$discrepancy; $i <= $discrepancy; ++$i ) {
 				$calculated_code = $this->mo2f_get_code( $secret, $current_time_slice + $i );
 				if ( $this->mo2f_timing_safe_equals( $calculated_code, $code ) ) {
-					update_option( 'mo2f_time_slice', $i );
+					update_site_option( 'mo2f_time_slice', $i );
 					$response['status'] = 'SUCCESS';
 					return wp_json_encode( $response );
 				}
