@@ -75,7 +75,6 @@ function mo2fa_register_customer( $post ) {
 	update_option( 'mo_wpns_password', $password );
 	$customer = new MocURL();
 	$content  = json_decode( $customer->check_customer( $email ), true );
-	$mo2fdb_queries->insert_user( $user->ID );
 	switch ( $content['status'] ) {
 		case 'CUSTOMER_NOT_FOUND':
 			$customer_key = json_decode( $customer->create_customer( $email, $company, $password ), true );

@@ -75,7 +75,14 @@ if ( ! class_exists( 'Mo2f_Advance_Settings_Handler' ) ) {
 					do_action( 'mo2f_enterprise_plan_settings_action', 'mo2f_save_session_management_settings', $_POST );
 					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
 					break;
-
+				case 'mo2f_enable_disable_remember_ip':
+					do_action( 'mo2f_all_inclusive_plan_settings_action', 'mo2f_enable_disable_remember_ip', $_POST );
+					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					break;
+				case 'mo2f_whatsapp_settings_ajax':
+					do_action( 'mo2f_all_inclusive_plan_settings_action', 'mo2f_whatsapp_settings_ajax', $_POST );
+					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					break;
 			}
 		}
 

@@ -19,7 +19,7 @@ if ( ! wp_verify_nonce( $nonce, 'mo_2fa_security_features_nonce' ) ) {
 	$mo2f_error->add( 'empty_username', '<strong>' . __( 'ERROR', 'miniorange-2-factor-authentication' ) . '</strong>: ' . __( 'Invalid Request.', 'miniorange-2-factor-authentication' ) );
 
 } else {
-	global $mo_wpns_utility,$mo2f_dir_name;
+	global $mo_wpns_utility, $mo2f_dir_name;
 	if ( current_user_can( 'manage_options' ) && isset( $_POST['option'] ) ) {
 		switch ( sanitize_text_field( wp_unslash( $_POST['option'] ) ) ) {
 			case 'mo_wpns_2fa_with_network_security':
@@ -29,7 +29,8 @@ if ( ! wp_verify_nonce( $nonce, 'mo_2fa_security_features_nonce' ) ) {
 		}
 	}
 }
-$network_security_features = MoWpnsUtility::get_mo2f_db_option( 'mo_wpns_2fa_with_network_security', 'site_option' ) ? 'checked' : '';
+$network_security_features = get_site_option( 'mo_wpns_2fa_with_network_security' ) ? 'checked' : '';
+$remaining_transaction     = $mo_wpns_utility->mo2f_check_remaining_transactions();
 
 if ( isset( $_GET['page'] ) ) {
 	$tab_count = get_site_option( 'mo2f_tab_count', 0 );
@@ -51,10 +52,10 @@ if ( isset( $_GET['page'] ) ) {
 	$logo_url = plugin_dir_url( dirname( __FILE__ ) ) . 'includes/images/miniorange-new-logo.png';
 
 	$mo_plugin_handler      = new MoWpnsHandler();
-	$safe                   = $mo_plugin_handler->is_whitelisted( $mo_wpns_utility->get_client_ip() );
+	$safe                   = $mo_plugin_handler->mo2f_is_whitelisted( $mo_wpns_utility->get_client_ip() );
 	$active_tab             = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
 	$user_id                = get_current_user_id();
-	$mo2f_two_fa_method     = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user_id );
+	$mo2f_two_fa_method     = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id );
 	$backup_codes_remaining = get_user_meta( $user_id, 'mo2f_backup_codes', true );
 if ( is_array( $backup_codes_remaining ) ) {
 	$backup_codes_remaining = count( $backup_codes_remaining );

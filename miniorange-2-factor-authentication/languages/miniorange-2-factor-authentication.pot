@@ -1,0 +1,1684 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: miniOrange 2 Factor Authentication\n"
+"POT-Creation-Date: 2025-03-21 07:56+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: miniOrange\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Loco https://localise.biz/\n"
+"X-Poedit-Basepath: ..\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"Language: \n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;mo2f_lt\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: views/myaccount/setupyour2fa.php:169
+msgid "  Click "
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1758
+msgid " Enter account name "
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1754
+msgid " Enter provided key "
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1762
+msgid " Enter your key "
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1777
+msgid " is selected"
+msgstr ""
+
+#: handler/class-registrationhandler.php:105
+msgid " not Found. Please check Selector"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1377
+msgid " questions"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1750
+msgid " Set up account "
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1776
+msgid " Time-based "
+msgstr ""
+
+#: views/myaccount/setupyour2fa.php:169
+msgid " to setup 2FA method for your users."
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:172
+#: views/whitelabelling/emailtemplates.php:20
+msgid " Via Link"
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:42
+#, php-format
+msgid ""
+"%1$1sNote:%2$12s Checking this option will enable %3$3s'Remember "
+"Device'%4$4s. When login from the same device which user has allowed to "
+"remember, user will bypass 2nd factor i.e user will be able to login through "
+"'username' + 'password' only."
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/settings.php:61
+#, php-format
+msgid ""
+"%1$1sNote:%2$12s Enabling this checkbox will not give end users the option "
+"to setup their 2FA method at the login time."
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/settings.php:100
+#, php-format
+msgid ""
+"%1$1sNote:%2$12s Enabling this option will send end users a notification on "
+"their email whenever they log into the site using new IP."
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/settings.php:80
+#, php-format
+msgid ""
+"%1$1sNote:%2$12s If the end users have mutliple 2FA method configured, "
+"enabling this option will allow them to login using any configured method "
+"otherwise they can login only using the latest configured 2FA method."
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/formintegration.php:83
+#, php-format
+msgid ""
+"%1$1sNote:%2$12s If you do not find your login form in the above list, you "
+"can integrate your form using the below settings to enable the 2FA on the "
+"same."
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/advancedfeatures/passwordlesslogin.php:43
+#, php-format
+msgid ""
+"%1$1sNote:%2$12s If you do not want to remember password anymore and login "
+"with 2nd factor, please check this option."
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/advancedfeatures/rememberip.php:40
+#, php-format
+msgid ""
+"%1$1sNote:%2$12s This will allow the users to directly login to the site "
+"using username and password if their IP address is remembered ( whitelisted )"
+" otherwise they would be asked for the 2-factor authentication."
+msgstr ""
+
+#. %s: bold tags
+#: views/whitelabelling/loginpopup.php:25
+#, php-format
+msgid ""
+"%1$1sNote:%2$12s To ensure optimal appearance, please upload a logo with "
+"dimensions around 33x33 pixels."
+msgstr ""
+
+#. %s: bold tags
+#: views/myaccount/verify.php:24
+#, php-format
+msgid ""
+"%1$1sNote:%2$2s Please make sure that the license key you enter is not being "
+"used on any other instance."
+msgstr ""
+
+#. %s: bold tags
+#: views/myaccount/verify.php:41
+#, php-format
+msgid ""
+"%1$1sThis is not a developer's license.:%2$2s Making any kind of change to "
+"the plugin's code will delete all your configurations and render the plugin "
+"unusable."
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/sessionmanagement.php:58
+msgid ""
+"'Allow access' will allow user to login but terminate all other active "
+"session when the limit reached. 'Deny access' will not allow users to login "
+"when the limit is reached."
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:126
+msgid "(Any TOTP Based Authenticator App)"
+msgstr ""
+
+#. %s: bold tags
+#: handler/user-profile-2fa.php:190 handler/user-profile-2fa.php:211
+#: handler/user-profile-2fa.php:238
+msgid "."
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:716
+msgid ""
+"1. Open the telegram app and search for 'miniorange2fa'. Click on start "
+"button or send '/start' message."
+msgstr ""
+
+#: handler/user-profile-2fa.php:84
+msgid "2-Factor Options"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:717
+msgid "2. Enter the recieved chat id in the below box."
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1704
+msgid "2. Scan the QR code from the Authenticator App."
+msgstr ""
+
+#: views/whitelabelling/loginpopup.php:128
+msgid ":"
+msgstr ""
+
+#: cloud/class-mo2f-cloud-validate.php:92
+#: cloud/class-mo2f-cloud-validate.php:98
+msgid ""
+"<strong>ERROR</strong>: An error occured while processing your request. "
+"Please Try again."
+msgstr ""
+
+#: handler/twofa/class-miniorange-password-2factor-login.php:459
+#: handler/twofa/class-miniorange-password-2factor-login.php:480
+#: handler/twofa/class-miniorange-password-2factor-login.php:685
+msgid "<strong>ERROR</strong>: Invalid Request."
+msgstr ""
+
+#: handler/twofa/class-miniorange-password-2factor-login.php:1010
+msgid "<strong>ERROR</strong>: Two Factor method has not been configured."
+msgstr ""
+
+#: handler/class-registrationhandler.php:140
+msgid ""
+"<strong>ERROR</strong>: Your email address is not allowed to register. "
+"Please select different email address."
+msgstr ""
+
+#: helper/mo2f-common-login-onprem-cloud.php:188
+msgid "Accept Your Transaction"
+msgstr ""
+
+#: views/whitelabelling/emailtemplates.php:21
+msgid "Account Recovery Link"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:151
+msgid "Account Recovery Via Email Verification"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:172
+msgid "Action after grace period is expired"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:94
+msgid "Action on exceeding device limit"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberip.php:85
+msgid "Add IPs"
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/advancedfeatures/rememberip.php:68
+#, php-format
+msgid "Add IPs for %1$1s'Whitelisting'%2$2s"
+msgstr ""
+
+#: views/ipblocking/ipblacklist.php:68
+msgid "Add new IP address to whitelist:"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberip.php:92
+msgid "Add range of IPs to whitelist"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberip.php:82
+msgid "Add the IPs you want to whitelist for 2FA"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:301
+msgid "All Done"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:301
+msgid "All done"
+msgstr ""
+
+#: handler/twofamethods/class-mo2f-kba-handler.php:247
+#: handler/twofamethods/class-mo2f-kba-handler.php:277
+msgid "All the fields are required. Please enter valid entries."
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:371
+msgid "All users"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/sessionmanagement.php:49
+msgid "Allow Access"
+msgstr ""
+
+#: views/2faconfigurations/settings.php:73
+msgid "Allow End Users to choose any Configured 2FA Method for Login"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:88
+msgid "Allow maximum"
+msgstr ""
+
+#: views/feedback-form.php:101
+msgid "Allow us to contact you on your registered email address"
+msgstr ""
+
+#: handler/class-registrationhandler.php:100
+msgid "Already Validated"
+msgstr ""
+
+#: handler/twofa/class-miniorange-password-2factor-login.php:237
+msgid "An error occured while validating the user. Please Try again."
+msgstr ""
+
+#: handler/class-registrationhandler.php:99
+msgid "An OTP will be sent to your Email ID"
+msgstr ""
+
+#: handler/class-registrationhandler.php:98
+msgid "An OTP will be sent to your Mobile Number"
+msgstr ""
+
+#: helper/mo2f-common-login-onprem-cloud.php:97
+msgid "Answer your Security Questions (KBA)"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1384
+msgid "Answers"
+msgstr ""
+
+#: views/myaccount/account.php:25
+msgid "API Key"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:97
+msgid "Ask for Two Factor"
+msgstr ""
+
+#: handler/user-profile-2fa.php:223
+msgid "Authentication codes will be sent to "
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:945
+#: helper/class-mo2f-common-helper.php:1323
+#: helper/class-mo2f-common-helper.php:1682
+#: helper/class-mo2f-inline-popup.php:81 helper/class-mo2f-login-popup.php:525
+#: helper/class-mo2f-login-popup.php:898
+#: helper/mo2f-common-login-onprem-cloud.php:71
+#: helper/mo2f-common-login-onprem-cloud.php:186
+#: handler/twofamethods/class-mo2f-sms-handler.php:242
+#: handler/twofamethods/class-mo2f-whatsapp-handler.php:242
+msgid "Back to login"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:150
+#: views/whitelabelling/emailtemplates.php:22
+msgid "Backup Codes"
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:369
+msgid ""
+"Backup Codes can be used to login into user account in case you forget your "
+"phone or get locked out."
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:175
+msgid "Block users from login"
+msgstr ""
+
+#: views/ipblocking/ipblacklist.php:25
+msgid "Blocked IPs"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:2135
+msgid "Blocked User"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1743
+msgid "Can't scan the QR code? "
+msgstr ""
+
+#: views/whitelabelling/2facustomizations.php:18
+msgid "Change App name in authenticator app:"
+msgstr ""
+
+#: views/whitelabelling/2facustomizations.php:32
+msgid "Change SMS Template: "
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:276
+msgid "Choose User roles"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:77
+msgid "Click"
+msgstr ""
+
+#: views/whitelabelling/2facustomizations.php:32
+#: views/whitelabelling/2facustomizations.php:33
+msgid "Click Here"
+msgstr ""
+
+#: views/myaccount/verify.php:12
+msgid "Click here to view your license key"
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:89
+msgid "Configure a Two-Factor method to protect your account"
+msgstr ""
+
+#: views/whitelabelling/2facustomizations.php:33
+msgid "Configure Custom SMS Gateway: "
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1684
+msgid "Configure Google/Authy/Microsoft Authenticator"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:104
+msgid "Congratulations!"
+msgstr ""
+
+#: handler/class-registrationhandler.php:89
+msgid "Contact Site Administrator"
+msgstr ""
+
+#: helper/mo2f-common-login-onprem-cloud.php:100
+msgid "Continue"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:272 views/class-mo2f-setup-wizard.php:286
+#: views/class-mo2f-setup-wizard.php:286
+msgid "Continue Setup"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1115
+msgid "Create New Account"
+msgstr ""
+
+#: views/myaccount/account.php:21
+msgid "Customer ID"
+msgstr ""
+
+#: views/2faconfigurations/settings.php:93
+msgid "Customize Email Template"
+msgstr ""
+
+#: views/whitelabelling/loginpopup.php:110
+msgid "Customize Email Verification via Link Response Template"
+msgstr ""
+
+#: views/whitelabelling/2facustomizations.php:39
+msgid "Customize Security Questions (KBA)"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:519
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:84
+msgid "days"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:102
+#: views/2faconfigurations/advancedfeatures/sessionmanagement.php:54
+msgid "Deny Access"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:90
+msgid "devices per user to remember"
+msgstr ""
+
+#: helper/mo2f-common-login-onprem-cloud.php:218
+msgid "Didn't receive push nitification?"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:361
+msgid "Do you want to enable 2FA for some, or all the user roles? "
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:409
+msgid "Download Codes"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:2132
+msgid "Email"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:243
+msgid "Email Field Selector"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:101
+msgid "Email Field Selector "
+msgstr ""
+
+#: views/whitelabelling/emailtemplates.php:61
+msgid "Email Subject:"
+msgstr ""
+
+#: handler/twofa/class-twofacustomregformapi.php:71
+msgid "Email Transaction Limit Exceeded"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:171
+msgid "Email Verification"
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:30
+#, php-format
+msgid "Enable %1$1s'Remember Device'%2$2s Option"
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/advancedfeatures/rememberip.php:28
+#, php-format
+msgid "Enable %1$1s'Remember IP'%2$2s Option"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:24
+msgid "Enable 2FA"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:28
+msgid "Enable 2FA for roles"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:73
+msgid "Enable 2FA for specific users"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:93
+msgid "Enable 2FA On Any Custom Login Form"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:145
+msgid "Enable Backup Login Methods"
+msgstr ""
+
+#: views/2faconfigurations/settings.php:17
+msgid "Enable Custom Redirection URL After Login"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:161
+msgid "Enable Grace Period"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:150
+msgid "Enable OTP Verification on your Registration Form"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberip.php:108
+msgid "End IP"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1135
+msgid "end user agreement"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:174
+msgid "Enforce 2FA"
+msgstr ""
+
+#: views/mo2fawhatsapp.php:52
+msgid "Enter Access Token"
+msgstr ""
+
+#: helper/class-mo2f-login-popup.php:72
+msgid "Enter Answer 1"
+msgstr ""
+
+#: helper/class-mo2f-login-popup.php:77
+msgid "Enter Answer 2"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:715
+msgid "Enter Chat ID recieved on your Telegram without any space or dashes"
+msgstr ""
+
+#: helper/class-mo2f-login-popup.php:64
+msgid "Enter code"
+msgstr ""
+
+#: handler/user-profile-2fa.php:178
+msgid "Enter Code:"
+msgstr ""
+
+#: views/ipblocking/ipblacklist.php:104
+msgid "Enter IP address you Want to check:"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1024
+msgid "Enter One Time Passcode"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1025
+#: helper/class-mo2f-common-helper.php:1721
+msgid "Enter OTP"
+msgstr ""
+
+#: handler/class-registrationhandler.php:95
+msgid "Enter OTP "
+msgstr ""
+
+#: handler/user-profile-2fa.php:179
+msgid "Enter OTP:"
+msgstr ""
+
+#: handler/user-profile-2fa.php:224 helper/class-mo2f-common-helper.php:673
+#: helper/class-mo2f-common-helper.php:737
+msgid "Enter phone number without any space or dashes"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:237
+msgid "Enter Selectors for your Form"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1718
+msgid "Enter the code from authenticator app:"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/sessionmanagement.php:38
+msgid "Enter the maximum simultaneous sessions allowed:"
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/advancedfeatures/sessionmanagement.php:84
+#, php-format
+msgid ""
+"Enter the number of %1$1shours%2$12s for which a session should be allowed:"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:96
+msgid "Enter the selectors of your login form"
+msgstr ""
+
+#: views/whitelabelling/loginpopup.php:88
+#: views/whitelabelling/loginpopup.php:137
+msgid "Enter the url of the background image"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1404
+msgid "Enter your answer"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1396
+#: views/whitelabelling/2facustomizations.php:59
+msgid "Enter your custom question here"
+msgstr ""
+
+#: views/myaccount/verify.php:17
+msgid "Enter your license key to activate the license "
+msgstr ""
+
+#: views/myaccount/verify.php:14
+msgid "Enter your license key to activate the plugin:"
+msgstr ""
+
+#: controllers/navbar.php:19 handler/class-ajaxhandler.php:47
+#: handler/class-feedbackhandler.php:46 handler/class-feedbackhandler.php:162
+#: handler/user-profile-2fa-update.php:29 helper/class-mo2f-setupwizard.php:176
+#: controllers/twofa/class-mo-2f-ajax.php:186
+#: controllers/twofa/class-mo-2f-ajax.php:213
+#: handler/twofa/class-miniorange-authentication.php:284
+#: handler/twofa/class-miniorange-authentication.php:296
+#: handler/twofa/class-miniorange-authentication.php:306
+#: handler/twofa/class-miniorange-authentication.php:315
+#: handler/twofa/class-miniorange-authentication.php:327
+#: handler/twofa/class-miniorange-authentication.php:363
+#: handler/twofa/class-miniorange-authentication.php:373
+#: handler/twofa/class-miniorange-authentication.php:627
+#: handler/twofa/class-miniorange-authentication.php:948
+#: handler/twofa/class-miniorange-authentication.php:1131
+#: handler/twofa/class-miniorange-password-2factor-login.php:193
+#: handler/twofa/class-miniorange-password-2factor-login.php:214
+#: handler/twofa/class-miniorange-password-2factor-login.php:256
+#: handler/twofa/class-miniorange-password-2factor-login.php:290
+#: handler/twofa/class-miniorange-password-2factor-login.php:347
+#: handler/twofa/class-miniorange-password-2factor-login.php:523
+msgid "ERROR"
+msgstr ""
+
+#: handler/class-mo2f-admin-action-handler.php:123
+#: handler/mo2f-register-verify-user.php:81
+msgid "Error occured while creating an account."
+msgstr ""
+
+#: handler/mo2f-register-verify-user.php:111
+msgid "Error Occured while registration"
+msgstr ""
+
+#: handler/class-registrationhandler.php:109
+msgid "Error Validating OTP"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1763
+msgid "field, type the below secret key"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1759
+msgid "field, type your preferred account name."
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:418
+msgid "Finish"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1757
+#: helper/class-mo2f-common-helper.php:1761
+msgid "For the"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:239
+msgid "Form Selector"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:115
+msgid "Form Selector "
+msgstr ""
+
+#. %s: bold tags and links
+#: views/mo2fa-offer-note.php:18
+#, php-format
+msgid ""
+"Get Your License Extended%1$s UPTO 3 EXTRA MONTHS on any of our premium "
+"plans.%2$s Hurry Up! offer valid till limited period of time. Contact us at "
+"%3$smfasupport@xecurify.com%4$s."
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:497
+msgid ""
+"Give users a grace period to configure 2FA (Users will be enforced to setup "
+"2FA after grace period expiry)."
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/advancedfeatures/rememberip.php:54
+#, php-format
+msgid "Give users an option to %1$1s'Remember (Whitelist)'%2$2s their IP"
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:58
+#, php-format
+msgid "Give users an option to enable %1$1s'Remember Device'%2$2s"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:362
+#: views/class-mo2f-setup-wizard.php:283 views/class-mo2f-setup-wizard.php:298
+msgid "Go Back"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1179
+msgid "Go Back To Registration"
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:119
+msgid "Google / Authy / Microsoft Authenticator"
+msgstr ""
+
+#: views/whitelabelling/2facustomizations.php:15
+msgid "Google Authenticator"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:291
+msgid "Grace period"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:79
+#: views/myaccount/setupyour2fa.php:169
+msgid "here"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/passwordlesslogin.php:35
+msgid "Hide Preview"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:513
+msgid "hours"
+msgstr ""
+
+#: helper/mo2f-common-login-onprem-cloud.php:73
+msgid "How would you like to authenticate yourself?"
+msgstr ""
+
+#. URI of the plugin
+#. Author URI of the plugin
+msgid "https://miniorange.com"
+msgstr ""
+
+#. %1$s: End User Agreement link, %2$s: Plugin Privacy Policy link
+#: helper/class-mo2f-common-helper.php:1134
+#, php-format
+msgid "I have read and agree to the %1$s and %2$s"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/passwordlesslogin.php:53
+msgid "I want to hide default login form"
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:361
+msgid ""
+"If you have received the codes on your email and do not wish to download the "
+"codes, click on Finish."
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:263
+msgid ""
+"If your form is not the default WordPress registration form, add the "
+"following shortcode to your registration or checkout page to enable OTP "
+"verification:"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:269
+msgid "Inline Registration"
+msgstr ""
+
+#: handler/class-registrationhandler.php:93
+msgid "Invalid Email Address"
+msgstr ""
+
+#: handler/class-registrationhandler.php:91
+msgid "Invalid Phone Number"
+msgstr ""
+
+#: controllers/navbar.php:19 handler/class-ajaxhandler.php:47
+#: handler/class-feedbackhandler.php:46 handler/class-feedbackhandler.php:162
+#: handler/user-profile-2fa-update.php:29 helper/class-mo2f-setupwizard.php:176
+#: controllers/twofa/class-mo-2f-ajax.php:186
+#: controllers/twofa/class-mo-2f-ajax.php:213
+#: handler/twofa/class-miniorange-authentication.php:284
+#: handler/twofa/class-miniorange-authentication.php:296
+#: handler/twofa/class-miniorange-authentication.php:306
+#: handler/twofa/class-miniorange-authentication.php:315
+#: handler/twofa/class-miniorange-authentication.php:327
+#: handler/twofa/class-miniorange-authentication.php:363
+#: handler/twofa/class-miniorange-authentication.php:373
+#: handler/twofa/class-miniorange-authentication.php:627
+#: handler/twofa/class-miniorange-authentication.php:948
+#: handler/twofa/class-miniorange-authentication.php:1131
+#: handler/twofa/class-miniorange-password-2factor-login.php:193
+#: handler/twofa/class-miniorange-password-2factor-login.php:214
+#: handler/twofa/class-miniorange-password-2factor-login.php:256
+#: handler/twofa/class-miniorange-password-2factor-login.php:290
+#: handler/twofa/class-miniorange-password-2factor-login.php:347
+#: handler/twofa/class-miniorange-password-2factor-login.php:503
+#: handler/twofa/class-miniorange-password-2factor-login.php:523
+msgid "Invalid Request."
+msgstr ""
+
+#: cloud/class-customer-cloud-setup.php:539
+msgid ""
+"Invalid request. Please register with miniOrange to configure 2 Factor "
+"plugin."
+msgstr ""
+
+#: handler/twofa/class-miniorange-password-2factor-login.php:240
+msgid "Invalid request. Please try again"
+msgstr ""
+
+#: views/ipblocking/advancedblocking.php:14
+msgid "IP Address Range Blocking"
+msgstr ""
+
+#: views/ipblocking/ipblacklist.php:99
+msgid "IP LookUp"
+msgstr ""
+
+#: views/ipblocking/ipblacklist.php:63
+msgid "IP Whitelisting"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1775
+msgid "Key type: make sure"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:335
+msgid "Learn more."
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:244
+msgid "Let us help you get started"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:250
+msgid "Let’s get started!"
+msgstr ""
+
+#: views/myaccount/verify.php:16
+msgid "License key"
+msgstr ""
+
+#: views/myaccount/verify.php:37
+msgid ""
+"License key you have entered here is associated with this site instance. In "
+"future, if you want to reinstall the plugin on your site for any reason, you "
+"should deactivate and delete the plugin from the WordPress dashboard ( not "
+"from the FTP/SFTP/cPanel ) so that you can reuse the same license key."
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/advancedfeatures/sessionmanagement.php:71
+#, php-format
+msgid "Limit '%1$1sSession Time%2$12s'"
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/advancedfeatures/sessionmanagement.php:27
+#, php-format
+msgid "Limit '%1$1sSimultaneous Sessions%2$12s'"
+msgstr ""
+
+#: helper/class-mo2f-login-popup.php:104
+msgid "Locked out? Click to recover your account using email verification"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:65
+msgid "Login forms supported by miniOrange 2FA"
+msgstr ""
+
+#: helper/class-mo2f-premium-common-helper.php:245
+#: helper/class-mo2f-premium-common-helper.php:260
+msgid "Login With 2-Factor"
+msgstr ""
+
+#: handler/twofa/class-miniorange-mobile-login.php:260
+msgid "Login with 2nd factor"
+msgstr ""
+
+#: helper/class-mo2f-login-popup.php:108
+msgid "Login with alternate 2FA method"
+msgstr ""
+
+#: controllers/myaccount/myaccount.php:24
+#: handler/twofamethods/class-mo2f-sms-handler.php:246
+#: handler/twofamethods/class-mo2f-whatsapp-handler.php:246
+msgid "Login/Register with miniOrange"
+msgstr ""
+
+#: views/ipblocking/ipblacklist.php:16
+msgid "Manual IP Blocking"
+msgstr ""
+
+#: views/ipblocking/ipblacklist.php:21
+msgid "Manually block an IP address here:"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:2134
+msgid "Method Selected"
+msgstr ""
+
+#. Author of the plugin
+msgid "miniOrange"
+msgstr ""
+
+#. Name of the plugin
+msgid "miniOrange 2 Factor Authentication"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:166
+msgid "miniOrange 2-factor authentication Setup"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:165 views/whitelabelling/loginpopup.php:48
+msgid "miniOrange 2-factor Logo"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:134
+msgid "miniOrange 2-factor Setup Wizard"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:155
+msgid "miniOrange 2FA &rsaquo; Setup Wizard"
+msgstr ""
+
+#: handler/class-registrationhandler.php:104
+msgid "miniOrange : Email Field"
+msgstr ""
+
+#: handler/class-registrationhandler.php:103
+msgid "miniOrange : Phone Field not Found."
+msgstr ""
+
+#: handler/class-registrationhandler.php:107
+msgid "miniOrange : Register/Login with miniOrange to Enable 2FA for this Form"
+msgstr ""
+
+#: views/whitelabelling/emailtemplates.php:23
+msgid "New IP Login"
+msgstr ""
+
+#: views/2faconfigurations/settings.php:92
+msgid "New IP Login Notification"
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:83
+msgid "New security system has been enabled"
+msgstr ""
+
+#: helper/class-mo2f-login-popup.php:114 helper/class-mo2f-login-popup.php:116
+#: helper/class-mo2f-login-popup.php:118
+msgid "No"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/passwordlesslogin.php:35
+msgid "No password required"
+msgstr ""
+
+#: views/whitelabelling/2facustomizations.php:82
+msgid ""
+"No. of custom questions user can add during security question configuration :"
+" "
+msgstr ""
+
+#: views/whitelabelling/2facustomizations.php:74
+msgid ""
+"No. of default questions to be selected from the above list during security "
+"question configuration : "
+msgstr ""
+
+#: views/whitelabelling/loginpopup.php:93
+#: views/2faconfigurations/advancedfeatures/sessionmanagement.php:58
+msgid "Note:"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/passwordlesslogin.php:58
+msgid ""
+"Note: Checking this option will hide default login form and will only show "
+"the Login with 2-factor form. Click on 'Show Preview' link to see the "
+"preview."
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1403
+#: helper/class-mo2f-login-popup.php:100
+msgid ""
+"Only alphanumeric letters with special characters(_@.$#&amp;+-) are allowed."
+msgstr ""
+
+#: helper/class-mo2f-login-popup.php:67
+msgid "Only digits within range 4-8 are allowed."
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:381
+msgid "Only for specific roles"
+msgstr ""
+
+#: helper/class-mo2f-premium-common-helper.php:254
+#: handler/twofa/class-miniorange-mobile-login.php:249
+msgid "or"
+msgstr ""
+
+#: views/mo2fawhatsapp.php:46
+msgid "OTP Length"
+msgstr ""
+
+#: views/whitelabelling/2facustomizations.php:29
+msgid "OTP Over SMS"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:105
+msgid "Password Field Selector "
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:108
+msgid "Password Label Selector"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/passwordlesslogin.php:62
+#: views/2faconfigurations/advancedfeatures/passwordlesslogin.php:66
+msgid "Passwordless login preview"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/passwordlesslogin.php:15
+msgid "Passwordless Login with 2FA"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:247
+msgid "Phone Field Selector"
+msgstr ""
+
+#: handler/class-registrationhandler.php:92
+msgid "Phone Number"
+msgstr ""
+
+#: views/mo2fawhatsapp.php:32
+msgid "Phone Number Id"
+msgstr ""
+
+#: handler/class-registrationhandler.php:110
+msgid "Phone Number Validated"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:177
+msgid "Phone Verification"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1377
+msgid "Please choose "
+msgstr ""
+
+#: helper/mo2f-common-login-onprem-cloud.php:85
+msgid "Please choose the options from below:"
+msgstr ""
+
+#: handler/twofamethods/class-mo2f-outofbandemail-handler.php:353
+msgid "Please contact to your admin"
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:350
+msgid "Please download the backup codes for account recovery."
+msgstr ""
+
+#: handler/class-mo2f-backup-codes.php:41
+msgid "Please provide your backup codes."
+msgstr ""
+
+#: handler/user-profile-2fa.php:207
+msgid "Please register with miniOrange for using this method."
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:376
+msgid ""
+"Please use this carefully as each code can only be used once. Please do not "
+"share these codes with anyone."
+msgstr ""
+
+#: handler/class-registrationhandler.php:106
+msgid "Please Validate Email and Phone first"
+msgstr ""
+
+#: handler/class-registrationhandler.php:102
+msgid "Please Validate Email first"
+msgstr ""
+
+#: handler/class-registrationhandler.php:101
+msgid "Please Validate Phone first"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1136
+msgid "plugin privacy policy"
+msgstr ""
+
+#: views/whitelabelling/loginpopup.php:87
+#: views/whitelabelling/loginpopup.php:135
+msgid "Popup Background Image URL:"
+msgstr ""
+
+#: views/whitelabelling/loginpopup.php:93
+msgid ""
+"Popup Background Image will be updated only if Popup Background Color is "
+"clear or not selected."
+msgstr ""
+
+#: views/2faconfigurations/settings.php:54
+msgid "Prevent End Users from configuring their 2FA method at Login"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:333
+msgid "Prompt users to setup 2FA after login? "
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:164
+msgid "Provide users a Grace Period to configure 2FA"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1383
+msgid "Questions"
+msgstr ""
+
+#: views/navbar.php:93
+msgid "Recharge"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/passwordlesslogin.php:26
+msgid "Recommended"
+msgstr ""
+
+#: views/2faconfigurations/settings.php:27
+msgid "Redirection URL based on user roles:"
+msgstr ""
+
+#: views/2faconfigurations/settings.php:22
+msgid "Redirection URL for all users:"
+msgstr ""
+
+#: handler/class-registrationhandler.php:108
+msgid "Register"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:159
+msgid "Register/Login"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:131
+msgid "Registration forms supported by miniOrange 2FA"
+msgstr ""
+
+#: helper/class-miniorange-security-notification.php:73
+msgid "Remaining Email transactions "
+msgstr ""
+
+#: helper/class-miniorange-security-notification.php:68
+msgid "Remaining SMS transactions "
+msgstr ""
+
+#: helper/class-miniorange-security-notification.php:57
+msgid "Remaining Transactions "
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberip.php:17
+msgid "Remember (Whitelist) IP to Bypass 2FA"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:82
+msgid "Remember device for"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:17
+msgid "Remember Device to Bypass 2FA"
+msgstr ""
+
+#: views/myaccount/account.php:34
+msgid "Remove Account"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1025
+#: helper/class-mo2f-login-popup.php:82
+msgid "Resend OTP"
+msgstr ""
+
+#: handler/class-registrationhandler.php:96
+msgid "Resend OTP "
+msgstr ""
+
+#: views/whitelabelling/loginpopup.php:42
+msgid "Reset"
+msgstr ""
+
+#: miniorange_2_factor_settings.php:380
+msgid "Reset 2 Factor"
+msgstr ""
+
+#: views/whitelabelling/2facustomizations.php:95
+#: views/whitelabelling/loginpopup.php:98
+#: views/whitelabelling/loginpopup.php:145
+msgid "Reset Settings"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:2133
+msgid "Role"
+msgstr ""
+
+#: handler/user-profile-2fa.php:225 helper/class-mo2f-common-helper.php:1339
+msgid "Save"
+msgstr ""
+
+#: views/whitelabelling/2facustomizations.php:24
+msgid "Save App Name"
+msgstr ""
+
+#: views/mo2fawhatsapp.php:18 views/2faconfigurations/formintegration.php:122
+#: views/2faconfigurations/formintegration.php:267
+#: views/2faconfigurations/quicksetup.php:87
+#: views/2faconfigurations/quicksetup.php:135
+#: views/2faconfigurations/quicksetup.php:155
+#: views/2faconfigurations/quicksetup.php:179
+#: views/2faconfigurations/settings.php:47
+#: views/whitelabelling/2facustomizations.php:94
+#: views/whitelabelling/loginpopup.php:97
+#: views/whitelabelling/loginpopup.php:144
+#: views/2faconfigurations/advancedfeatures/passwordlesslogin.php:72
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:109
+#: views/2faconfigurations/advancedfeatures/rememberip.php:131
+#: views/2faconfigurations/advancedfeatures/sessionmanagement.php:95
+msgid "Save Settings"
+msgstr ""
+
+#: views/reports/remembereddevices.php:16
+msgid "Saved Devices"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:534
+msgid "Seconds"
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:186
+msgid "Security Questions ( KBA )"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:152
+msgid "Security Questions (KBA)"
+msgstr ""
+
+#: views/whitelabelling/2facustomizations.php:44
+msgid "Security Questions (KBA) List:"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1753
+msgid "Select"
+msgstr ""
+
+#: helper/class-mo2f-login-popup.php:900
+msgid "Select 2 Factor method for authentication"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:95
+msgid "Select 2FA Methods for Users"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:48
+msgid "Select All Roles"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/passwordlesslogin.php:19
+msgid "Select Login Options"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1454
+msgid "Select your question"
+msgstr ""
+
+#: helper/mo2f-common-login-onprem-cloud.php:90
+msgid "Send a one time passcode to my registered email"
+msgstr ""
+
+#: helper/class-mo2f-login-popup.php:95
+#: helper/mo2f-common-login-onprem-cloud.php:229
+msgid "Send backup codes on email"
+msgstr ""
+
+#: handler/class-registrationhandler.php:94
+msgid "Send OTP "
+msgstr ""
+
+#: handler/class-registrationhandler.php:90
+msgid "Sending OTP "
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/sessionmanagement.php:17
+msgid "Session Management"
+msgstr ""
+
+#: miniorange_2_factor_settings.php:390
+msgid "Set 2 Factor"
+msgstr ""
+
+#: views/myaccount/setupyour2fa.php:169
+msgid "Set 2-factor method for other users?"
+msgstr ""
+
+#: views/myaccount/setupyour2fa.php:22
+msgid "Setup 2-factor Method for You"
+msgstr ""
+
+#: views/whitelabelling/emailtemplates.php:16
+msgid "Setup Custom Email Templates"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:485
+msgid ""
+"Should users be given a grace period or should they be directly enforced for "
+"2FA setup?"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1177
+msgid "Sign In"
+msgstr ""
+
+#. %s: bold tags
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:72
+#, php-format
+msgid "Silently enable %1$1s'Remember Device'%2$2s"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:273 views/class-mo2f-setup-wizard.php:287
+#: views/class-mo2f-setup-wizard.php:302
+msgid "Skip Setup"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:254
+msgid "Skip Setup Wizard"
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:226
+msgid "Skip Two Factor"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1771
+msgid "Spaces do not matter"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1382
+msgid "Sr. No."
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberip.php:102
+msgid "Start IP"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:166
+msgid "Step 1: Select Authentication Method"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:182
+msgid "Step 2: Select Form"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:261
+msgid "Step 3: Copy Shortcode"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:102
+msgid "Step 4 of 4"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:252
+msgid "Submit Button Selector"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:112
+msgid "Submit Button Selector "
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:257
+msgid "Submit form after validating OTP"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1780
+msgid "Tap Add."
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1749
+msgid "Tap on Menu and select"
+msgstr ""
+
+#: views/mo2fawhatsapp.php:42
+msgid "Template Language"
+msgstr ""
+
+#: views/mo2fawhatsapp.php:36
+msgid "Template Name"
+msgstr ""
+
+#: cloud/class-customer-cloud-setup.php:715
+msgid ""
+"The email associated with your account is already registered in miniOrange. "
+"Please Choose another email or contact miniOrange."
+msgstr ""
+
+#: handler/twofa/class-miniorange-password-2factor-login.php:441
+msgid ""
+"The email associated with your account is already registered. Please contact "
+"your admin to change the email."
+msgstr ""
+
+#: handler/twofamethods/class-mo2f-kba-handler.php:257
+msgid "The questions you select must be unique."
+msgstr ""
+
+#. Description of the plugin
+msgid ""
+"This TFA plugin provides various two-factor authentication methods as an "
+"additional layer of security after the default WordPress login. We Support "
+"Google/Authy/LastPass/Microsoft Authenticator, QR Code, Push Notification, "
+"Soft Token and Security Questions(KBA) for 3 User in the free version of the "
+"plugin."
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:245
+msgid ""
+"This wizard will assist you with plugin configuration and the 2FA settings "
+"for you and the users on this website."
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:80
+msgid "to enable/disable 2FA for your users."
+msgstr ""
+
+#: views/myaccount/account.php:29
+msgid "Token Key"
+msgstr ""
+
+#: handler/twofamethods/class-mo2f-outofbandemail-handler.php:369
+msgid "TRANSACTION DENIED"
+msgstr ""
+
+#: handler/twofamethods/class-mo2f-outofbandemail-handler.php:368
+msgid "Transaction has been Canceled . Please try Again . "
+msgstr ""
+
+#: handler/twofamethods/class-mo2f-outofbandemail-handler.php:363
+msgid ""
+"Transaction has been successfully validated . Please continue with the "
+"transaction."
+msgstr ""
+
+#: handler/twofamethods/class-mo2f-outofbandemail-handler.php:364
+msgid "TRANSACTION SUCCESSFUL"
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:346
+msgid "Two Factor Setup Complete"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:2156
+msgid "Unblock User"
+msgstr ""
+
+#: views/whitelabelling/loginpopup.php:41
+msgid "Upload Logo"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:99
+msgid "URL of Login Form"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:99
+msgid "Use 2FA methods for All Users"
+msgstr ""
+
+#: views/2faconfigurations/quicksetup.php:114
+msgid "Use 2FA methods for Specific Roles"
+msgstr ""
+
+#: helper/class-mo2f-login-popup.php:91
+#: helper/mo2f-common-login-onprem-cloud.php:235
+msgid "Use Backup Codes"
+msgstr ""
+
+#: views/whitelabelling/loginpopup.php:66
+msgid "Use custom 2FA login Popup"
+msgstr ""
+
+#: views/whitelabelling/loginpopup.php:18
+msgid "Use your own branding logo on 2FA login Popup"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:2131
+#: handler/twofa/class-miniorange-mobile-login.php:255
+msgid "Username"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/passwordlesslogin.php:34
+msgid "Username + 2FA"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/passwordlesslogin.php:25
+msgid "Username + Password + 2FA"
+msgstr ""
+
+#: views/myaccount/account.php:17
+msgid "Username/Email"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:490
+msgid "Users should be directly enforced for 2FA setup."
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:342
+msgid "Users should setup 2FA after first login."
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:348
+msgid "Users will setup 2FA in plugin dashboard"
+msgstr ""
+
+#: helper/class-mo2f-login-popup.php:83
+msgid "Validate"
+msgstr ""
+
+#: helper/class-mo2f-common-helper.php:1027
+msgid "Validate OTP"
+msgstr ""
+
+#: handler/class-registrationhandler.php:97
+msgid "Validate OTP "
+msgstr ""
+
+#: handler/user-profile-2fa.php:180
+msgid "Verify and Save"
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/rememberdevice.php:18
+msgid "View Remembered Devices"
+msgstr ""
+
+#: helper/mo2f-common-login-onprem-cloud.php:200
+msgid "Waiting for your approval..."
+msgstr ""
+
+#: views/2faconfigurations/advancedfeatures/sessionmanagement.php:43
+msgid "What happens when user's session limit is reached?"
+msgstr ""
+
+#: views/mo2fawhatsapp.php:16
+msgid "WhatsApp Configuration Settings"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:486
+msgid ""
+"When you configure the 2FA policies and require users to configure 2FA, they "
+"can either have a grace period to configure 2FA (users who don't have 2fa "
+"setup after grace period, will be enforced to setup 2FA ). Choose which "
+"method you'd like to use:"
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:363
+msgid ""
+"When you enable 2FA, the users will be prompted to configure 2FA the next "
+"time they login. Users have a grace period for configuring 2FA. You can "
+"configure the grace period and also exclude role(s) in this settings page. "
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:335
+msgid ""
+"When you enable this, the users will be prompted to set up the 2FA method "
+"after entering username and password. Users can select from the list of all "
+"2FA methods. Once selected, user will setup and will login to the site "
+msgstr ""
+
+#: views/ipblocking/ipblacklist.php:72
+msgid "Whitelisted IPs"
+msgstr ""
+
+#: views/2faconfigurations/formintegration.php:159
+msgid "with miniOrange to enable OTP verifcation on registration form."
+msgstr ""
+
+#: controllers/class-wpns-ajax.php:84
+msgid "Wrong username or password."
+msgstr ""
+
+#: helper/class-mo2f-login-popup.php:113 helper/class-mo2f-login-popup.php:115
+#: helper/class-mo2f-login-popup.php:117
+msgid "Yes"
+msgstr ""
+
+#: handler/twofamethods/class-mo2f-outofbandemail-handler.php:352
+msgid "You are not authorized to perform this action"
+msgstr ""
+
+#: views/whitelabelling/2facustomizations.php:43
+msgid ""
+"You can customize the list of Security Questions and specify how many custom "
+"questions users can add during setup."
+msgstr ""
+
+#: views/class-mo2f-setup-wizard.php:106
+msgid "You have successfully configured the two-factor authentication."
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:184
+msgid ""
+"You have to answers some knowledge based security questions which are only "
+"known to you to authenticate yourself. Supported in Desktops, Laptops, "
+"Smartphones."
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:116
+msgid ""
+"You have to enter 6 digits code generated by Authenticator App to login. "
+"Supported in Smartphones only."
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:212
+msgid ""
+"You have to enter 6 digits code generated by Authy 2-Factor Authentication "
+"App to login. Supported in Smartphones only."
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:198
+msgid "You will get an OTP on your Telegram app from miniOrange Bot."
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:156
+msgid ""
+"You will receive a one time passcode on your email. You have to enter the "
+"otp on your screen to login. Supported in Smartphones, Feature Phones."
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:142
+msgid ""
+"You will receive a one time passcode via SMS on your phone. You have to "
+"enter the otp on your screen to login. Supported in Smartphones, Feature "
+"Phones."
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:170
+msgid ""
+"You will receive an email with link. You have to click the ACCEPT or DENY "
+"link to verify your email. Supported in Desktops, Laptops, Smartphones."
+msgstr ""
+
+#: helper/class-mo2f-inline-popup.php:354
+msgid ""
+"You will receive the backup codes via email if you have your SMTP configured."
+msgstr ""
+
+#: handler/twofa/class-miniorange-authentication.php:796
+msgid "Your KBA as alternate 2 factor is configured successfully."
+msgstr ""
+
+#: views/myaccount/account.php:14
+msgid "Your Profile"
+msgstr ""

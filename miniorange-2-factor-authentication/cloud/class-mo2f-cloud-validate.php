@@ -77,7 +77,7 @@ if ( ! class_exists( 'Mo2f_Cloud_Validate' ) ) {
 		public function mo2f_login_kba_verification( $user_id, $session_id, $redirect_to ) {
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
 			$pass2fa_login = new Miniorange_Password_2Factor_Login();
-			$user_email    = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user_id );
+			$user_email    = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user_id );
 			$content       = $mo2f_onprem_cloud_obj->send_otp_token( null, $user_email, MoWpnsConstants::SECURITY_QUESTIONS );
 			$response      = json_decode( $content, true );
 			if ( JSON_ERROR_NONE === json_last_error() ) { /* Generate Qr code */

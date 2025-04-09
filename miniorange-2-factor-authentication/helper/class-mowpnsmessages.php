@@ -44,7 +44,7 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 
 		const INVALID_OTP           = 'Invalid one time passcode. Please enter a valid passcode.';
 		const INVALID_PHONE         = 'Please enter a valid phone number.';
-		const INVALID_INPUT         = 'Please enter a valid value in the input fields.';
+		const INVALID_INPUT         = 'Please enter a valid value in the OTP length field.';
 		const INVALID_CREDS         = 'Invalid username or password. Please try again.';
 		const INVALID_USERNAME      = 'Invalid username or email.';
 		const ALL_ENABLED           = 'All Website security features are available.';
@@ -53,6 +53,7 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 		const LOGIN_ENABLE          = 'Login security and spam protection features are available. Configure it in the Login and Spam tab.';
 		const DELETE_FILE           = 'Someone has deleted the backup by going to directory please refreash the page';
 		const NOT_ADMIN             = 'You are not a admin. Only admin can download';
+		const UNBLOCK_CONFIRMATION  = 'Are you sure you want to unblock this user?';
 		const PHONE_NUMBER_MISMATCH = 'The current phone number is different from the phone number on which OTP is sent. Please enter the phone number and click on \'Verify\' button again.';
 		const CHAT_ID_MISMATCH      = 'The current Chat ID is different from the Chat ID on which OTP is sent. Please enter the Chat ID and click on \'Verify\' button again.';
 
@@ -99,7 +100,8 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 		const SELECT_ANY_AUTHENTICATION_METHOD           = 'Please select an authentication method before saving.';
 		const EXPECTED_RBA_EXPIRY                        = 'Please enter remember device expiry value greater than 0';
 		const EXPECTED_RBA_DEVICE_LIMIT                  = 'Please enter maximum remembered device limit greater than 0';
-		const RBA_CANNOT_BE_ENABLED_ERROR                = 'Please disable the Passwordless Login in order to enable this feature.';
+		const RBA_CANNOT_BE_ENABLED_ERROR                = 'Please disable the Passwordless Login and Remember IP features in order to enable this feature.';
+		const REMEMBER_IP_CANNOT_BE_ENABLED_ERROR        = 'Please disable the Remember Device and Passwordless Login features in order to enable this feature.';
 		const FILE_UPLOADED_SUCCESSFULLY                 = 'File uploaded successfully!';
 		const INVALID_FILE_FORMAT                        = 'Invalid file format.';
 		const TOO_LARGE_FILE_SIZE                        = 'File size is too large.';
@@ -203,8 +205,9 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 		const LOGIN_WITH_TWO_FACTOR                      = 'Login With 2nd Factor';
 		const TWOFA_NOT_ENABLED                          = 'Two Factor is not enabled for you. Please login with username and password.';
 		const TWOFA_NOT_CONFIGURED                       = 'Two Factor is not configured for you. Please login with password first to setup 2FA.';
-		const PASSWORDLESS_LOGIN_CANNOT_BE_ENABLED_ERROR = 'Please disable the Remember Device feature first in order to enable this feature.';
+		const PASSWORDLESS_LOGIN_CANNOT_BE_ENABLED_ERROR = 'Please disable the Remember Device and Remember IP features first in order to enable this feature.';
 		const GET_YOUR_PLAN_UPGRADED                     = 'Please upgrade you plan in order to use this feature.';
+		const REMEMBER_IP_CONSENT_MESSAGE                = 'Do you want to remember this IP? Remembering this IP enables you to avoid the Two-Factor Authentication (2FA) the next time you login using this IP.';
 
 		/**
 		 * Return actual messages according to the key.

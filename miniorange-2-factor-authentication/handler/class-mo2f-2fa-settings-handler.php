@@ -71,7 +71,7 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 			global $mo2fdb_queries;
 			$current_user         = wp_get_current_user();
 			$generate_backup_code = new MocURL();
-			$mo2f_user_email      = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $current_user->ID ) ?? $current_user->user_email;
+			$mo2f_user_email      = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $current_user->ID ) ?? $current_user->user_email;
 			$codes                = $generate_backup_code->mo2f_get_backup_codes( $mo2f_user_email, site_url() );
 			$codes                = apply_filters( 'mo2f_basic_plan_settings_filter', $codes, 'generate_backup_codes', array( 'user_id' => $current_user->ID ) );
 			$show_message         = new MoWpnsMessages();

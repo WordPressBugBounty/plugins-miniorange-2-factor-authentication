@@ -48,7 +48,7 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		 * @return boolean
 		 */
 		public static function check_empty_or_null( $value ) {
-			if ( ! isset( $value ) || empty( $value ) ) {
+			if ( ! isset( $value ) || null === $value || '' === $value ) {
 				return true;
 			}
 			return false;
@@ -177,7 +177,7 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 			$is_plugin_active_for_network = is_plugin_active_for_network( MoWpnsConstants::TWO_FACTOR_SETTINGS );
 			$is_onprem                    = MO2F_IS_ONPREM;
 			$pricing_page_visits          = get_site_option( 'mo2fa_visit', 0 );
-			$no_of_2fa_users              = $mo2fdb_queries->get_no_of_2fa_users();
+			$no_of_2fa_users              = $mo2fdb_queries->mo2f_get_no_of_2fa_users();
 			$is_inline_used               = get_site_option( 'mo2f_is_inline_used' );
 			$login_with_mfa_use           = get_site_option( 'mo2f_login_with_mfa_use' );
 			$email_transactions           = self::get_mo2f_db_option( 'cmVtYWluaW5nT1RQ', 'site_option' );
@@ -197,7 +197,7 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 			} else {
 				$backup_codes_remaining = 0;
 			}
-			$plugin_configuration = '<br><br><I>Plugin Configuration :-</I>' . $space . 'On-premise:' . ( $is_onprem ? 'Yes' : 'No' ) . $space . 'Login with MFA:' . ( '1' === $login_with_mfa_use ? 'Yes' : 'No' ) . $space . 'Inline Registration:' . ( '1' === $is_inline_used ? 'Yes' : 'No' ) . $space . 'No. of 2FA users :' . $no_of_2fa_users . $space . 'Total users : ' . $user_count . $space . 'Methods of users:' . ( '' === $show_methods ? 'NONE' : $show_methods ) . $space . 'Email transactions:' . $email_transactions . $space . 'SMS Transactions:' . $sms_transactions . $space . ( is_multisite() ? 'Multisite:Yes' : 'Single-site:Yes' ) . ( ( Miniorange_Authentication::mo2f_is_customer_registered() ) ? ( $space . 'Customer Key:' . $key ) : ( $space . "Customer Registered:'No" ) );
+			$plugin_configuration = '<br><br><I>Plugin Configuration :-</I>' . $space . 'On-premise:' . ( $is_onprem ? 'Yes' : 'No' ) . $space . 'Login with MFA:' . ( (int) $login_with_mfa_use ? 'Yes' : 'No' ) . $space . 'Inline Registration:' . ( (int) $is_inline_used ? 'Yes' : 'No' ) . $space . 'No. of 2FA users :' . $no_of_2fa_users . $space . 'Total users : ' . $user_count . $space . 'Methods of users:' . ( '' === $show_methods ? 'NONE' : $show_methods ) . $space . 'Email transactions:' . $email_transactions . $space . 'SMS Transactions:' . $sms_transactions . $space . ( is_multisite() ? 'Multisite:Yes' : 'Single-site:Yes' ) . ( ( Miniorange_Authentication::mo2f_is_customer_registered() ) ? ( $space . 'Customer Key:' . $key ) : ( $space . "Customer Registered:'No" ) );
 
 			if ( get_user_meta( $user_object->ID, 'mo_backup_code_generated', true ) || get_user_meta( $user_object->ID, 'mo_backup_code_downloaded', true ) ) {
 				$plugin_configuration = $plugin_configuration . $space . 'Backup Codes:' . $backup_codes_remaining . '/5';
@@ -271,11 +271,6 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 				return;
 			}
 
-			$mo_wpns_config = new MoWpnsHandler();
-			if ( $mo_wpns_config->is_email_sent_to_user( $username, $ip_adress ) ) {
-				return;
-			}
-
 			$from_email = get_option( 'mo2f_email' );
 			$subject    = self::get_mo2f_db_option( 'mo2f_2fa_new_ip_detected_email_subject', 'site_option' );
 			if ( get_option( 'custom_user_template' ) ) {
@@ -286,7 +281,6 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 				$content = $this->get_message_content( $reason, $ip_adress, $username, $from_email );
 			}
 
-			$mo_wpns_config->audit_email_notification_sent_to_user( $username, $ip_adress, $reason );
 			$status = $this->wp_mail_send_notification( $to_email, $subject, $content, $from_email );
 			return $status;
 		}
@@ -380,5 +374,18 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 			}
 		}
 
+		/**
+		 * Returns remaining transactions.
+		 *
+		 * @return array Associative array containing email and SMS transactions.
+		 */
+		public function mo2f_check_remaining_transactions() {
+			$email_transactions = apply_filters( 'mo2f_is_lv_needed', false ) ? 'Unlimited' : get_site_option( 'cmVtYWluaW5nT1RQ', 30 );
+			$sms_transactions   = get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', 0 );
+			return array(
+				'email_transactions' => $email_transactions,
+				'sms_transactions'   => $sms_transactions,
+			);
+		}
 	}
 }

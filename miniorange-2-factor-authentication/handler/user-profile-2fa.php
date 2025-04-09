@@ -41,26 +41,26 @@ $transient_id = MO2f_Utility::random_str( 20 );
 MO2f_Utility::mo2f_set_transient( $transient_id, 'mo2f_user_id', $user->ID );
 $same_user = $user->ID === $userid;
 global $mo2fdb_queries;
-$current_method         = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
+$current_method         = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
 $twofactor_transactions = new Mo2fDB();
 $exceeded               = apply_filters( 'mo2f_basic_plan_settings_filter', $mo2fdb_queries->check_alluser_limit_exceeded( $user->ID ), 'is_user_limit_exceeded', array() );
 if ( $exceeded ) {
 	return;
 }
-$user_column_exists = $mo2fdb_queries->check_if_user_column_exists( $user->ID );
-$email              = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID );
+$user_column_exists = $mo2fdb_queries->mo2f_check_if_user_exists( $user->ID );
+$email              = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
 if ( empty( $email ) ) {
-	$mo2fdb_queries->update_user_details( $user->ID, array( 'mo2f_user_email' => $user->user_email ) );
+	$mo2fdb_queries->mo2f_update_user_details( $user->ID, array( 'mo2f_user_email' => $user->user_email ) );
 }
-$email                  = ! empty( $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID ) ) ? $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID ) : $user->user_email;
+$email                  = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
+$email                  = ! empty( $email ) ? $email : $user->user_email;
 $pass_2fa_login_session = new Miniorange_Password_2Factor_Login();
-if ( ! $user_column_exists ) {
-	$mo2fdb_queries->insert_user( $user->ID );
-}
+
 $two_factor_methods_descriptions = array(
 	MoWpnsConstants::GOOGLE_AUTHENTICATOR => 'administrator' === $user->roles[0] ? 'Please scan the below QR code using Google Authenticator app.' : 'Link to configure Google authenticator method will be sent to ' . $user->user_email . '.',
 	MoWpnsConstants::SECURITY_QUESTIONS   => 'Please click on %1$1sUpdate User%2$2s button in order to set the %3$3sSecurity Questions%4$4s method for ' . $user->user_login . '.',
 	MoWpnsConstants::OTP_OVER_SMS         => get_site_option( 'mo2f_customerkey' ) ? 'Enter the ' . $user->user_login . '\'s phone number and click on %1$1sSave%2$2s .' : '',
+	MoWpnsConstants::OTP_OVER_WHATSAPP    => get_site_option( 'mo2f_customerkey' ) ? 'Enter the ' . $user->user_login . '\'s phone number and click on %1$1sSave%2$2s .' : '',
 	MoWpnsConstants::OTP_OVER_EMAIL       => '',
 	MoWpnsConstants::OUT_OF_BAND_EMAIL    => '',
 	MoWpnsConstants::HARDWARE_TOKEN       => 'Enter the One Time Passcode on your Hardware Token to login.',
@@ -75,7 +75,7 @@ $twofa_heading  = 'Set-up 2FA method for ';
 $twofa_heading .= $userid === $user->ID ? 'yourself' : $user->user_login;
 ?>
 <h3>
-<input type="checkbox" name="mo2f_enable_userprofile_2fa" onChange="mo2f_set_2fa_authentication()" value="1" <?php checked( $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user->ID ) !== '' ); ?> />
+<input type="checkbox" name="mo2f_enable_userprofile_2fa" onChange="mo2f_set_2fa_authentication()" value="1" <?php checked( $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID ) !== '' ); ?> />
 	<?php esc_html_e( $twofa_heading, 'miniorange-2-factor-authentication' ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?></h3>
 	<input type="hidden" name="option" value="mo2f_enable_twofactor_userprofile">
 	<input type="hidden" id="mo2f_enable_user_profile_2fa_nonce"  name="mo2f_enable_user_profile_2fa_nonce" value="<?php echo esc_attr( wp_create_nonce( 'mo-two-factor-ajax-nonce' ) ); ?>"/>
@@ -155,16 +155,17 @@ $twofa_heading .= $userid === $user->ID ? 'yourself' : $user->user_login;
 	 */
 	function methods_on_user_profile( $method, $user, $transient_id ) {
 		global $mo2fdb_queries,$main_dir;
-		$email                  = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID );
+		$email                  = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
 		$pass_2fa_login_session = new Miniorange_Password_2Factor_Login();
 		$trimmed_method         = $method;
 		$is_registered          = get_site_option( 'mo2f_customerkey' );
 		$userid                 = get_current_user_id();
 		if ( empty( $email ) ) {
-			$mo2fdb_queries->update_user_details( $user->ID, array( 'mo2f_user_email' => $user->user_email ) );
+			$mo2fdb_queries->mo2f_update_user_details( $user->ID, array( 'mo2f_user_email' => $user->user_email ) );
 		}
 		$update_user_button = 'Click on %1$1sUpdate User%2$2s button to set the ';
-		$email              = ! empty( $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID ) ) ? $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID ) : $user->user_email;
+		$email              = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
+		$email              = ! empty( $email ) ? $email : $user->user_email;
 		switch ( $method ) {
 			case MoWpnsConstants::GOOGLE_AUTHENTICATOR:
 				if ( $user->ID === $userid ) {
@@ -214,7 +215,7 @@ $twofa_heading .= $userid === $user->ID ? 'yourself' : $user->user_login;
 						'<b>',
 						'</b>',
 					);
-					$mo2f_user_phone = $mo2fdb_queries->get_user_detail( 'mo2f_user_phone', $user->ID );
+					$mo2f_user_phone = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_phone', $user->ID );
 					$user_phone      = $mo2f_user_phone ? $mo2f_user_phone : get_site_option( 'user_phone_temp' );
 					?>
 				<form name="f" method="post" action="" id="<?php echo esc_attr( 'mo2f_verify_form-' . $trimmed_method ); ?>">
@@ -228,9 +229,35 @@ $twofa_heading .= $userid === $user->ID ? 'yourself' : $user->user_login;
 					<?php
 				}
 				break;
+			case MoWpnsConstants::OTP_OVER_WHATSAPP:
+				if ( ! $is_registered ) {
+					esc_html_e( 'Please register with miniOrange for using this method.', 'miniorange-2-factor-authentication' );
+				} else {
+					printf(
+						/* Translators: %s: bold tags */
+						esc_html( __( $update_user_button . '%1$1sOTP Over WhatsApp%2$2s method for ' . $user->user_login . '.', 'miniorange-2-factor-authentication' ) ), //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal
+						'<b>',
+						'</b>',
+						'<b>',
+						'</b>',
+					);
+					$mo2f_user_phone = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_whatsapp', $user->ID );
+					$user_phone      = $mo2f_user_phone ? $mo2f_user_phone : get_site_option( 'user_phone_temp' );
+					?>
+					<form name="f" method="post" action="" id="<?php echo esc_attr( 'mo2f_verify_form-' . $trimmed_method ); ?>">
+
+						<table id="mo2f_setup_sms">
+							<td class="bg-none"><?php esc_html_e( 'Authentication codes will be sent to ', 'miniorange-2-factor-authentication' ); ?></td> 
+							<td><input class="mo2f_table_textbox" style="width:200px;" name="verify_phone" id="<?php echo 'textbox-' . esc_attr( $trimmed_method ); ?>" value="<?php echo esc_attr( $user_phone ); ?>" pattern="[\+]?[0-9]{1,4}\s?[0-9]{7,12}" required="true" title="<?php esc_attr_e( 'Enter phone number without any space or dashes', 'miniorange-2-factor-authentication' ); ?>"/></td>
+							<td><a id="<?php echo 'save-' . esc_attr( $trimmed_method ); ?>" name="save" class="button button1" ><?php esc_html_e( 'Save', 'miniorange-2-factor-authentication' ); ?></a></td>
+						</table>
+					</form>
+					<?php
+				}
+				break;
 			case MoWpnsConstants::OTP_OVER_EMAIL:
 			case MoWpnsConstants::OUT_OF_BAND_EMAIL:
-				if ( ! $mo2fdb_queries->check_if_user_column_exists( $user->ID ) ) {
+				if ( ! $mo2fdb_queries->mo2f_check_if_user_exists( $user->ID ) ) {
 					$content = $pass_2fa_login_session->create_user_in_miniorange( $user->ID, $email, $method );
 				}
 				printf(

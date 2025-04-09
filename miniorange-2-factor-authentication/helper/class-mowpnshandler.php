@@ -48,7 +48,7 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 				return false;
 			}
 
-			$user_count = $wpns_db_queries->get_ip_blocked_count( $ip_address );
+			$user_count = $wpns_db_queries->mo2f_get_ip_blocked_count( $ip_address );
 
 			if ( $user_count ) {
 				$user_count = intval( $user_count );
@@ -58,42 +58,6 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 			}
 
 			return false;
-		}
-		/**
-		 * Get the all blocked ip by waf
-		 *
-		 * @return string
-		 */
-		public function get_blocked_ip_waf() {
-			global $wpns_db_queries;
-			$ip_count = $wpns_db_queries->get_total_blocked_ips_waf();
-			if ( $ip_count ) {
-				$ip_count = intval( $ip_count );
-			}
-
-			return $ip_count;
-		}
-		/**
-		 * Get manual ip blocked by admin from dashboard
-		 *
-		 * @return string
-		 */
-		public function get_manual_blocked_ip_count() {
-			global $wpns_db_queries;
-			$ip_count = $wpns_db_queries->get_total_manual_blocked_ips();
-			if ( $ip_count ) {
-				$ip_count = intval( $ip_count );
-			}
-			return $ip_count;
-		}
-		/**
-		 * Get the blocked ip
-		 *
-		 * @return object
-		 */
-		public function get_blocked_ips() {
-			global $wpns_db_queries;
-			return $wpns_db_queries->get_blocked_ip_list();
 		}
 		/**
 		 * Blocking the Ip addresses
@@ -127,23 +91,13 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 				}
 			}
 
-			$wpns_db_queries->insert_blocked_ip( $ip_address, $reason, $blocked_for_time );
+			$wpns_db_queries->mo2f_insert_blocked_ip( $ip_address, $reason, $blocked_for_time );
 			// send notification.
 			global $mo_wpns_utility;
 			if ( MoWpnsUtility::get_mo2f_db_option( 'mo_wpns_enable_ip_blocked_email_to_admin', 'site_option' ) ) {
 				$mo_wpns_utility->sendIpBlockedNotification( $ip_address, MoWpnsConstants::LOGIN_ATTEMPTS_EXCEEDED );
 			}
 
-		}
-		/**
-		 * This will unblock the ip from the blocked table .
-		 *
-		 * @param string $entryid .
-		 * @return void
-		 */
-		public function unblock_ip_entry( $entryid ) {
-			global $wpns_db_queries;
-			$wpns_db_queries->delete_blocked_ip( $entryid );
 		}
 
 		/**
@@ -152,9 +106,9 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 		 * @param string $ip_address .
 		 * @return boolean
 		 */
-		public function is_whitelisted( $ip_address ) {
+		public function mo2f_is_whitelisted( $ip_address ) {
 			global $wpns_db_queries;
-			$count = $wpns_db_queries->get_whitelisted_ip_count( $ip_address );
+			$count = $wpns_db_queries->mo2f_get_whitelisted_ip_count( $ip_address );
 
 			if ( empty( $ip_address ) ) {
 				return false;
@@ -174,96 +128,19 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 		 * @param string $ip_address .
 		 * @return void
 		 */
-		public function whitelist_ip( $ip_address ) {
+		public function mo2f_whitelist_ip( $ip_address ) {
 			global $wpns_db_queries;
 
 			if ( empty( $ip_address ) ) {
 				return;
 			}
-			if ( $this->is_whitelisted( $ip_address ) ) {
+			if ( $this->mo2f_is_whitelisted( $ip_address ) ) {
 				return;
 			}
 
-			$wpns_db_queries->insert_whitelisted_ip( $ip_address );
+			$wpns_db_queries->mo2f_insert_whitelisted_ip( $ip_address );
 		}
-		/**
-		 * Remove the ip from whitelist entry
-		 *
-		 * @param string $entryid .
-		 * @return void
-		 */
-		public function remove_whitelist_entry( $entryid ) {
-			global $wpns_db_queries;
-			$wpns_db_queries->delete_whitelisted_ip( $entryid );
-		}
-		/**
-		 * It will get the all whitelist ip
-		 *
-		 * @return object
-		 */
-		public function get_whitelisted_ips() {
-			global $wpns_db_queries;
-			return $wpns_db_queries->get_whitelisted_ips_list();
-		}
-		/**
-		 * It will sent the email
-		 *
-		 * @param string $username .
-		 * @param string $ip_address .
-		 * @return boolean
-		 */
-		public function is_email_sent_to_user( $username, $ip_address ) {
-			global $wpns_db_queries;
-			if ( empty( $ip_address ) ) {
-				return false;
-			}
-			$sent_count = $wpns_db_queries->get_email_audit_count( $ip_address, $username );
-			if ( $sent_count ) {
-				$sent_count = intval( $sent_count );
-			}
-			if ( $sent_count > 0 ) {
-				return true;
-			}
-			return false;
-		}
-		/**
-		 * It will sent the notification to the user
-		 *
-		 * @param string $username .
-		 * @param string $ip_address .
-		 * @param string $reason .
-		 * @return void
-		 */
-		public function audit_email_notification_sent_to_user( $username, $ip_address, $reason ) {
-			if ( empty( $ip_address ) || empty( $username ) ) {
-				return;
-			}
-			global $wpns_db_queries;
-			$wpns_db_queries->insert_email_audit( $ip_address, $username, $reason );
-		}
-		/**
-		 * It will add transaction detail
-		 *
-		 * @param string $ip_address .
-		 * @param string $username .
-		 * @param string $type .
-		 * @param string $status .
-		 * @param string $url .
-		 * @return void
-		 */
-		public function add_transactions( $ip_address, $username, $type, $status, $url = null ) {
-			global $wpns_db_queries;
-			$wpns_db_queries->insert_transaction_audit( $ip_address, $username, $type, $status, $url );
-		}
-		/**
-		 * It will help to get the login transaction report
-		 *
-		 * @return string
-		 */
-		public function get_login_transaction_report() {
-			global $wpns_db_queries;
-			return $wpns_db_queries->get_login_transaction_report();
-		}
+
 		/**
 		 * Move failed transaction on table
 		 *
@@ -272,7 +149,7 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 		 */
 		public function move_failed_transactions_to_past_failed( $ip_address ) {
 			global $wpns_db_queries;
-			$wpns_db_queries->update_transaction_table(
+			$wpns_db_queries->mo2f_update_transaction_table(
 				array(
 					'status'     => MoWpnsConstants::FAILED,
 					'ip_address' => $ip_address,

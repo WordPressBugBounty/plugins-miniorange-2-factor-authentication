@@ -62,7 +62,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<div class="ml-mo-16">
 	<label class="mo2f_checkbox_container">
-		<input type="checkbox" id="mo2f_session_logout_time_enable" name="mo2f_session_logout_time_enable" <?php checked( get_site_option( 'mo2f_session_logout_time_enable' ) === '1' ); ?>/>
+		<input type="checkbox" id="mo2f_session_logout_time_enable" name="mo2f_session_logout_time_enable" <?php checked( (int) get_site_option( 'mo2f_session_logout_time_enable' ) ); ?>/>
 	</label>
 	<span>
 	<?php

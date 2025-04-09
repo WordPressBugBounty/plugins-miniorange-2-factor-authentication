@@ -49,29 +49,28 @@ if ( ! class_exists( 'Miniorange_Security_Notification' ) ) {
 		public function custom_dashboard_help() {
 
 			if ( current_user_can( 'administrator' ) ) {
+				// Inline CSS used intentionally as external files can't be loaded in the admin dashboard.
 				echo "<html>
                        
               <div style='width:100%;background-color:#555f5f;padding-top:10px;''>
               <div style='font-size:25px;color:white;text-align:center'>
-            <strong style='font-weight:300;''>Remaining Transactions <span style='color:orange;'>[OTPs]</strong>
+            <strong style='font-weight:300;''>" . esc_html__( 'Remaining Transactions ', 'miniorange-2-factor-authentication' ) . "<span style='color:orange;'>[OTPs]</strong>
       
                 </div>
                 <hr>
        
                 ";
 
-				$email_transactions = MoWpnsUtility::get_mo2f_db_option( 'cmVtYWluaW5nT1RQ', 'site_option' );
-				$email_transactions = $email_transactions ? $email_transactions : 0;
-				$sms_transactions   = get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' ) ? get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' ) : 0;
-
+				$email_transactions = apply_filters( 'mo2f_is_lv_needed', false ) ? 'Unlimited' : get_site_option( 'cmVtYWluaW5nT1RQ', 0 );
+				$sms_transactions   = get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', 0 );
 				echo '<table style="solid #CCCCCC; border-collapse: collapse; padding:0px 0px 0px 10px; margin:2px; width:99%">
           <tr>  
-                        <td style="font-size:18px;color:#ffffff;padding: 10px;"><strong style="font-weight:300;">Remaining SMS transactions </strong></td>
+                        <td style="font-size:18px;color:#ffffff;padding: 10px;"><strong style="font-weight:300;">' . esc_html__( 'Remaining SMS transactions ', 'miniorange-2-factor-authentication' ) . '</strong></td>
                         <td style="text-align:center;font-size:36px;color:#ffffff;font-weight:400" ><strong>' . esc_html( isset( $sms_transactions ) ? $sms_transactions : '' ) . '</strong></td>
                                                               
                     </tr>
                     <tr>
-                        <td style="font-size:18px;color:#ffffff;padding: 10px;"><strong style="font-weight:300;">Remaining Email transactions </strong></td>
+                        <td style="font-size:18px;color:#ffffff;padding: 10px;"><strong style="font-weight:300;">' . esc_html__( 'Remaining Email transactions ', 'miniorange-2-factor-authentication' ) . '</strong></td>
                         <td style="text-align:center;font-size:36px;color:#ffffff;font-weight:400" ><strong>' . esc_html( isset( $email_transactions ) ? $email_transactions : '' ) . '</strong></td>
                                       
                         

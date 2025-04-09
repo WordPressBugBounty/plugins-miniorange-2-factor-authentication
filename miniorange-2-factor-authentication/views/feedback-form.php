@@ -17,8 +17,8 @@ if ( 'plugins.php' !== basename( isset( $_SERVER['PHP_SELF'] ) ? sanitize_text_f
 	return;
 }
 global $mo2fdb_queries;
-$mo2f_configured_2_f_a_method = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', get_current_user_id() );
-$no_of_2fa_users              = $mo2fdb_queries->get_no_of_2fa_users();
+$mo2f_configured_2_f_a_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', get_current_user_id() );
+$no_of_2fa_users              = $mo2fdb_queries->mo2f_get_no_of_2fa_users();
 $deactivate_reasons           = array(
 	'Conflicts with other plugins',
 	'Redirecting back to login page after Authentication',

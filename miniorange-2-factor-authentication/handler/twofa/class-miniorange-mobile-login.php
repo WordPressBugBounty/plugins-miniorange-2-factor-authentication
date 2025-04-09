@@ -156,7 +156,7 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 					if ( ! empty( $user_name ) ) {
 						$user = get_user_by( 'login', $user_name );
 						if ( $user ) {
-							$current_method = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
+							$current_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
 							if ( 'None' === $current_method || empty( $current_method ) ) {
 								$login_status_phone_enable = 'MO_2_FACTOR_LOGIN_WHEN_PHONELOGIN_ENABLED';
 							}

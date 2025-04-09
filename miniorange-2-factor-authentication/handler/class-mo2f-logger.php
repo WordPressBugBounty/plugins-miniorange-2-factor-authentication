@@ -45,7 +45,8 @@ if ( ! class_exists( 'Mo2f_Logger' ) ) {
 			$user           = wp_get_current_user();
 			$username       = is_user_logged_in() ? $user->user_login : 'GUEST';
 			if ( 'true' === get_site_option( 'mo2f_enable_login_report' ) ) {
-				$mo_wpns_config->add_transactions( $user_ip, $username, MoWpnsConstants::ERR_403, MoWpnsConstants::ACCESS_DENIED, $url );
+				global $wpns_db_queries;
+				$wpns_db_queries->mo2f_insert_transaction_audit( $user_ip, $username, MoWpnsConstants::ERR_403, MoWpnsConstants::ACCESS_DENIED, $url );
 			}
 		}
 
@@ -67,7 +68,8 @@ if ( ! class_exists( 'Mo2f_Logger' ) ) {
 			$user           = wp_get_current_user();
 			$username       = is_user_logged_in() ? $user->user_login : 'GUEST';
 			if ( 'true' === get_site_option( 'mo2f_enable_login_report' ) ) {
-				$mo_wpns_config->add_transactions( $user_ip, $username, MoWpnsConstants::ERR_404, MoWpnsConstants::ACCESS_DENIED, $url );
+				global $wpns_db_queries;
+				$wpns_db_queries->mo2f_insert_transaction_audit( $user_ip, $username, MoWpnsConstants::ERR_403, MoWpnsConstants::ACCESS_DENIED, $url );
 			}
 		}
 	}

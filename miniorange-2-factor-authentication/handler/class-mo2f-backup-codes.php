@@ -57,7 +57,7 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 			$mo2fa_login_method   = isset( $post['login_method'] ) ? sanitize_text_field( wp_unslash( $post['login_method'] ) ) : '';
 			$user_id              = MO2f_Utility::mo2f_get_transient( $session_id, 'mo2f_current_user_id' );
 			$currentuser          = get_user_by( 'id', $user_id );
-			$mo2f_user_email      = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user_id ) ?? $currentuser->user_email;
+			$mo2f_user_email      = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user_id ) ?? $currentuser->user_email;
 			$generate_backup_code = new MocURL();
 			$codes                = $generate_backup_code->mo2f_get_backup_codes( $mo2f_user_email, site_url() );
 			$codes                = apply_filters( 'mo2f_basic_plan_settings_filter', $codes, 'generate_backup_codes', array( 'user_id' => $currentuser->ID ) );
@@ -83,7 +83,7 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 			$mo2f_backup_code   = isset( $post['mo2f_backup_code'] ) ? sanitize_text_field( $post['mo2f_backup_code'] ) : null;
 			$twofa_method       = isset( $post['twofa_method'] ) ? sanitize_text_field( $post['twofa_method'] ) : '';
 			$currentuser_id     = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
-			$mo2f_user_email    = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $currentuser_id );
+			$mo2f_user_email    = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $currentuser_id );
 			$this->mo2f_handle_backupcode_validation( $mo2f_backup_code, $currentuser_id, $redirect_to, $session_id_encrypt, $mo2f_user_email, $twofa_method );
 		}
 
@@ -228,7 +228,7 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 				$data                 = $generate_backup_code->mo2f_validate_backup_codes( $mo2f_backup_code, $mo2f_user_email );
 				if ( 'success' === $data ) {
 					$mo2f_delete_details = new Miniorange_Authentication();
-					$mo2f_delete_details->mo2f_delete_user( $currentuser_id );
+					$mo2f_delete_details->mo2f_delete_user_details( $currentuser_id );
 					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::BACKUPCODE_VALIDATED ) );
 				} else {
 					wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_BACKUPCODE ) );
@@ -251,10 +251,9 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 			$redirect_to        = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : '';
 			$user_id            = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
 			if ( ! get_site_option( 'mo2f_disable_inline_registration' ) ) {
-					$mo2fdb_queries->insert_user( $user_id );
 					$mo2fa_login_message = 'Please configure your 2FA again so that you can avoid being locked out.';
 					$inline_popup        = new Mo2f_Inline_Popup();
-					$mo2fdb_queries->update_user_details( $user_id, array( 'user_registration_with_miniorange' => 'SUCCESS' ) );
+					$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'user_registration_with_miniorange' => 'SUCCESS' ) );
 					$inline_popup->prompt_user_to_select_2factor_mthod_inline( $user_id, $mo2fa_login_message, $redirect_to, $session_id_encrypt );
 					exit;
 			} else {

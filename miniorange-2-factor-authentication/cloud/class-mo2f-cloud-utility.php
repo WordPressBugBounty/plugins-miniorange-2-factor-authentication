@@ -59,7 +59,7 @@ if ( ! class_exists( 'Mo2f_Cloud_Validate' ) ) {
 		 */
 		public static function mo2f_get_g_a_parameters( $user ) {
 			global $mo2fdb_queries;
-			$email           = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID );
+			$email           = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
 			$gauth_name      = get_site_option( 'mo2f_google_appname' );
 			$gauth_name      = $gauth_name ? $gauth_name : 'miniOrangeAu';
 			$gauth_setup     = new Mo2f_Cloud_Utility();

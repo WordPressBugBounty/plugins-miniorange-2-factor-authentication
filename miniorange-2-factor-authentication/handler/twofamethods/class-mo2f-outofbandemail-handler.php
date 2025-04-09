@@ -96,7 +96,6 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
 			$current_user = wp_get_current_user();
 			$email        = $current_user->user_email;
-			$mo2fdb_queries->insert_user( $current_user->ID );
 			$json_string = stripslashes( $mo2f_onprem_cloud_obj->mo2f_send_link( $current_user, $this->mo2f_current_method, $email ) );
 			$content     = json_decode( $json_string, true );
 			if ( json_last_error() === JSON_ERROR_NONE ) {
@@ -115,7 +114,7 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		public function mo2f_prompt_2fa_test_dashboard() {
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
 			$current_user    = wp_get_current_user();
-			$mo2f_user_email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $current_user->ID );
+			$mo2f_user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $current_user->ID );
 			$response        = json_decode( $mo2f_onprem_cloud_obj->mo2f_send_link( $current_user, $this->mo2f_current_method, $mo2f_user_email ), true );
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'SUCCESS' === $response['status'] ) {
@@ -137,7 +136,7 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 */
 		public function mo2f_prompt_2fa_login( $currentuser, $session_id_encrypt, $redirect_to ) {
 			global $mo2fdb_queries,$mo2f_onprem_cloud_obj;
-			$mo2f_user_email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $currentuser->ID );
+			$mo2f_user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $currentuser->ID );
 			$response        = json_decode( $mo2f_onprem_cloud_obj->mo2f_send_link( $currentuser, $this->mo2f_current_method, $mo2f_user_email ), true );
 			$transaction_id  = isset( $response['txId'] ) ? $response['txId'] : '';
 			if ( json_last_error() === JSON_ERROR_NONE && MoWpnsConstants::SUCCESS_RESPONSE === $response['status'] ) {
@@ -322,13 +321,14 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 			$mo2f_dir_name = explode( 'wp-content', $mo2f_dir_name );
 			$mo2f_dir_name = explode( 'handler', $mo2f_dir_name[1] );
 			$response      = $this->mo2f_validate_link( $txidstatus, $txidget, $otp_token, $otp_tokend, $accesstokenget, $useridget, $useridd );
+			$custom_logo   = get_site_option( 'mo2f_custom_logo', 'miniOrange2.png' );
 			$popup_args    = array(
 				'head'         => $response['head'],
 				'body'         => $response['body'],
 				'color'        => $response['color'],
 				'bg_color'     => '#FFFFFF',
-				'branding_img' => "background-color: #d5e3d9;",
-				'logo_url'     => esc_url( $main_dir . 'includes/images/miniOrange2.png' ),
+				'branding_img' => 'background-color: #d5e3d9;',
+				'logo_url'     => esc_url( $main_dir . 'includes/images/' . $custom_logo ),
 			);
 			$popup_args    = apply_filters( 'mo2f_enterprise_plan_settings_filter', $popup_args, 'mo2f_custom_email_verification_popup_args', $popup_args );
 			$display_popup = new Mo2f_Login_Popup();
@@ -407,10 +407,10 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 */
 		public function mo2f_handle_polling( $txidpost ) {
 			global $mo2fdb_queries;
-			$status = get_site_option( $txidpost );
-			if ( '1' === $status || '0' === $status ) {
+			$status = (int) get_site_option( $txidpost );
+			if ( 1 === $status || 0 === $status ) {
 				$user_details = TwoFAMoSessions::get_session_var( $txidpost );
-				if ( '1' === $status && ! $mo2fdb_queries->get_user_detail( 'mo2f_EmailVerification_config_status', $user_details['user_id'] ) ) {
+				if ( 1 === $status && ! $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_EmailVerification_config_status', $user_details['user_id'] ) ) {
 					$this->mo2f_update_user_details( get_user_by( 'id', $user_details['user_id'] ), $user_details['user_email'] );
 				}
 				delete_site_option( $txidpost );

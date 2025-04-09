@@ -30,10 +30,10 @@ if ( ! wp_verify_nonce( $nonce, 'mo2f-update-mobile-nonce' ) || ! current_user_c
 	return $mo2f_error;
 } else {
 	$method = isset( $_POST['method'] ) ? sanitize_text_field( wp_unslash( $_POST['method'] ) ) : null ;
-	if ( is_null( $method ) || $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user_id ) === $method  ) {
+	if ( is_null( $method ) || $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id ) === $method  ) {
 		return;
 	}
-	$email   = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user_id );
+	$email   = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user_id );
 	$email   = sanitize_email( $email );
 	$enduser = new MocURL();
 	if ( isset( $_POST['verify_phone'] ) ) {
@@ -76,6 +76,22 @@ if ( ! wp_verify_nonce( $nonce, 'mo2f-update-mobile-nonce' ) || ! current_user_c
 		case MoWpnsConstants::OTP_OVER_SMS:
 			if ( ! get_site_option( 'mo2f_customerKey' ) ) {
 				update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::lang_translate( 'Please register with miniOrange to set the OTP Over SMS method.' ) );
+				return;
+			}
+			if ( $userid === $user_id ) {
+				$pass2flogin->mo2fa_update_user_details( $user_id, true, $method, MoWpnsConstants::SUCCESS_RESPONSE, MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS, 1, $email );
+			} else {
+				$content = mo2f_send_twofa_setup_link_on_email( $email, $user_id, $method );
+				if ( 'SUCCESS' === $content['status'] ) {
+					$pass2flogin->mo2fa_update_user_details( $user_id, true, $method, MoWpnsConstants::SUCCESS_RESPONSE, MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS, 1, $email );
+				} else {
+					update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::lang_translate( MoWpnsMessages::USER_PROFILE_SETUP_SMTP ) );
+				}
+			}
+			break;
+		case MoWpnsConstants::OTP_OVER_WHATSAPP:
+			if ( ! get_site_option( 'mo2f_customerKey' ) ) {
+				update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::lang_translate( 'Please register with miniOrange to set the OTP Over WhatsApp method.' ) );
 				return;
 			}
 			if ( $userid === $user_id ) {
@@ -155,6 +171,7 @@ function mo2f_send_twofa_setup_link_on_email( $email, $user_id, $tfa_method ) {
 		MoWpnsConstants::GOOGLE_AUTHENTICATOR => 'configure the 2nd factor',
 		MoWpnsConstants::SECURITY_QUESTIONS   => 'configure the 2nd factor',
 		MoWpnsConstants::OTP_OVER_SMS         => 'Login to the site',
+		MoWpnsConstants::OTP_OVER_WHATSAPP    => 'Login to the site',
 		MoWpnsConstants::OTP_OVER_EMAIL       => 'Login to the site',
 		MoWpnsConstants::OUT_OF_BAND_EMAIL    => 'Login to the site',
 	);
@@ -208,7 +225,7 @@ function mo2f_send_twofa_setup_link_on_email( $email, $user_id, $tfa_method ) {
 			'txid'    => '',
 		);
 		update_user_meta( $user_id, 'mo2f_user_profile_set', true );
-		$mo2fdb_queries->update_user_details(
+		$mo2fdb_queries->mo2f_update_user_details(
 			$user_id,
 			array(
 				'mo2f_AuthyAuthenticator_config_status'  => false,

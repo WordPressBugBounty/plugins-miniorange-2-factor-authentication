@@ -268,7 +268,6 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 		public function mo2f_prompt_2fa_setup_dashboard() {
 			global $mo2fdb_queries;
 			$current_user = wp_get_current_user();
-			$mo2fdb_queries->insert_user( $current_user->ID );
 			$common_helper = new Mo2f_Common_Helper();
 			$skeleton      = $common_helper->mo2f_telegram_common_skeleton( $current_user->ID );
 			$html          = $common_helper->mo2f_otp_based_methods_configuration_screen( $skeleton, $this->mo2f_current_method, '', $current_user->ID, '', '', 'dashboard' );

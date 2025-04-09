@@ -9,7 +9,7 @@
  * Plugin Name: miniOrange 2 Factor Authentication
  * Plugin URI: https://miniorange.com
  * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. We Support Google/Authy/LastPass/Microsoft Authenticator, QR Code, Push Notification, Soft Token and Security Questions(KBA) for 3 User in the free version of the plugin.
- * Version: 6.0.6
+ * Version: 6.0.7
  * Author: miniOrange
  * Author URI: https://miniorange.com
  * Text Domain: miniorange-2-factor-authentication
@@ -43,7 +43,7 @@ require dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
 require_once dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
 define( 'MO_HOST_NAME', 'https://login.xecurify.com' );
-define( 'MO2F_VERSION', '6.0.6' );
+define( 'MO2F_VERSION', '6.0.7' );
 define( 'MO2F_PLUGIN_URL', ( plugin_dir_url( __FILE__ ) ) );
 define( 'MO2F_TEST_MODE', false );
 define( 'MO2F_IS_ONPREM', get_option( 'is_onprem', 1 ) );
@@ -72,7 +72,6 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			add_action( 'admin_menu', array( $this, 'mo_wpns_widget_menu' ) );
 			add_action( 'admin_enqueue_scripts', array( $this, 'mo_wpns_settings_style' ) );
 			add_action( 'admin_enqueue_scripts', array( $this, 'mo_wpns_settings_script' ) );
-			add_action( 'admin_init', array( $this, 'mo2f_change_method_names_from_db' ) );
 			add_action( 'admin_init', array( $this, 'miniorange_reset_save_settings' ) );
 			add_action( 'admin_init', array( $this, 'mo2f_mail_send' ) );
 			add_filter( 'manage_users_columns', array( $this, 'mo2f_mapped_email_column' ) );
@@ -96,6 +95,11 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			add_action( 'elementor/init', array( $this, 'mo2fa_login_elementor_note' ) );
 			add_shortcode( 'mo2f_enable_register', array( $reg_handler_obj, 'mo2f_wp_verification' ) );
 			add_action( 'user_profile_update_errors', array( $this, 'mo2f_user_profile_errors' ), 10, 3 );
+			add_action( 'admin_init', array( $this, 'mo2f_migrate_whitelisted_ips_table' ) );
+			add_action( 'admin_init', array( $this, 'mo2f_migrate_network_blocked_ips_table' ) );
+			add_action( 'admin_init', array( $this, 'mo2f_migrate_network_transactions_table' ) );
+			add_action( 'admin_init', array( $this, 'mo2f_migrate_user_details' ) );
+			add_action( 'admin_init', array( $this, 'mo2f_drop_wpns_attack_logs_and_network_email_sent_audit' ) );
 		}
 
 
@@ -113,9 +117,9 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			if ( wp_verify_nonce( $nonce, 'mo-two-factor-ajax-nonce' ) ) {
 				$is_userprofile_enabled = isset( $_POST['mo2f_enable_userprofile_2fa'] ) ? sanitize_key( wp_unslash( $_POST['mo2f_enable_userprofile_2fa'] ) ) : false;
 				if ( $is_userprofile_enabled ) {
-					$twofa_configuration_status = $mo2fdb_queries->get_user_detail( 'mo_2factor_user_registration_status', $userdata->ID );
+					$twofa_configuration_status = $mo2fdb_queries->mo2f_get_user_detail( 'mo_2factor_user_registration_status', $userdata->ID );
 					if ( MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $twofa_configuration_status ) {
-						$existing_twofa_method = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $userdata->ID );
+						$existing_twofa_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $userdata->ID );
 						$selected_method       = isset( $_POST['method'] ) ? sanitize_text_field( wp_unslash( $_POST['method'] ) ) : '';
 						if ( $existing_twofa_method === $selected_method ) {
 							return;
@@ -128,22 +132,6 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 					}
 				}
 			}
-		}
-		/**
-		 * Changes the method names from database.
-		 *
-		 * @return void
-		 */
-		public function mo2f_change_method_names_from_db() {
-			if ( ! get_site_option( 'mo2f_is_methods_name_updated' ) ) {
-				global $mo2fdb_queries;
-				$configured_methods = $mo2fdb_queries->mo2f_get_distinct_configured_methods();
-				if ( count( $configured_methods ) <= 0 ) {
-					return;
-				}
-				$mo2fdb_queries->mo2f_run_queries_to_change_method_names( MoWpnsConstants::$mo2f_small_to_cap, $configured_methods );
-			}
-
 		}
 
 		/**
@@ -205,7 +193,8 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		 * @return void
 		 */
 		public function mo2f_add_wizard_actions() {
-			if ( file_exists( plugin_dir_path( __FILE__ ) . 'views\class-mo2f-setup-wizard.php' ) ) {
+			global $mo2f_dir_name;
+			if ( file_exists( $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . 'class-mo2f-setup-wizard.php' ) ) {
 				$object = new Mo2f_Setup_Wizard();
 				if ( function_exists( 'wp_get_current_user' ) && current_user_can( 'administrator' ) ) {
 					add_action( 'admin_init', array( $object, 'mo2f_setup_page' ), 11 );
@@ -227,7 +216,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			// setting variables for low SMS/email notification.
 			global $mo2fdb_queries;
 			$user_object                  = wp_get_current_user();
-			$mo2f_configured_2_f_a_method = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user_object->ID );
+			$mo2f_configured_2_f_a_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_object->ID );
 			$one_day                      = 60 * 60 * 24;
 			$day_sms                      = ( time() - get_site_option( 'mo2f_wpns_sms_dismiss' ) ) / $one_day;
 			$day_sms                      = floor( $day_sms );
@@ -235,7 +224,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			$day_email                    = floor( $day_email );
 
 			$count = $mo2fdb_queries->mo2f_get_specific_method_users_count( MoWpnsConstants::OTP_OVER_SMS );
-			if ( ! get_site_option( 'mo2f_wpns_donot_show_low_email_notice' ) && ( get_site_option( 'cmVtYWluaW5nT1RQ' ) <= 5 ) && ( $day_email >= 1 ) && MoWpnsConstants::OTP_OVER_EMAIL === $mo2f_configured_2_f_a_method ) {
+			if ( ! apply_filters( 'mo2f_is_lv_needed', false ) && MoWpnsConstants::OTP_OVER_EMAIL === $mo2f_configured_2_f_a_method && ( $day_email >= 1 ) && ! get_site_option( 'mo2f_wpns_donot_show_low_email_notice' ) && ( get_site_option( 'cmVtYWluaW5nT1RQ' ) <= 5 ) ) {
 				echo wp_kses_post( MoWpnsMessages::show_message( 'LOW_EMAIL_TRANSACTIONS' ) );
 			}
 			if ( ! get_site_option( 'mo2f_wpns_donot_show_low_sms_notice' ) && ( get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' ) <= 4 ) && ( $day_sms >= 1 ) && 0 !== $count ) {
@@ -283,7 +272,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			if ( ! get_site_option( 'mo2f_activated_time' ) ) {
 				add_site_option( 'mo2f_activated_time', time() );
 			}
-			$no_of2fa_users = $mo2fdb_queries->get_no_of_2fa_users();
+			$no_of2fa_users = $mo2fdb_queries->mo2f_get_no_of_2fa_users();
 			if ( ! $no_of2fa_users ) {
 				update_site_option( 'mo2f_plugin_redirect', true );
 			}
@@ -386,7 +375,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		 */
 		public function miniorange_reset_users( $actions, $user_object ) {
 			global $mo2fdb_queries;
-			$mo2f_configured_2_f_a_method = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user_object->ID );
+			$mo2f_configured_2_f_a_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_object->ID );
 			if ( current_user_can( 'edit_users', $user_object->ID ) && $mo2f_configured_2_f_a_method ) {
 				if ( get_current_user_id() !== $user_object->ID ) {
 					$actions['miniorange_reset_users'] = "<a class='miniorange_reset_users' href='" . wp_nonce_url( "users.php?page=reset&action=reset_edit&amp;user_id=$user_object->ID", 'reset_edit', 'mo2f_reset-2fa' ) . "'>" . __( 'Reset 2 Factor', 'miniorange-2-factor-authentication' ) . '</a>';
@@ -529,7 +518,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 						delete_user_meta( $user_id, 'mo2f_whatsapp_num' );
 						delete_user_meta( $user_id, 'mo2f_whatsapp_id' );
 						delete_user_meta( $user_id, 'mo2f_configure_2FA' );
-						$mo2fdb_queries->delete_user_details( $user_id );
+						$mo2fdb_queries->mo2f_delete_user_details( $user_id );
 						delete_user_meta( $user_id, 'mo2f_2FA_method_to_test' );
 						delete_site_option( 'mo2f_user_login_status_' . $user_id );
 						delete_site_option( 'mo2f_grace_period_status_' . $user_id );
@@ -551,10 +540,10 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		 */
 		public function mo2f_mapped_email_column_content( $value, $column_name, $user_id ) {
 			global $mo2fdb_queries;
-			$current_method = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user_id );
+			$current_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id );
 			if ( ! $current_method ) {
-				$check_if_skipped = $mo2fdb_queries->get_user_detail( 'mo2f_2factor_enable_2fa_byusers', $user_id );
-				if ( '0' === $check_if_skipped ) {
+				$check_if_skipped = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_2factor_enable_2fa_byusers', $user_id );
+				if ( ! (int) $check_if_skipped ) {
 					$current_method = 'Two-Factor skipped by user';
 				} else {
 					$current_method = 'Not Registered for 2FA';
@@ -605,6 +594,202 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			}
 		}
 
+		/**
+		 * Migrate whitelisted IPs from the custom `mo2f_whitelist_ips_table` to a WordPress site option.
+		 *
+		 * This function retrieves all the whitelisted IP data from the `mo2f_whitelist_ips_table`,
+		 * updates the `mo2f_whitelisted_ips_data` site option with the valid IP data,
+		 * deletes the old table, and sets an option to indicate that the migration is complete.
+		 *
+		 * @global wpdb $wpdb WordPress database abstraction object.
+		 * @return void
+		 */
+		public function mo2f_migrate_whitelisted_ips_table() {
+			global $wpdb;
+			global $wpns_db_queries;
+			global $mo2fdb_queries;
+			if ( get_site_option( 'mo2f_whitelisted_ips_migrated' ) ) {
+				return;
+			}
+			$old_network_whitelisted_ips_data = $wpns_db_queries->mo2f_get_old_table_data( 'mo2f_network_whitelisted_ips' );
+			if ( ! empty( $old_network_whitelisted_ips_data ) ) {
+				$whitelisted_ips = array();
+				foreach ( $old_network_whitelisted_ips_data as $row ) {
+					$ip_data           = array_filter(
+						array(
+							'id'                => $row['id'],
+							'ip_address'        => $row['ip_address'],
+							'created_timestamp' => $row['created_timestamp'],
+							'plugin_path'       => $row['plugin_path'] ?? null,
+						),
+						function ( $value ) {
+							return null !== $value;
+						}
+					);
+					$whitelisted_ips[] = $ip_data;
+				}
+				update_site_option( 'mo2f_whitelisted_ips', $whitelisted_ips );
+			}
+			$mo2fdb_queries->mo2f_drop_table( 'mo2f_network_whitelisted_ips' );
+			update_site_option( 'mo2f_whitelisted_ips_migrated', true );
+		}
+
+		/**
+		 * Migrate blocked IPs from the custom `mo2f_network_blocked_ips` table to a WordPress site option.
+		 *
+		 * This function retrieves all the blocked IP data from the `mo2f_network_blocked_ips` table,
+		 * filters the entries, and updates the `mo2f_blocked_ips_data` site option with the valid IP data.
+		 * After the migration, it deletes the old table and sets an option to indicate that the migration is complete.
+		 *
+		 * @global wpdb $wpdb WordPress database abstraction object.
+		 * @return void
+		 */
+		public function mo2f_migrate_network_blocked_ips_table() {
+			global $wpns_db_queries;
+			global $mo2fdb_queries;
+			if ( get_site_option( 'mo2f_blocked_ips_migrated' ) ) {
+				return;
+			}
+			$old_network_blocked_ips_data = $wpns_db_queries->mo2f_get_old_table_data( 'mo2f_network_blocked_ips' );
+			if ( ! empty( $old_network_blocked_ips_data ) ) {
+				$blocked_ips = array();
+				foreach ( $old_network_blocked_ips_data as $row ) {
+					$ip_data       = array_filter(
+						array(
+							'id'                => $row['id'],
+							'ip_address'        => $row['ip_address'],
+							'reason'            => $row['reason'],
+							'blocked_for_time'  => $row['blocked_for_time'],
+							'created_timestamp' => $row['created_timestamp'],
+						),
+						function ( $value ) {
+							return null !== $value;
+						}
+					);
+					$blocked_ips[] = $ip_data;
+				}
+				update_site_option( 'mo2f_blocked_ips_data', $blocked_ips );
+			}
+			$mo2fdb_queries->mo2f_drop_table( 'mo2f_network_blocked_ips' );
+			update_site_option( 'mo2f_blocked_ips_migrated', true );
+		}
+
+		/**
+		 * Migrate network transactions from the custom `mo2f_network_transactions` table to a WordPress site option.
+		 *
+		 * This function retrieves all the transaction details from the `mo2f_network_transactions` table,
+		 * filters out the invalid entries, and updates the `mo2f_network_transactions_data` site option
+		 * with the valid transaction data. After a successful migration, it deletes the old table
+		 * and sets an option to indicate that the migration has been completed.
+		 *
+		 * @global wpdb $wpdb WordPress database abstraction object.
+		 * @return void
+		 */
+		public function mo2f_migrate_network_transactions_table() {
+			global $wpns_db_queries;
+			global $mo2fdb_queries;
+			if ( get_site_option( 'mo2f_network_transactions_migrated' ) ) {
+				return;
+			}
+			$old_network_transactions_data = $wpns_db_queries->mo2f_get_old_table_data( 'mo2f_network_transactions' );
+			if ( ! empty( $old_network_transactions_data ) ) {
+				$network_transactions = array();
+				foreach ( $old_network_transactions_data as $row ) {
+					$transaction_data       = array_filter(
+						array(
+							'ip_address'        => $row['ip_address'],
+							'username'          => $row['username'],
+							'type'              => $row['type'],
+							'url'               => $row['url'],
+							'status'            => $row['status'],
+							'created_timestamp' => $row['created_timestamp'],
+						),
+						function ( $value ) {
+							return null !== $value;
+						}
+					);
+					$network_transactions[] = $transaction_data;
+				}
+				update_site_option( 'mo2f_network_transactions_data', $network_transactions );
+			}
+			$mo2fdb_queries->mo2f_drop_table( 'mo2f_network_transactions' );
+			update_site_option( 'mo2f_network_transactions_migrated', true );
+		}
+		/**
+		 * Migrate user details from the custom `mo2f_user_details` table to the WordPress `usermeta` table.
+		 *
+		 * @global wpdb $wpdb WordPress database abstraction object.
+		 * @return void
+		 */
+		public function mo2f_migrate_user_details() {
+			global $wpdb;
+			global $mo2fdb_queries;
+			global $wpns_db_queries;
+			if ( get_site_option( 'mo2f_user_details_migrated' ) ) {
+				return;
+			}
+
+			$old_user_details_data = $wpns_db_queries->mo2f_get_old_table_data( 'mo2f_user_details' );
+
+			if ( ! empty( $old_user_details_data ) ) {
+				foreach ( $old_user_details_data as $row ) {
+					$user_id               = $row['user_id'];
+					$configured_2fa_method = ! empty( $row['mo2f_configured_2FA_method'] ) ? strtoupper( $row['mo2f_configured_2FA_method'] ) : '';
+					$configured_2fa_map    = array(
+						'SECURITY QUESTIONS' => 'KBA',
+						'EMAIL VERIFICATION' => 'OUT OF BAND EMAIL',
+						'OTP OVER SMS'       => 'SMS',
+						'OTP OVER EMAIL'     => 'EMAIL',
+					);
+					if ( isset( $configured_2fa_map [ $configured_2fa_method ] ) ) {
+						$configured_2fa_method = $configured_2fa_map [ $configured_2fa_method ];
+					}
+					$user_data = array_filter(
+						array(
+							'mo2f_OTPOverSMS_config_status'                     => $row['mo2f_OTPOverSMS_config_status'] ?? null,
+							'mo2f_miniOrangePushNotification_config_status'     => $row['mo2f_miniOrangePushNotification_config_status'] ?? null,
+							'mo2f_miniOrangeQRCodeAuthentication_config_status' => $row['mo2f_miniOrangeQRCodeAuthentication_config_status'] ?? null,
+							'mo2f_miniOrangeSoftToken_config_status'            => $row['mo2f_miniOrangeSoftToken_config_status'] ?? null,
+							'mo2f_AuthyAuthenticator_config_status'             => $row['mo2f_AuthyAuthenticator_config_status'] ?? null,
+							'mo2f_EmailVerification_config_status'              => $row['mo2f_EmailVerification_config_status'] ?? null,
+							'mo2f_SecurityQuestions_config_status'              => $row['mo2f_SecurityQuestions_config_status'] ?? null,
+							'mo2f_GoogleAuthenticator_config_status'            => $row['mo2f_GoogleAuthenticator_config_status'] ?? null,
+							'mo2f_OTPOverEmail_config_status'                   => $row['mo2f_OTPOverEmail_config_status'] ?? null,
+							'mo2f_OTPOverTelegram_config_status'                => $row['mo2f_OTPOverTelegram_config_status'] ?? null,
+							'mo2f_OTPOverWhatsapp_config_status'                => $row['mo2f_OTPOverWhatsapp_config_status'] ?? null,
+							'mo2f_DuoAuthenticator_config_status'               => $row['mo2f_DuoAuthenticator_config_status'] ?? null,
+							'mobile_registration_status'                        => $row['mobile_registration_status'] ?? null,
+							'mo2f_2factor_enable_2fa_byusers'                   => $row['mo2f_2factor_enable_2fa_byusers'] ?? null,
+							'mo2f_configured_2FA_method'                        => $configured_2fa_method,
+							'mo2f_user_phone'                                   => $row['mo2f_user_phone'] ?? null,
+							'mo2f_user_whatsapp'                                => $row['mo2f_user_whatsapp'] ?? null,
+							'mo2f_user_email'                                   => $row['mo2f_user_email'] ?? null,
+							'user_registration_with_miniorange'                 => $row['user_registration_with_miniorange'] ?? null,
+							'mo_2factor_user_registration_status'               => $row['mo_2factor_user_registration_status'] ?? null,
+						),
+						function ( $value ) {
+							return null !== $value;
+						}
+					);
+					update_user_meta( $user_id, 'mo2f_user_2fa_data', $user_data );        }
+			}
+			$mo2fdb_queries->mo2f_drop_table( 'mo2f_user_details' );
+			update_site_option( 'mo2f_user_details_migrated', true );
+		}
+		/**
+		 * Drop table wpns_attack_logs and mo2f_network_email_sent_audit.
+		 *
+		 * @return void
+		 */
+		public function mo2f_drop_wpns_attack_logs_and_network_email_sent_audit() {
+			global $mo2fdb_queries;
+			if ( get_site_option( 'mo2f_wpns_attack_logs_and_mo2f_network_email_sent_audit_dropped' ) ) {
+				return;
+			}
+			$mo2fdb_queries->mo2f_drop_table( 'wpns_attack_logs' );
+			$mo2fdb_queries->mo2f_drop_table( 'mo2f_network_email_sent_audit' );
+			update_site_option( 'mo2f_wpns_attack_logs_and_mo2f_network_email_sent_audit_dropped', true );
+		}
 	}
 }
 require_once 'class-mo2f-classloader.php';

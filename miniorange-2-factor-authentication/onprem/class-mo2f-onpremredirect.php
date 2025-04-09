@@ -174,7 +174,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 		 * @return array
 		 */
 		public function mo2f_check_if_email_transactions_exists() {
-			if ( (int) MoWpnsUtility::get_mo2f_db_option( 'cmVtYWluaW5nT1RQ', 'site_option' ) <= 0 && ! get_site_option( 'mo2fa_lk' ) ) {
+			if ( ! apply_filters( 'mo2f_is_lv_needed', false ) && (int) get_site_option( 'cmVtYWluaW5nT1RQ', 0 ) <= 0 ) {
 				return false;
 			} else {
 				return true;
@@ -207,7 +207,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 			if ( $result ) {
 				$cmvtywluaw5nt1rq = get_site_option( 'cmVtYWluaW5nT1RQ' );
 				update_site_option( 'cmVtYWluaW5nT1RQ', $cmvtywluaw5nt1rq - 1 );
-				if ( '5' === $cmvtywluaw5nt1rq ) {
+				if ( ! apply_filters( 'mo2f_is_lv_needed', false ) && 5 === (int) $cmvtywluaw5nt1rq ) {
 					Miniorange_Authentication::mo2f_low_otp_alert( 'email' );
 				}
 				$arr = array(
@@ -276,7 +276,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 		public function mo2f_pass2login_push_email_onpremise( $current_user, $email, $in_dashboard_flow = false ) {
 			global $mo2fdb_queries;
 			if ( empty( $email ) ) {
-				$email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $current_user->ID );
+				$email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $current_user->ID );
 			}
 			$subject     = MoWpnsUtility::get_mo2f_db_option( 'mo2f_email_ver_subject', 'site_option' );
 			$headers     = array( 'Content-Type: text/html; charset=UTF-8' );
@@ -308,7 +308,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 			$result                  = wp_mail( $email, $subject, $message, $headers );
 			$response                = array( 'txId' => $txid );
 			if ( $result ) {
-				if ( get_site_option( 'cmVtYWluaW5nT1RQ' ) === 5 ) {
+				if ( ! apply_filters( 'mo2f_is_lv_needed', false ) && (int) get_site_option( 'cmVtYWluaW5nT1RQ' ) === 5 ) {
 					Miniorange_Authentication::mo2f_low_otp_alert( 'email' );
 				}
 				update_site_option( 'cmVtYWluaW5nT1RQ', $cm_vt_y_wlua_w5n_t1_r_q - 1 );

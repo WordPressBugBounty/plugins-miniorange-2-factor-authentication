@@ -89,7 +89,7 @@ $registration_forms = array(
 	</div>
 	<div class="mo2f-settings-div mo2f-all-inclusive-plan">
 		<div class="mo2f-settings-head">
-		<label class="mo2f_checkbox_container"><input type="checkbox" id="mo2f_enable_login_form" <?php echo checked( '1' === get_site_option( 'mo2f_enable_custom_login_form' ) ); ?>/><span class="mo2f-settings-checkmark"></span></label>
+		<label class="mo2f_checkbox_container"><input type="checkbox" id="mo2f_enable_login_form" <?php echo checked( (int) get_site_option( 'mo2f_enable_custom_login_form' ) ); ?>/><span class="mo2f-settings-checkmark"></span></label>
 			<span><?php esc_html_e( 'Enable 2FA On Any Custom Login Form', 'miniorange-2-factor-authentication' ); ?></span>
 		</div>
 		<div class="mo2f-sub-settings-div mo2f-all-inclusive-plan">

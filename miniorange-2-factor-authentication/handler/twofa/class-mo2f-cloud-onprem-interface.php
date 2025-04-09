@@ -148,12 +148,13 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		 * @param boolean $twofa_by_user 2FA enabled by user.
 		 * @param string  $email Email.
 		 * @param string  $phone Phone.
+		 * @param string  $whatsapp WhatsApp number.
 		 * @param string  $transaction_name Transaction name.
 		 * @param boolean $enable_admin_2fa 2FA enabled of admin.
 		 * @return mixed
 		 */
-		public function mo2f_update_user_info( $user_id, $config_status, $twofa_method, $user_registration, $twofa_reg_status, $twofa_by_user, $email, $phone = null, $transaction_name = null, $enable_admin_2fa = null ) {
-			$response = $this->class_object->mo2f_update_user_info( $user_id, $config_status, $twofa_method, $user_registration, $twofa_reg_status, $twofa_by_user, $email, $phone, $transaction_name, $enable_admin_2fa );
+		public function mo2f_update_user_info( $user_id, $config_status, $twofa_method, $user_registration, $twofa_reg_status, $twofa_by_user, $email, $phone = null, $whatsapp = null, $transaction_name = null, $enable_admin_2fa = null ) {
+			$response = $this->class_object->mo2f_update_user_info( $user_id, $config_status, $twofa_method, $user_registration, $twofa_reg_status, $twofa_by_user, $email, $phone, $whatsapp, $transaction_name, $enable_admin_2fa );
 			return $response;
 		}
 

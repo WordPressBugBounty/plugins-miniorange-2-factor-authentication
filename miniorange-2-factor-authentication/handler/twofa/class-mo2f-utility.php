@@ -638,7 +638,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		 * @return void
 		 */
 		public static function mo2f_debug_file( $text ) {
-			if ( MoWpnsUtility::get_mo2f_db_option( 'mo2f_enable_debug_log', 'site_option' ) === '1' ) {
+			if ( (int) MoWpnsUtility::get_mo2f_db_option( 'mo2f_enable_debug_log', 'site_option' ) ) {
 				$debug_log_path = wp_upload_dir();
 				$debug_log_path = $debug_log_path['basedir'] . DIRECTORY_SEPARATOR;
 				$filename       = 'miniorange_debug_log.txt';

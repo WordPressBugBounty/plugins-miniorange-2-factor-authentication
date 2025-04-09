@@ -85,7 +85,7 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		public function mo2f_prompt_2fa_test_dashboard() {
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj, $mo_wpns_utility;
 			$current_user    = wp_get_current_user();
-			$mo2f_user_email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $current_user->ID );
+			$mo2f_user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $current_user->ID );
 			$response        = json_decode( $mo2f_onprem_cloud_obj->send_otp_token( null, $mo2f_user_email, $this->mo2f_current_method, $current_user ), true );
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'SUCCESS' === $response['status'] ) {
@@ -117,7 +117,7 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		 */
 		public function mo2f_prompt_2fa_login( $currentuser, $session_id_encrypt, $redirect_to ) {
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
-			$mo2f_user_email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $currentuser->ID );
+			$mo2f_user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $currentuser->ID );
 			$content         = json_decode( $mo2f_onprem_cloud_obj->send_otp_token( null, $mo2f_user_email, $this->mo2f_current_method, $currentuser ), true );
 			if ( json_last_error() === JSON_ERROR_NONE && MoWpnsConstants::SUCCESS_RESPONSE === $content['status'] ) {
 					$content             = $this->mo2f_handle_success_login( $mo2f_user_email, $currentuser, $content );
@@ -255,7 +255,7 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		 */
 		public function mo2f_send_otp( $email, $session_id, $current_user, $message ) {
 			global $mo2f_onprem_cloud_obj, $mo2fdb_queries;
-			$email   = $email ?? $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $current_user->ID );
+			$email   = $email ?? $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $current_user->ID );
 			$content = json_decode( $mo2f_onprem_cloud_obj->send_otp_token( null, $email, $this->mo2f_current_method, $current_user ), true );
 			$this->mo2f_process_send_otp_content( $content, $current_user, $message, $email );
 		}
@@ -417,7 +417,6 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		public function mo2f_prompt_2fa_setup_dashboard() {
 			global $mo2fdb_queries;
 			$current_user = wp_get_current_user();
-			$mo2fdb_queries->insert_user( $current_user->ID );
 			$common_helper = new Mo2f_Common_Helper();
 			$skeleton      = $common_helper->mo2f_email_common_skeleton( $current_user->ID );
 			$html          = $common_helper->mo2f_otp_based_methods_configuration_screen( $skeleton, $this->mo2f_current_method, '', $current_user->ID, '', '', 'dashboard' );

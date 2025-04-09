@@ -8,7 +8,18 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
+$configurations = array(
+	'mo2f_remember_ip_feature'   => 0,
+	'mo2f_give_rem_ip_choice'    => 1,
+	'mo2f_enable_ip_list'        => 1,
+	'mo2f_enable_ip_range'       => 0,
+	'mo2f_2fa_whitelist_ip_list' => '',
+	'mo2f_rem_ip_range'          => array( array()),
 
+);
+$configurations = (array)get_site_option( 'mo2f_remember_ip_configurations', $configurations );
+$rem_ip_ranges   = isset( $configurations['mo2f_rem_ip_range'] ) ? $configurations['mo2f_rem_ip_range'] : array( array());
 require_once $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'advancedfeatures' . DIRECTORY_SEPARATOR . 'rememberdevice.php';
+require_once $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'advancedfeatures' . DIRECTORY_SEPARATOR . 'rememberip.php';
 require_once $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'advancedfeatures' . DIRECTORY_SEPARATOR . 'sessionmanagement.php';
 require_once $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'advancedfeatures' . DIRECTORY_SEPARATOR . 'passwordlesslogin.php';

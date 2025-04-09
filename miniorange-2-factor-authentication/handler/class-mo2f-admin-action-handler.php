@@ -65,6 +65,12 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 				case 'mo2f_handle_support_form':
 					$this->mo2f_handle_support_form( $_POST );
 					break;
+				case 'mo2f_show_confirmation_popup':
+					$this->mo2f_show_confirmation_popup( $_POST );
+					break;
+				case 'mo2f_unblock_user':
+					$this->mo2f_unblock_user( $_POST );
+					break;
 			}
 		}
 
@@ -161,6 +167,7 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_check_transactions() {
+			global $mo_wpns_utility;
 			$mocurl  = new MocURL();
 			$content = json_decode( $mocurl->get_customer_transactions( 'otp_recharge_plan', 'WP_OTP_VERIFICATION_PLUGIN' ), true );
 			if ( 'SUCCESS' === $content['status'] ) {
@@ -195,8 +202,13 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 					}
 				}
 			}
-			wp_send_json_success( MoWpnsMessages::lang_translate( 'Transactions updated successfully.' ) );
-
+			$remaining_transaction = $mo_wpns_utility->mo2f_check_remaining_transactions();
+			wp_send_json_success(
+				array(
+					'sms_remaining'   => $remaining_transaction['sms_transactions'],
+					'email_remaining' => $remaining_transaction['email_transactions'],
+				)
+			);
 		}
 
 		/**
@@ -230,6 +242,45 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 			} else {
 				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::SUPPORT_FORM_ERROR ) );
 			}
+		}
+
+		/**
+		 * Unblocks the user.
+		 *
+		 * @param array $post Post data.
+		 * @return void
+		 */
+		public function mo2f_unblock_user( $post ) {
+			$user_id = isset( $post['user_id'] ) ? intval( $post['user_id'] ) : 0;
+			if ( is_null( $user_id ) ) {
+				wp_send_json_error( MoWpnsMessages::lang_translate( 'Invalid user ID.' ) );
+			}
+			delete_user_meta( $user_id, 'mo2f_grace_period_start_time' );
+			wp_send_json_success( MoWpnsMessages::lang_translate( 'User unblocked successfully!' ) );
+		}
+		/**
+		 * Returns the HTML of the confirmation popup.
+		 *
+		 * @param array $post Post data.
+		 * @return void
+		 */
+		public function mo2f_show_confirmation_popup( $post ) {
+			if ( ! current_user_can( 'edit_users' ) ) {
+				wp_send_json_error( MoWpnsMessages::lang_translate( 'You do not have permission to perform this action.' ) );
+			}
+			if ( ! isset( $post['user_id'] ) || ! is_numeric( $post['user_id'] ) ) {
+				wp_send_json_error( MoWpnsMessages::lang_translate( 'Invalid user ID.' ) );
+			}
+			$user_id             = intval( $post['user_id'] );
+			$mo2fa_login_status  = MoWpnsConstants::MO_2_FACTOR_SHOW_CONFIRMATION_BLOCK;
+			$mo2fa_login_message = MoWpnsMessages::UNBLOCK_CONFIRMATION;
+			$login_popup         = new Mo2f_Login_Popup();
+			ob_start();
+			$skeleton_values = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, get_user_by( 'id', $user_id ), 'test_2fa', '' );
+			$html            = $login_popup->mo2f_twofa_authentication_login_prompt( $mo2fa_login_status, $mo2fa_login_message, null, null, $skeleton_values, '', 'test_2fa' );
+			echo $html;
+			$popup_html = ob_get_clean();
+			wp_send_json_success( array( 'popup_html' => $popup_html ) );
 		}
 	}
 	new Mo2f_Admin_Action_Handler();

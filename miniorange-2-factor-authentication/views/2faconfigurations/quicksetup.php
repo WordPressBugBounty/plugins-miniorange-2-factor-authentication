@@ -98,18 +98,31 @@ if ( current_user_can( 'administrator' ) ) {
 		<div class="my-mo-3">
 			<input type="radio" name="mo2f_methods_for_users" value="1" id="2fa_methods_for_all" <?php checked( $selected_type ); ?> ><?php esc_html_e( 'Use 2FA methods for All Users', 'miniorange-2-factor-authentication' ); ?><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
 		</div>
-		<div class="mo2f-settings-items <?php echo ( esc_attr( $lv_needed ) ? ( $selected_type ? 'flex' : 'mo2f-hide-div' ) : 'flex' ); ?>" id="mo2f_all_2fa_methods_div">
-			<?php
-			foreach ( $mo2f_methods_on_dashboard as $method ) {
-				?>
-			<span class="mr-mo-4">
-				<br>
-				<input type="checkbox" name="mo2f_methods[]" id="<?php echo 'mo2fa_forall_' . esc_attr( $method ); ?> " value="<?php echo esc_attr( $method ); ?>" <?php checked( in_array( $method, $selected_methods, true ) ); ?> <?php echo ( esc_attr( $lv_needed ) ? '' : 'checked' ); ?>>
-				<?php echo esc_attr( $mo2f_method_names[ $method ] ); ?>
-			</span>
-			<?php } ?>
+		<div class="mo2f-sub-settings-div mo2f_table_styling mo2f-settings-items <?php echo ( esc_attr( $lv_needed ) ? ( $selected_type ? 'flex' : 'mo2f-hide-div' ) : 'flex' ); ?>" id="mo2f_all_2fa_methods_div">
+			<table>
+				<tr>
+					<?php
+						$counter = 0;
+					foreach ( $mo2f_methods_on_dashboard as $method ) {
+						?>
+					<td class="mr-mo-4">
+						<input type="checkbox" name="mo2f_methods[]" id="<?php echo 'mo2fa_forall_' . esc_attr( $method ); ?> " value="<?php echo esc_attr( $method ); ?>" <?php checked( in_array( $method, $selected_methods, true ) ); ?> <?php echo ( esc_attr( $lv_needed ) ? '' : 'checked' ); ?>>
+						<?php echo esc_attr( $mo2f_method_names[ $method ] ); ?>
+					</td>
+						<?php
+						++$counter;
+						foreach ( $mo2f_methods_on_dashboard as $method ) {
+							if ( $counter > 0 && 0 === $counter % 5 ) {
+								echo '</tr><tr>';
+							}
+							?>
+							<?php
+						}
+					}
+					?>
+				</tr>
+			</table>
 		</div>
-			</br>
 		<div class="my-mo-3">
 			<input type="radio" name="mo2f_methods_for_users" value="0" id="2fa_methods_for_roles"  <?php checked( ! $selected_type ); ?>><?php esc_html_e( 'Use 2FA methods for Specific Roles', 'miniorange-2-factor-authentication' ); ?><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
 		</div>
@@ -120,11 +133,29 @@ if ( current_user_can( 'administrator' ) ) {
 				?>
 				<div class="my-mo-3"><input type="checkbox" name="mo2f_user_role[]" value="<?php echo esc_attr( $role_id ); ?>" onclick="mo2f_show_specific_twofa_settings(this)" id="<?php echo 'mo2fa_' . esc_attr( $role_id ); ?>" <?php checked( in_array( $role_id, $selected_roles, true ) ); ?> <?php echo ( esc_attr( ! $lv_needed ) && 'administrator' === $role_id ? 'checked' : '' ); ?>/><?php echo esc_html( $role_name ); ?></div>
 				<div class="mo2f-sub-settings-items <?php echo in_array( $role_id, $selected_roles, true ) ? 'flex' : 'hidden'; ?>"  id="<?php echo 'mo2fa_' . esc_attr( $role_id ) . '_settings'; ?>" data-role="<?php echo esc_attr( $role_id ); ?>">
-				<?php
-				foreach ( $mo2f_methods_on_dashboard as $method ) {
-					?>
-				<div class="mr-mo-4"><input type="checkbox" name="<?php echo 'mo2fa_' . esc_attr( $role_id ) . '_[]'; ?>" id="<?php echo 'mo2fa_' . esc_attr( $method ); ?>" value="<?php echo esc_attr( $method ); ?>" <?php checked( in_array( $method, (array) get_site_option( 'mo2f_auth_methods_for_' . $role_id ), true ) ); ?>><?php echo esc_html( $mo2f_method_names[ $method ] ); ?></div>
-				<?php } ?>
+					<table>
+						<tr>
+							<?php
+								$counter = 0;
+							foreach ( $mo2f_methods_on_dashboard as $method ) {
+								?>
+							<td class="pr-mo-6">
+								<input type="checkbox" name="<?php echo 'mo2fa_' . esc_attr( $role_id ) . '_[]'; ?>" id="<?php echo 'mo2fa_' . esc_attr( $method ); ?> " value="<?php echo esc_attr( $method ); ?>" <?php checked( in_array( $method, (array) get_site_option( 'mo2f_auth_methods_for_' . $role_id ), true ) ); ?>>
+								<?php echo esc_attr( $mo2f_method_names[ $method ] ); ?>
+							</td>
+								<?php
+								++$counter;
+								foreach ( $mo2f_methods_on_dashboard as $method ) {
+									if ( $counter > 0 && 0 === $counter % 5 ) {
+										echo '</tr><tr>';
+									}
+									?>
+									<?php
+								}
+							}
+							?>
+						</tr>
+					</table>
 				</div>
 				<?php } ?>
 			</div>

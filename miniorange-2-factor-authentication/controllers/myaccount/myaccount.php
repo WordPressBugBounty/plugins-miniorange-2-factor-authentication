@@ -17,9 +17,6 @@ $email                            = get_site_option( 'mo2f_email' );
 $key                              = get_site_option( 'mo2f_customerKey' );
 $api                              = get_site_option( 'mo2f_api_key' );
 $token                            = get_site_option( 'mo2f_customer_token' );
-$email_transactions               = get_site_option( 'mo2fa_lk' ) ? 'Unlimited' : MoWpnsUtility::get_mo2f_db_option( 'cmVtYWluaW5nT1RQ', 'site_option' );
-$email_transactions               = $email_transactions ? $email_transactions : 0;
-$sms_transactions                 = get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' ) ? get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' ) : 0;
 if ( ! $key ) {
 	$skeleton      = array(
 		'##crossbutton##'    => '',

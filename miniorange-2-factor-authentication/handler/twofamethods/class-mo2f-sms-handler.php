@@ -84,7 +84,7 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 		 */
 		public function mo2f_send_otp( $phone, $session_id_encrypt, $user, $message ) {
 			global $mo2f_onprem_cloud_obj, $mo2fdb_queries;
-			$phone = $phone ?? $mo2fdb_queries->get_user_detail( 'mo2f_user_phone', $user->ID );
+			$phone = $phone ?? $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_phone', $user->ID );
 			TwoFAMoSessions::add_session_var( 'user_phone_temp', $phone );
 			$content = json_decode( $mo2f_onprem_cloud_obj->send_otp_token( $phone, null, $this->mo2f_current_method, $user ), true );
 			$this->mo2f_process_send_otp_content( $content, $session_id_encrypt, $user, $phone, $message );
@@ -231,7 +231,6 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 		public function mo2f_prompt_2fa_setup_dashboard() {
 			global $mo2fdb_queries;
 			$current_user = wp_get_current_user();
-			$mo2fdb_queries->insert_user( $current_user->ID );
 			$common_helper = new Mo2f_Common_Helper();
 			if ( get_site_option( 'mo_2factor_admin_registration_status' ) === 'MO_2_FACTOR_CUSTOMER_REGISTERED_SUCCESS' ) {
 				$skeleton = $common_helper->mo2f_sms_common_skeleton( $current_user->ID );
@@ -261,7 +260,7 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 		public function mo2f_prompt_2fa_test_dashboard() {
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj, $mo_wpns_utility;
 			$current_user    = wp_get_current_user();
-			$mo2f_user_phone = $mo2fdb_queries->get_user_detail( 'mo2f_user_phone', $current_user->ID );
+			$mo2f_user_phone = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_phone', $current_user->ID );
 			$response        = json_decode( $mo2f_onprem_cloud_obj->send_otp_token( $mo2f_user_phone, null, $this->mo2f_current_method, $current_user ), true );
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'SUCCESS' === $response['status'] ) {
@@ -294,7 +293,7 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 		 */
 		public function mo2f_prompt_2fa_login( $currentuser, $session_id_encrypt, $redirect_to ) {
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj, $mo_wpns_utility;	
-			$mo2f_user_phone     = $mo2fdb_queries->get_user_detail( 'mo2f_user_phone', $currentuser->ID );
+			$mo2f_user_phone     = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_phone', $currentuser->ID );
 			$content             = json_decode( $mo2f_onprem_cloud_obj->send_otp_token( $mo2f_user_phone, null, $this->mo2f_current_method, $currentuser ), true );
 			if ( json_last_error() === JSON_ERROR_NONE && MoWpnsConstants::SUCCESS_RESPONSE === $content['status']) {		
 					$mo2f_hidden_phone   = MO2f_Utility::get_hidden_phone( $mo2f_user_phone );

@@ -96,6 +96,8 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const MO2F_ERROR_MESSAGE_PROMPT                   = 'MO2F_ERROR_MESSAGE_PROMPT';
 		const MO2F_USER_BLOCKED_PROMPT                    = 'MO2F_USER_BLOCKED_PROMPT';
 		const MO2F_RBA_GET_USER_CONSENT                   = 'MO2F_RBA_GET_USER_CONSENT';
+		const MO2F_REMEMBER_IP_GET_USER_CONSENT           = 'MO2F_REMEMBER_IP_GET_USER_CONSENT';
+		const MO_2_FACTOR_SHOW_CONFIRMATION_BLOCK         = 'MO_2_FACTOR_SHOW_CONFIRMATION_BLOCK';
 		const MO_2_FACTOR_CHALLENGE_OTP_OVER_EMAIL        = 'MO_2_FACTOR_CHALLENGE_OTP_OVER_EMAIL';
 		const MO_2_FACTOR_CHALLENGE_OTP_OVER_TELEGRAM     = 'MO_2_FACTOR_CHALLENGE_OTP_OVER_TELEGRAM';
 		const MO_2_FACTOR_CHALLENGE_GOOGLE_AUTHENTICATION = 'MO_2_FACTOR_CHALLENGE_GOOGLE_AUTHENTICATION';
@@ -135,6 +137,7 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const IP_RANGE_BLOCKING                 = 'IP Range Blocking';
 		const FAILED_LOGIN_ATTEMPTS_FROM_NEW_IP = 'Failed login attempts from new IP.';
 		const LOGGED_IN_FROM_NEW_IP             = 'Logged in from new IP.';
+		const USER_DEATIL_META_KEY              = 'mo2f_user_2fa_data';
 
 		// code of url use .
 		const DATABASE                          = 'db';
@@ -171,6 +174,7 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const AUTH_ANDROID_APP_COMMON_LINK    = 'https://play.google.com/store/apps/details?id=';
 		const AUTH_IOS_APP_COMMON_LINK_ITUNES = 'http://itunes.apple.com/';
 		const AUTH_IOS_APP_COMMON_LINK_APPS   = 'https://apps.apple.com/';
+		const WP_META_HOST                    = 'https://graph.facebook.com/v17.0/';
 
 		/**
 		 * Method components used on test method screen on plugin dashboard.
@@ -207,6 +211,12 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 				'test_method_instructions' => 'verification code from the configured account in your Authy Authenticator app.',
 				'option_name'              => 'mo2f_validate_google_authy_test',
 				'nonce_name'               => 'mo2f-validate-google-authy-test-nonce',
+			),
+			self::OTP_OVER_WHATSAPP    => array(
+				'selected_2fa_method'      => self::OTP_OVER_WHATSAPP,
+				'test_method_instructions' => 'One time passcode sent to your registered mobile number of WhatsApp.',
+				'option_name'              => 'mo2f_validate_otp_over_WhatsApp',
+				'nonce_name'               => 'mo2f-validate-otp-over-WhatsApp-nonce',
 			),
 		);
 
@@ -246,6 +256,7 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			'OTPOverEmail'        => self::OTP_OVER_EMAIL,
 			'DuoAuthenticator'    => self::DUO_AUTHENTICATOR,
 			'OTPOverTelegram'     => self::OTP_OVER_TELEGRAM,
+			'OTPOverWhatsapp'     => self::OTP_OVER_WHATSAPP,
 		);
 
 		/**
@@ -261,6 +272,7 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			'OTP Over SMS'         => self::OTP_OVER_SMS,
 			'OTP Over Email'       => self::OTP_OVER_EMAIL,
 			'OTP Over Telegram'    => self::OTP_OVER_TELEGRAM,
+			'OTP Over WhatsApp'    => self::OTP_OVER_WHATSAPP,
 		);
 
 		/**

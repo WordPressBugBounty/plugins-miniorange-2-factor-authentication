@@ -143,6 +143,15 @@ if ( ! class_exists( 'Mo2f_TabDetails' ) ) {
 					$can_user_manage_options,
 					$this->reports_tab_details,
 				),
+				Mo2f_Tabs::WHATSAPP        => new Mo2f_PluginPageDetails(
+					'WhatsApp',
+					'mo_2fa_whatsapp',
+					'manage_options',
+					$request_uri,
+					'mo2fawhatsapp.php',
+					$can_user_manage_options,
+					array(),
+				),
 				Mo2f_Tabs::MY_ACCOUNT      => new Mo2f_PluginPageDetails(
 					'My Account',
 					'mo_2fa_my_account',

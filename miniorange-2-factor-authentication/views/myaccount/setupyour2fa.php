@@ -13,7 +13,6 @@ use TwoFA\Helper\MoWpnsUtility;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-$overlay_on_premium_features = MO2F_PREMIUM_PLAN ? '' : '<div class="mo2f_settings_overlay"><div class="mo2f-method-premium-tag">Premium Feature</div></div>';
 ?>
 <div>
 	<div class="mo2f-tw-top-content">
@@ -52,7 +51,7 @@ $overlay_on_premium_features = MO2F_PREMIUM_PLAN ? '' : '<div class="mo2f_settin
 		// ----------------------------------------.
 		global $mo2fdb_queries;
 
-		$is_customer_registered        = 'SUCCESS' === $mo2fdb_queries->get_user_detail( 'user_registration_with_miniorange', $user->ID ) ? true : false;
+		$is_customer_registered        = 'SUCCESS' === $mo2fdb_queries->mo2f_get_user_detail( 'user_registration_with_miniorange', $user->ID );
 		$can_user_configure_2fa_method = $can_display_admin_features || $is_customer_registered;
 
 		echo '<div class="overlay1" id="overlay" hidden ></div>';
@@ -62,6 +61,7 @@ $overlay_on_premium_features = MO2F_PREMIUM_PLAN ? '' : '<div class="mo2f_settin
                     <table class="mo2f_auth_methods_table">';
 
 		foreach ( $mo2f_methods_on_dashboard as $auth_method ) {
+			$is_premium_feature        = isset( $two_factor_methods_details[ $auth_method ]['crown'] ) && $two_factor_methods_details[ $auth_method ]['crown'];
 			$auth_method_abr           = str_replace( ' ', '', MoWpnsConstants::mo2f_convert_method_name( $auth_method, 'cap_to_small' ) );
 			$auth_method_abr           = empty( $auth_method_abr ) ? 'NoMethod' : $auth_method_abr;
 			$is_auth_method_selected   = ( $auth_method === $selected_method ? true : false );
@@ -71,7 +71,7 @@ $overlay_on_premium_features = MO2F_PREMIUM_PLAN ? '' : '<div class="mo2f_settin
 			if ( ( MoWpnsConstants::OTP_OVER_EMAIL === $auth_method || MoWpnsConstants::OUT_OF_BAND_EMAIL === $auth_method ) && ! MO2F_IS_ONPREM ) {
 				$is_auth_method_configured = 1;
 			} else {
-				$is_auth_method_configured = $mo2fdb_queries->get_user_detail( 'mo2f_' . $auth_method_abr . '_config_status', $user->ID );
+				$is_auth_method_configured = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_' . $auth_method_abr . '_config_status', $user->ID );
 			}
 			$is_mfa_enabled = get_site_option( 'mo2f_multi_factor_authentication' );
 			echo '<div class="mo2f-tw-thumbnail ';
@@ -89,6 +89,9 @@ $overlay_on_premium_features = MO2F_PREMIUM_PLAN ? '' : '<div class="mo2f_settin
 				echo esc_html( MoWpnsConstants::mo2f_convert_method_name( $auth_method, 'cap_to_small' ) . ' Via Link' );
 			} else {
 				echo esc_html( MoWpnsConstants::mo2f_convert_method_name( $auth_method, 'cap_to_small' ) );
+				if ( $is_premium_feature ) {
+					echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. 
+				}
 			}
 
 			echo '</b></div></div>';
@@ -108,13 +111,8 @@ $overlay_on_premium_features = MO2F_PREMIUM_PLAN ? '' : '<div class="mo2f_settin
 			echo '<div class="mo2f-thumbnail-method-desc">';
 			echo wp_kses_post( __( $two_factor_methods_details[ $auth_method ]['desc'], 'miniorange-2-factor-authentication' ) ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal 
 			echo '</div>';
-			if ( isset( $two_factor_methods_details[ $auth_method ]['crown'] ) && $two_factor_methods_details[ $auth_method ]['crown'] ) {
-				$allowed_html = array(
-					'div' => array(
-						'class' => array(),
-					),
-				);
-				echo wp_kses( $overlay_on_premium_features, $allowed_html );
+			if ( $is_premium_feature ) {
+				echo '<div class="mo2f_settings_overlay"></div>';
 			}
 			echo '<div class="mo2f-thumbnail-bottom-section">';
 			if ( MO2F_IS_ONPREM ) {

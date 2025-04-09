@@ -72,6 +72,9 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 				case 'mo2f_set_otp_over_sms':
 					$this->mo2f_set_otp_over_sms();
 					break;
+				case 'mo2f_set_otp_over_whatsapp':
+					$this->mo2f_set_otp_over_whatsapp();
+					break;
 				case 'mo2f_enable_twofactor_userprofile':
 					$this->mo2f_enable_twofactor_userprofile( $_POST );
 					break;
@@ -122,7 +125,7 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 
 				global $mo2fdb_queries, $user;
 				if ( MO2f_Utility::mo2f_check_number_length( $otp_token ) ) {
-					$email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID );
+					$email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
 					$user  = wp_get_current_user();
 					if ( ! $user->ID ) {
 						$user_id = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
@@ -199,9 +202,36 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 			}
 			$new_phone = isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : null;
 			$new_phone = str_replace( ' ', '', $new_phone );
-			$mo2fdb_queries->update_user_details( $user_id, array( 'mo2f_user_phone' => $new_phone ) );
-			$user_phone = $mo2fdb_queries->get_user_detail( 'mo2f_user_phone', $user_id );
-			wp_send_json_success( $user_phone );
+			$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'mo2f_user_phone' => $new_phone ) );
+			wp_send_json_success( $new_phone );
+		}
+
+		/**
+		 * Function to set OTP over WhatsApp of user.
+		 *
+		 * @return void
+		 */
+		public function mo2f_set_otp_over_whatsapp() {
+			if ( ! check_ajax_referer( 'mo-two-factor-ajax-nonce', 'nonce', false ) ) {
+				$error = new WP_Error();
+				$error->add( 'empty_username', '<strong>' . esc_html__( 'ERROR', 'miniorange-2-factor-authentication' ) . '</strong>: ' . esc_html__( 'Invalid Request.', 'miniorange-2-factor-authentication' ) );
+				wp_send_json_error( 'mo2f-ajax' );
+				exit;
+			}
+			$is_2fa_enabled = isset( $_POST['is_2fa_enabled'] ) ? sanitize_text_field( wp_unslash( $_POST['is_2fa_enabled'] ) ) : null;
+			if ( 'true' !== $is_2fa_enabled ) {
+				wp_send_json( '2fadisabled' );
+			}
+			global $mo2fdb_queries;
+			$transient_id = isset( $_POST['transient_id'] ) ? sanitize_text_field( wp_unslash( $_POST['transient_id'] ) ) : null;
+			$user_id      = MO2f_Utility::mo2f_get_transient( $transient_id, 'mo2f_user_id' );
+			if ( empty( $user_id ) ) {
+				wp_send_json_error( 'UserIdNotFound' );
+			}
+			$new_phone = isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : null;
+			$new_phone = str_replace( ' ', '', $new_phone );
+			$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'mo2f_user_whatsapp' => $new_phone ) );
+			wp_send_json_success( $new_phone );
 		}
 		/**
 		 * Function to set Google Authenticator method of user.
@@ -226,7 +256,8 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 				wp_send_json_error( 'UserIdNotFound' );
 			}
 			$user      = get_user_by( 'id', $user_id );
-			$email     = ! empty( $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user_id ) ) ? $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user_id ) : $user->user_email;
+			$email     = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user_id );
+			$email     = ! empty( $email ) ? $email : $user->user_email;
 			$otp_token = isset( $_POST['code'] ) ? sanitize_text_field( wp_unslash( $_POST['code'] ) ) : null;
 			$ga_secret = isset( $_POST['ga_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['ga_secret'] ) ) : null;
 

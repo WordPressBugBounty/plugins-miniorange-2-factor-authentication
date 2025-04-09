@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
 $user                         = wp_get_current_user();
 $user_id                      = $user->ID;
-$selected_method              = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user_id );
+$selected_method              = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id );
 $is_customer_admin_registered = get_site_option( 'mo_2factor_admin_registration_status' );
 
 update_site_option( 'mo2f_show_sms_transaction_message', MoWpnsConstants::OTP_OVER_SMS === $selected_method );
@@ -33,7 +33,7 @@ if ( ! $can_display_admin_features && ! Miniorange_Authentication::mo2f_is_custo
 	);
 }
 if ( MO2F_IS_ONPREM ) {
-	$selected_method = ! empty( $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user_id ) ) ? $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user_id ) : 'NONE';// to do: shift the implementation above and avoid redefining same var.
+	$selected_method = ! empty( $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id ) ) ? $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id ) : 'NONE';// to do: shift the implementation above and avoid redefining same var.
 }
 $common_helper = new Mo2f_Common_Helper();
 $common_helper->mo2f_echo_js_css_files();

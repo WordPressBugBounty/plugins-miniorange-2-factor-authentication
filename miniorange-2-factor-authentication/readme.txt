@@ -6,7 +6,7 @@
  Requires at least: 3.0.1
  Tested up to: 6.7.1
  Requires PHP: 7.2.24
- Stable tag: 6.0.6
+ Stable tag: 6.0.7
  License: MIT/Expat
  License URI: https://docs.miniorange.com/mit-license
 
@@ -200,6 +200,11 @@ TOTP (Time-Based One-Time Password) is a type of Two-Factor Authentication (2FA)
 
  == Changelog ==
 
+ = 6.0.7 =
+ * UI/UX Improvements - miniOrange user Login & Registration form | Sync Transactions button
+ * Bug Fixes - Login Report feature
+ * Updates - Users' 2FA Status table | .pot file
+
  = 6.0.6 =
  * Improvements - 2FA admin dashboard UI/UX
  * Auto file inclusion added
@@ -335,6 +340,11 @@ TOTP (Time-Based One-Time Password) is a type of Two-Factor Authentication (2FA)
  For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/miniorange-2-factor-authentication/trunk/changelog.txt) provided with the plugin.
 
  == Upgrade Notice ==
+
+ = 6.0.7 =
+ * UI/UX Improvements - miniOrange user Login & Registration form | Sync Transactions button
+ * Bug Fixes - Login Report feature
+ * Updates - Users' 2FA Status table | .pot file
 
  = 6.0.6 =
  * Improvements - 2FA admin dashboard UI/UX

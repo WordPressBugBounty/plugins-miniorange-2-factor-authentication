@@ -115,7 +115,7 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 
 				$ip_address     = filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : 'INVALID_IP_FORMAT';
 				$mo_wpns_config = new MoWpnsHandler();
-				$is_whitelisted = $mo_wpns_config->is_whitelisted( $ip_address );
+				$is_whitelisted = $mo_wpns_config->mo2f_is_whitelisted( $ip_address );
 				if ( ! $is_whitelisted ) {
 					if ( $mo_wpns_config->mo_wpns_is_ip_blocked( $ip_address ) ) {
 						echo( 'already blocked' );
@@ -127,9 +127,9 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 						<thead><tr><th>IP Address&emsp;&emsp;</th><th>Reason&emsp;&emsp;</th><th>Blocked Until&emsp;&emsp;</th><th>Blocked Date&emsp;&emsp;</th><th>Action&emsp;&emsp;</th></tr></thead>
 						<tbody>
 						<?php
-						$mo_wpns_handler = new MoWpnsHandler();
-						$blockedips      = $mo_wpns_handler->get_blocked_ips();
-						$whitelisted_ips = $mo_wpns_handler->get_whitelisted_ips();
+						global $wpns_db_queries;
+						$blockedips      = $wpns_db_queries->mo2f_get_blocked_ip_list();
+						$whitelisted_ips = $wpns_db_queries->mo2f_get_whitelisted_ips_list();
 						global $mo2f_dir_name;
 						foreach ( $blockedips as $blockedip ) {
 							echo "<tr class='mo_wpns_not_bold'><td>" . esc_html( $blockedip->ip_address ) . '</td><td>' . esc_html( $blockedip->reason ) . '</td><td>';
@@ -177,13 +177,13 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 			} else {
 				$ip_address     = ( filter_var( $ip, FILTER_VALIDATE_IP ) ) ? $ip : 'INVALID_IP';
 				$mo_wpns_config = new MoWpnsHandler();
-				if ( $mo_wpns_config->is_whitelisted( $ip_address ) ) {
+				if ( $mo_wpns_config->mo2f_is_whitelisted( $ip_address ) ) {
 					echo( 'IP_ALREADY_WHITELISTED' );
 					exit;
 				} else {
-					$mo_wpns_config->whitelist_ip( $ip );
-					$mo_wpns_handler = new MoWpnsHandler();
-					$whitelisted_ips = $mo_wpns_handler->get_whitelisted_ips();
+					$mo_wpns_config->mo2f_whitelist_ip( $ip );
+					global $wpns_db_queries;
+					$whitelisted_ips = $wpns_db_queries->mo2f_get_whitelisted_ips_list();
 
 					?>
 				<table id="whitelistedips_table1" class="display">
@@ -216,7 +216,7 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 		 */
 		public function wpns_ip_lookup() {
 
-			if ( ! check_ajax_referer( 'LoginSecurityNonce', 'nonce', false ) ) {
+			if ( ! check_ajax_referer( 'mo2f-ip-black-list-ajax-nonce', 'nonce', false ) ) {
 				wp_send_json_error( 'class-wpns-ajax' );
 
 			} else {
@@ -284,17 +284,17 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 				echo( 'UNKNOWN_ERROR' );
 				exit;
 			} else {
-				$entryid        = sanitize_text_field( $entry_id );
-				$mo_wpns_config = new MoWpnsHandler();
-				$mo_wpns_config->unblock_ip_entry( $entryid );
+				$entryid = sanitize_text_field( $entry_id );
+				global $wpns_db_queries;
+				$wpns_db_queries->mo2f_delete_blocked_ip( $entryid );
 				?>
 				<table id="blockedips_table1" class="display">
 				<thead><tr><th>IP Address&emsp;&emsp;</th><th>Reason&emsp;&emsp;</th><th>Blocked Until&emsp;&emsp;</th><th>Blocked Date&emsp;&emsp;</th><th>Action&emsp;&emsp;</th></tr></thead>
 				<tbody>
 				<?php
-				$mo_wpns_handler = new MoWpnsHandler();
-				$blockedips      = $mo_wpns_handler->get_blocked_ips();
-				$whitelisted_ips = $mo_wpns_handler->get_whitelisted_ips();
+				global $wpns_db_queries;
+				$blockedips      = $wpns_db_queries->mo2f_get_blocked_ip_list();
+				$whitelisted_ips = $wpns_db_queries->mo2f_get_whitelisted_ips_list();
 				foreach ( $blockedips as $blockedip ) {
 					echo "<tr class='mo_wpns_not_bold'><td>" . esc_html( $blockedip->ip_address ) . '</td><td>' . esc_html( $blockedip->reason ) . '</td><td>';
 					if ( empty( $blockedip->blocked_for_time ) ) {
@@ -331,11 +331,10 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 				echo( 'UNKNOWN_ERROR' );
 				exit;
 			} else {
-				$entryid        = isset( $entry_id ) ? sanitize_text_field( $entry_id ) : '';
-				$mo_wpns_config = new MoWpnsHandler();
-				$mo_wpns_config->remove_whitelist_entry( $entryid );
-				$mo_wpns_handler = new MoWpnsHandler();
-				$whitelisted_ips = $mo_wpns_handler->get_whitelisted_ips();
+				$entryid = isset( $entry_id ) ? sanitize_text_field( $entry_id ) : '';
+				global $wpns_db_queries;
+				$wpns_db_queries->mo2f_delete_whitelisted_ip( $entryid );
+				$whitelisted_ips = $wpns_db_queries->mo2f_get_whitelisted_ips_list();
 
 				?>
 				<table id="whitelistedips_table1" class="display">

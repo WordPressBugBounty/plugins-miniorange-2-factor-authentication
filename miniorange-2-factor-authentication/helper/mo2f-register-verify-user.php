@@ -37,7 +37,7 @@ function mo2fa_save_success_customer_config( $email, $id, $api_key, $token, $app
 	update_option( 'mo2f_miniorange_admin', $user->ID );
 	update_site_option( 'mo_2factor_admin_registration_status', 'MO_2_FACTOR_CUSTOMER_REGISTERED_SUCCESS' );
 
-	$mo2fdb_queries->update_user_details(
+	$mo2fdb_queries->mo2f_update_user_details(
 		$user->ID,
 		array(
 			'mo2f_user_email'                   => $email,
@@ -165,31 +165,31 @@ function mo2f_update_and_sync_user_two_factor( $user_id, $userinfo ) {
 	global $mo2fdb_queries;
 	$mo2f_second_factor = isset( $userinfo['authType'] ) && ! empty( $userinfo['authType'] ) ? $userinfo['authType'] : 'NONE';
 	if ( MO2F_IS_ONPREM ) {
-		$mo2f_second_factor = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user_id );
+		$mo2f_second_factor = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id );
 		$mo2f_second_factor = $mo2f_second_factor ? $mo2f_second_factor : 'NONE';
 		return $mo2f_second_factor;
 	}
 
-	$mo2fdb_queries->update_user_details( $user_id, array( 'mo2f_user_email' => $userinfo['email'] ) );
+	$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'mo2f_user_email' => $userinfo['email'] ) );
 	if ( MoWpnsConstants::OUT_OF_BAND_EMAIL === $mo2f_second_factor ) {
-		$mo2fdb_queries->update_user_details( $user_id, array( 'mo2f_EmailVerification_config_status' => true ) );
+		$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'mo2f_EmailVerification_config_status' => true ) );
 	} elseif ( MoWpnsConstants::OTP_OVER_SMS === $mo2f_second_factor && ! MO2F_IS_ONPREM ) {
 		$phone_num = isset( $userinfo['phone'] ) ? sanitize_text_field( $userinfo['phone'] ) : '';
-		$mo2fdb_queries->update_user_details( $user_id, array( 'mo2f_OTPOverSMS_config_status' => true ) );
+		$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'mo2f_OTPOverSMS_config_status' => true ) );
 		$_SESSION['user_phone'] = $phone_num;
 	} elseif ( MoWpnsConstants::SECURITY_QUESTIONS === $mo2f_second_factor ) {
-		$mo2fdb_queries->update_user_details( $user_id, array( 'mo2f_SecurityQuestions_config_status' => true ) );
+		$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'mo2f_SecurityQuestions_config_status' => true ) );
 	} elseif ( MoWpnsConstants::GOOGLE_AUTHENTICATOR === $mo2f_second_factor ) {
 		$app_type = get_user_meta( $user_id, 'mo2f_external_app_type', true );
 		if ( MoWpnsConstants::AUTHY_AUTHENTICATOR === $app_type ) {
-			$mo2fdb_queries->update_user_details(
+			$mo2fdb_queries->mo2f_update_user_details(
 				$user_id,
 				array(
 					'mo2f_AuthyAuthenticator_config_status' => true,
 				)
 			);
 		} else {
-			$mo2fdb_queries->update_user_details(
+			$mo2fdb_queries->mo2f_update_user_details(
 				$user_id,
 				array(
 					'mo2f_GoogleAuthenticator_config_status' => true,

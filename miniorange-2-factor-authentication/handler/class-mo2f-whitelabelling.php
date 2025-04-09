@@ -147,7 +147,8 @@ if ( ! class_exists( 'Mo2f_Whitelabelling' ) ) {
 		public function mo2f_save_custom_email_template( $post ) {
 			$show_message  = new MoWpnsMessages();
 			$email_content = stripslashes( $post[ $post['option'] . '_config_message' ] );
-			if ( strpos( $email_content, 'xecurify-logo.png' ) ) {
+			$is_lv_needed  = apply_filters( 'mo2f_is_lv_needed', false );
+			if ( $is_lv_needed  || strpos( $email_content, 'https://login.xecurify.com/moas/images/xecurify-logo.png' ) ) {
 				update_site_option( $post['subject_name'], stripslashes( $post['mo2f_email_subject'] ) );
 				update_site_option( $post['option'], stripslashes( $post[ $post['option'] . '_config_message' ] ) );
 				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::EMAIL_TEMPLATE_SAVED ), 'SUCCESS' );

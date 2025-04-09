@@ -81,58 +81,8 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 */
 		public function generate_tables() {
 			global $wpdb;
-			$table_name = $this->user_details_table;
-			if ( $wpdb->get_var( $wpdb->prepare( 'show tables like %s', array( $table_name ) ) ) !== $table_name ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange -- Schema change is neccessary here.
-				$sql = 'CREATE TABLE IF NOT EXISTS ' . $table_name . ' (  
-				`user_id` bigint NOT NULL, 
-				`mo2f_OTPOverSMS_config_status` tinyint, 
-				`mo2f_miniOrangePushNotification_config_status` tinyint, 
-				`mo2f_miniOrangeQRCodeAuthentication_config_status` tinyint, 
-				`mo2f_miniOrangeSoftToken_config_status` tinyint, 
-				`mo2f_AuthyAuthenticator_config_status` tinyint, 
-				`mo2f_EmailVerification_config_status` tinyint, 
-				`mo2f_SecurityQuestions_config_status` tinyint, 
-				`mo2f_GoogleAuthenticator_config_status` tinyint, 
-				`mo2f_OTPOverEmail_config_status` tinyint, 
-				`mo2f_OTPOverTelegram_config_status` tinyint, 
-				`mo2f_OTPOverWhatsapp_config_status` tinyint,
-				`mo2f_DuoAuthenticator_config_status` tinyint, 
-				`mobile_registration_status` tinyint, 
-				`mo2f_2factor_enable_2fa_byusers` tinyint DEFAULT 1,
-				`mo2f_configured_2FA_method` mediumtext NOT NULL , 
-				`mo2f_user_phone` mediumtext NOT NULL , 
-				`mo2f_user_email` mediumtext NOT NULL,  
-				`user_registration_with_miniorange` mediumtext NOT NULL, 
-				`mo_2factor_user_registration_status` mediumtext NOT NULL,
-				UNIQUE KEY user_id (user_id) );';
-
-				dbDelta( $sql );
-			}
 			add_site_option( 'cmVtYWluaW5nT1RQ', 30 );
 			add_site_option( 'bGltaXRSZWFjaGVk', 0 );
-			add_site_option( base64_encode( 'totalUsersCloud' ), 0 ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- We need to obfuscate the option as it will be stored in database.
-			add_site_option( base64_encode( 'remainingWhatsapptransactions' ), 30 ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- We need to obfuscate the option as it will be stored in database.
-
-			$check_if_column_exists     = $this->check_if_column_exists( 'mo2f_user_details', 'mo2f_OTPOverEmail_config_status' );
-			$check_if_column_exists_tel = $this->check_if_column_exists( 'mo2f_user_details', 'mo2f_OTPOverTelegram_config_status' );
-			$check_if_column_exists_duo = $this->check_if_column_exists( 'mo2f_user_details', 'mo2f_DuoAuthenticator_config_status' );
-			if ( ! $check_if_column_exists ) {
-				$query = "ALTER TABLE `$table_name` ADD COLUMN `mo2f_OTPOverEmail_config_status` tinyint";
-				$this->execute_add_column( $query );
-
-			}
-			if ( ! $check_if_column_exists_tel ) {
-				$query = 'ALTER TABLE ' . $table_name . ' ADD COLUMN (
-			`mo2f_OTPOverTelegram_config_status` tinyint, 
-			`mo2f_OTPOverWhatsapp_config_status` tinyint);';
-				$this->execute_add_column( $query );
-			}
-			if ( ! $check_if_column_exists_duo ) {
-				$query = 'ALTER TABLE ' . $table_name . ' ADD COLUMN ( 
-			`mo2f_DuoAuthenticator_config_status` tinyint);';
-				$this->execute_add_column( $query );
-			}
 			$table_name = $this->user_login_info_table;
 			if ( $wpdb->get_var( $wpdb->prepare( 'show tables like %s', array( $table_name ) ) ) !== $table_name ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange -- Schema change is neccessary here.
@@ -174,7 +124,6 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 				$this->execute_add_column( $query );
 
 			}
-
 		}
 
 		/**
@@ -252,20 +201,8 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 				$this->execute_add_column( $query );
 
 			}
-
 		}
 
-		/**
-		 * Adds user id in the user details table in the database.
-		 *
-		 * @param integer $user_id User ID corresponding which the details get added.
-		 * @return void
-		 */
-		public function insert_user( $user_id ) {
-			global $wpdb;
-
-			$wpdb->query( $wpdb->prepare( 'INSERT INTO %1s  (user_id) VALUES(%d) ON DUPLICATE KEY UPDATE user_id=%d;', array( $this->user_details_table, $user_id, $user_id ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- DB Direct Query is necessary here.
-		}
 
 		/**
 		 * Fetch user details of given user id from database.
@@ -274,12 +211,12 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 * @param integer $user_id Id of the users whose details need to be fetched.
 		 * @return string
 		 */
-		public function get_user_detail( $column_name, $user_id ) {
-			global $wpdb;
-
-			$user_column_detail = $wpdb->get_results( $wpdb->prepare( 'SELECT %1s FROM %1s WHERE user_id = %d;', array( $column_name, $this->user_details_table, $user_id ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- DB Direct Query is necessary here.
-			$value              = empty( $user_column_detail ) ? '' : get_object_vars( $user_column_detail[0] );
-			return empty( $value ) ? '' : $value[ $column_name ];
+		public function mo2f_get_user_detail( $column_name, $user_id ) {
+			$mo2f_user_2fa_data = get_user_meta( $user_id, 'mo2f_user_2fa_data', true );
+			if ( ! empty( $mo2f_user_2fa_data ) && isset( $mo2f_user_2fa_data[ $column_name ] ) ) {
+				return $mo2f_user_2fa_data[ $column_name ];
+			}
+			return '';
 		}
 
 		/**
@@ -290,24 +227,25 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 */
 		public function mo2f_get_specific_method_users_count( $method ) {
 			global $wpdb;
-			if ( 'TOTP BASED AUTHENTICATION' === $method ) {
-				$count = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-					$wpdb->prepare(
-						// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
-						'SELECT * FROM %1s WHERE mo2f_configured_2FA_method = %s OR 
-						mo2f_configured_2FA_method = "miniOrange Soft Token" OR 
-						mo2f_configured_2FA_method = %s;',
-						array( $this->user_details_table, MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::AUTHY_AUTHENTICATOR )
-					)
-				);
-			} else {
-				$count = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-					$wpdb->prepare(
-						'SELECT * FROM %1s WHERE mo2f_configured_2FA_method LIKE %s;', // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
-						array( $this->user_details_table, $method )
-					)
-				);
-
+			$users_meta = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT user_id, meta_value
+					FROM {$wpdb->usermeta}
+					WHERE meta_key = %s",
+					MoWpnsConstants::USER_DEATIL_META_KEY
+				)
+			);
+			$count      = 0;
+			if ( ! empty( $users_meta ) ) {
+				foreach ( $users_meta as $user_meta ) {
+					$meta_value = maybe_unserialize( $user_meta->meta_value );
+					if ( is_array( $meta_value ) && isset( $meta_value['mo2f_configured_2FA_method'] ) ) {
+						$configured_method = $meta_value['mo2f_configured_2FA_method'];
+						if ( $configured_method === $method ) {
+							++$count;
+						}
+					}
+				}
 			}
 			return $count;
 		}
@@ -318,12 +256,8 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 * @param integer $user_id User ID whose details will be deleted.
 		 * @return void
 		 */
-		public function delete_user_details( $user_id ) {
-			global $wpdb;
-
-			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-				$wpdb->prepare( 'DELETE FROM  %1s WHERE user_id = %d;', array( $this->user_details_table, $user_id ) ) // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
-			);
+		public function mo2f_delete_user_details( $user_id ) {
+			delete_user_meta( $user_id, MoWpnsConstants::USER_DEATIL_META_KEY );
 		}
 
 		/**
@@ -331,10 +265,14 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 *
 		 * @return integer
 		 */
-		public function get_no_of_2fa_users() {
+		public function mo2f_get_no_of_2fa_users() {
 			global $wpdb;
-
-			$count = $wpdb->query( $wpdb->prepare( 'SELECT * FROM  %1s;', array( $this->user_details_table ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder  -- DB Direct Query is necessary here.
+			$count = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(DISTINCT user_id) FROM {$wpdb->usermeta} WHERE meta_key = %s",
+					MoWpnsConstants::USER_DEATIL_META_KEY
+				)
+			);
 			return $count;
 		}
 
@@ -346,31 +284,23 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		public function get_all_user_2fa_methods() {
 			global $wpdb;
 			$all_methods = array();
-
-			$methods = $wpdb->get_results(  // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
+			$users_meta  = $wpdb->get_results(
 				$wpdb->prepare(
-					'SELECT mo2f_configured_2FA_method FROM %1s;', // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
-					array( $this->user_details_table )
-				),
-				ARRAY_A
+					"SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s",
+					MoWpnsConstants::USER_DEATIL_META_KEY
+				)
 			);
-			foreach ( $methods as $method ) {
-				array_push( $all_methods, $method['mo2f_configured_2FA_method'] );
+			if ( ! empty( $users_meta ) ) {
+				foreach ( $users_meta as $user_meta ) {
+					$meta_value = maybe_unserialize( $user_meta->meta_value );
+					if ( is_array( $meta_value ) && isset( $meta_value['mo2f_configured_2FA_method'] ) ) {
+						array_push( $all_methods, $meta_value['mo2f_configured_2FA_method'] );
+					}
+				}
 			}
 			return $all_methods;
 		}
 
-		/**
-		 * Checks if the given table exist in the database.
-		 *
-		 * @return bool
-		 */
-		public function check_if_table_exists() {
-			global $wpdb;
-
-			$does_table_exist = $wpdb->query( $wpdb->prepare( 'SHOW TABLES LIKE %s;', array( $this->user_details_table ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- DB Direct Query is necessary here.
-			return $does_table_exist;
-		}
 
 		/**
 		 * Fetch the user details corresponding to given user id from user details table.
@@ -378,13 +308,9 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 * @param integer $user_id User ID whose details need to be fetched.
 		 * @return integer
 		 */
-		public function check_if_user_column_exists( $user_id ) {
-			global $wpdb;
-
-			$value = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-				$wpdb->prepare( 'SELECT * FROM %1s WHERE user_id = %d;', array( $this->user_details_table, $user_id ) ) // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
-			);
-			return $value;
+		public function mo2f_check_if_user_exists( $user_id ) {
+			$meta_value = get_user_meta( $user_id, 'mo2f_user_2fa_data', true );
+			return ! empty( $meta_value );
 		}
 
 		/**
@@ -395,11 +321,7 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 * @return bool
 		 */
 		public function check_if_column_exists( $table_type, $column_name ) {
-			if ( 'user_login_info_table' === $table_type ) {
-				$table = $this->user_login_info_table;
-			} elseif ( 'mo2f_user_details' === $table_type ) {
-				$table = $this->user_details_table;
-			}
+			$table = $this->user_login_info_table;
 			global $wpdb;
 
 			$value = $wpdb->query( $wpdb->prepare( 'SHOW COLUMNS FROM %1s LIKE %s;', array( $table, $column_name ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- DB Direct Query is necessary here.
@@ -413,27 +335,15 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 * @param array   $update The details which need to be updated for given user id.
 		 * @return void
 		 */
-		public function update_user_details( $user_id, $update ) {
-			global $wpdb;
-			$count = count( $update );
-			$sql   = 'UPDATE ' . $this->user_details_table . ' SET ';
-			$i     = 1;
-			foreach ( $update as $key => $value ) {
-				if ( 'mo2f_configured_2FA_method' === $key || 'mo2f_user_phone' === $key || 'mo2f_user_email' === $key || 'user_registration_with_miniorange' === $key || 'mo_2factor_user_registration_status' === $key ) {
-					$sql .= $wpdb->prepare( ' %1s =%s', array( $key, $value ) ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
-				} else {
-					$sql .= $wpdb->prepare( ' %1s =%s', array( $key, $value ) ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
-				}
-
-				if ( $i < $count ) {
-					$sql .= ' , ';
-				}
-				$i ++;
+		public function mo2f_update_user_details( $user_id, $update ) {
+			$mo2f_user_2fa_data = get_user_meta( $user_id, 'mo2f_user_2fa_data', true );
+			if ( ! is_array( $mo2f_user_2fa_data ) ) {
+				$mo2f_user_2fa_data = array();
 			}
-
-			$sql .= $wpdb->prepare( ' WHERE user_id= %d;', array( $user_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-
-			$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
+			foreach ( $update as $key => $value ) {
+					$mo2f_user_2fa_data[ $key ] = $value;
+			}
+			update_user_meta( $user_id, 'mo2f_user_2fa_data', $mo2f_user_2fa_data );
 		}
 
 		/**
@@ -482,7 +392,7 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 				if ( $i < $count ) {
 					$sql .= ' , ';
 				}
-				$i ++;
+				$i++;
 			}
 
 			$wpdb->query( $sql .= $wpdb->prepare( ' WHERE session_id=%s;', array( $session_id ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Ignoring complex placeholder warning and DB Direct Query is necessary here.
@@ -521,11 +431,21 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 * @param interger $user_id User id whose details need to be fetched.
 		 * @return array
 		 */
-		public function get_user_configured_methods( $user_id ) {
-			global $wpdb;
-
-			$user_methods_detail = $wpdb->get_results( $wpdb->prepare( 'SELECT *  FROM %1s  WHERE user_id = %d;', array( $this->user_details_table, $user_id ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- DB Direct Query is necessary here.
-			return $user_methods_detail;
+		public function mo2f_get_user_configured_methods( $user_id ) {
+			$user_meta           = get_user_meta( $user_id, MoWpnsConstants::USER_DEATIL_META_KEY, true );
+			$user_methods_detail = ! empty( $user_meta ) ? maybe_unserialize( $user_meta ) : array();
+			if ( ! empty( $user_methods_detail ) && is_array( $user_methods_detail ) ) {
+				if ( ! isset( $user_methods_detail[0] ) ) {
+					return array( (object) $user_methods_detail );
+				}
+				return array_map(
+					function ( $item ) {
+						return (object) $item;
+					},
+					$user_methods_detail
+				);
+			}
+			return array();
 		}
 
 		/**
@@ -550,16 +470,16 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 */
 		public function check_alluser_limit_exceeded( $user_id ) {
 			global $wpdb;
-
-			$value = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-				$wpdb->prepare( 'SELECT * FROM %1s;', array( $this->user_details_table ) ) // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
+			$total_users_configured  = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(DISTINCT user_id) FROM {$wpdb->usermeta} WHERE meta_key = %s",
+					MoWpnsConstants::USER_DEATIL_META_KEY
+				)
 			);
+			$user_meta_data          = get_user_meta( $user_id, MoWpnsConstants::USER_DEATIL_META_KEY, true );
+			$user_already_configured = ! empty( $user_meta_data );
 
-			$user_already_configured = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-				$wpdb->prepare( 'SELECT * FROM %1s WHERE user_id = %d;', array( $this->user_details_table, $user_id ) ) // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
-			);
-
-			if ( $value < 3 || $user_already_configured ) {
+			if ( $total_users_configured < 3 || $user_already_configured ) {
 				return false;
 			} else {
 				return true;
@@ -580,76 +500,6 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		}
 
 		/**
-		 * Gets distinct configured methods.
-		 *
-		 * @return array
-		 */
-		public function mo2f_get_distinct_configured_methods() {
-			global $wpdb;
-
-			$distinct_methods   = $wpdb->get_results(  // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-				$wpdb->prepare(
-					'SELECT DISTINCT mo2f_configured_2FA_method FROM %1s;', // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
-					array( $this->user_details_table )
-				),
-				ARRAY_A
-			);
-			$all_config_methods = array();
-			foreach ( $distinct_methods as $distinct_method ) {
-				if ( empty( $distinct_method['mo2f_configured_2FA_method'] ) || ctype_upper( str_replace( ' ', '', $distinct_method['mo2f_configured_2FA_method'] ) ) ) {
-					continue;
-				}
-				array_push( $all_config_methods, $distinct_method['mo2f_configured_2FA_method'] );
-			}
-			return $all_config_methods;
-		}
-
-		/**
-		 * Updates the 2FA methods names from database.
-		 *
-		 * @param array $twofa_methods Total 2fa methods.
-		 * @param array $configured_methods Configured 2fa methods.
-		 * @return void
-		 */
-		public function mo2f_run_queries_to_change_method_names( $twofa_methods, $configured_methods ) {
-			global $wpdb;
-			foreach ( $configured_methods as $configured_method ) {
-				$wpdb->query( $wpdb->prepare( 'UPDATE %1s SET `mo2f_configured_2FA_method`= %s WHERE `mo2f_configured_2FA_method`=%s', $this->user_details_table, $twofa_methods[ $configured_method ], $configured_method ) ); //phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring complex warning of Direct Database call as it is used for tablename.
-			}
-			update_site_option( 'mo2f_is_methods_name_updated', true );
-		}
-
-		/**
-		 * Delete user details.
-		 *
-		 * @return void
-		 */
-		public function mo2f_delete_user_details() {
-			global $wpdb;
-			$current_user = wp_get_current_user();
-			$user_id      = $current_user->ID;
-			// Deleting only admin details as admin can change his/her 2FA details.
-			$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-				$wpdb->prepare( 'DELETE FROM  %1s WHERE user_id = %d', array( $wpdb->base_prefix . 'mo2f_user_details', $user_id ) ) // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
-			);
-		}
-
-		/**
-		 * Checking the email is already registered or not
-		 *
-		 * @param string $email It will carry the email address .
-		 * @return boolean
-		 */
-		public static function check_if_email_is_already_registered( $email ) {
-			global $wpdb;
-			$user_column_detail = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM %1s WHERE mo2f_user_email = %s;', array( $wpdb->base_prefix . 'mo2f_user_details', $email ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- DB Direct Query is necessary here.
-			if ( ! empty( $user_column_detail ) ) {
-				return true;
-			}
-			return false;
-		}
-
-		/**
 		 * Get all the user ids and updates the user details in user details table.
 		 *
 		 * @return void
@@ -666,9 +516,7 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 
 				if ( isset( $row->user_id ) ) {
 
-					$this->insert_user( $row->user_id );
-
-					$this->update_user_details(
+					$this->mo2f_update_user_details(
 						$row->user_id,
 						array(
 							'mo2f_GoogleAuthenticator_config_status' => get_user_meta( $row->user_id, MoWpnsConstants::GOOGLE_AUTHENTICATOR, true ),
@@ -686,6 +534,17 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 				}
 			}
 		}
-
+		/**
+		 * Drops a specified table from the WordPress database.
+		 *
+		 * @param string $table_name The name of the table to be dropped (without prefix).
+		 * @return void
+		 */
+		public function mo2f_drop_table( $table_name ) {
+			global $wpdb;
+			$table_name = esc_sql( $wpdb->base_prefix . $table_name );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
+			$wpdb->query( "DROP TABLE IF EXISTS `{$table_name}`" );
+		}
 	}
 }

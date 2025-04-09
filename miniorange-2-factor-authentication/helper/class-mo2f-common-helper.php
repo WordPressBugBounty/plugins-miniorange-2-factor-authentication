@@ -98,7 +98,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 */
 		public function mo2f_is_2fa_set( $current_user_id ) {
 			global $mo2fdb_queries;
-			return MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $mo2fdb_queries->get_user_detail( 'mo_2factor_user_registration_status', $current_user_id );
+			return MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $mo2fdb_queries->mo2f_get_user_detail( 'mo_2factor_user_registration_status', $current_user_id );
 		}
 
 		/**
@@ -113,7 +113,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			global $mo2fdb_queries;
 			$backup_methods = (array) get_site_option( 'mo2f_enabled_backup_methods' );
 			if ( get_site_option( 'mo2f_enable_backup_methods' ) ) {
-				if ( in_array( 'backup_kba', $backup_methods, true ) && MoWpnsConstants::SECURITY_QUESTIONS !== $mo2fdb_queries->get_user_detail( 'mo2f_configured_2fa_method', $current_user_id ) && ! TwoFAMoSessions::get_session_var( 'mo2f_is_kba_backup_configured' . $current_user_id ) ) {
+				if ( in_array( 'backup_kba', $backup_methods, true ) && MoWpnsConstants::SECURITY_QUESTIONS !== $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2fa_method', $current_user_id ) && ! TwoFAMoSessions::get_session_var( 'mo2f_is_kba_backup_configured' . $current_user_id ) ) {
 					do_action(
 						'mo2f_basic_plan_settings_action',
 						'show_kba_registration_form',
@@ -126,7 +126,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				}
 				TwoFAMoSessions::unset_session( 'mo2f_is_kba_backup_configured' . $current_user_id );
 				if ( in_array( 'mo2f_back_up_codes', $backup_methods, true ) ) {
-					$mo2f_user_email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $current_user_id );
+					$mo2f_user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $current_user_id );
 					if ( empty( $mo2f_user_email ) ) {
 						$currentuser     = get_user_by( 'id', $current_user_id );
 						$mo2f_user_email = $currentuser->user_email;
@@ -177,8 +177,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			global $mo2fdb_queries;
 			$current_user_id = $currentuser->ID;
 			$email           = $currentuser->user_email;
-			$mo2fdb_queries->insert_user( $current_user_id, array( 'user_id' => $current_user_id ) );
-			$mo2fdb_queries->update_user_details(
+			$mo2fdb_queries->mo2f_update_user_details(
 				$current_user_id,
 				array(
 					'user_registration_with_miniorange'   => 'SUCCESS',
@@ -242,14 +241,18 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 */
 		public function mo2fa_return_methods_value( $currentuserid ) {
 			global $mo2fdb_queries;
-			$count_methods          = $mo2fdb_queries->get_user_configured_methods( $currentuserid );
-			$value                  = empty( $count_methods ) ? array() : get_object_vars( $count_methods[0] );
+			$count_methods = $mo2fdb_queries->mo2f_get_user_configured_methods( $currentuserid );
+			if ( ! empty( $count_methods ) && is_array( $count_methods ) && isset( $count_methods[0] ) && is_object( $count_methods[0] ) ) {
+				$value = get_object_vars( $count_methods[0] );
+			} else {
+				$value = array();
+			}
 			$configured_methods_arr = array();
 			foreach ( $value as $config_status_option => $config_status ) {
 				if ( strpos( $config_status_option, 'config_status' ) ) {
 					$config_status_string_array = explode( '_', $config_status_option );
 					$config_method              = MoWpnsConstants::mo2f_convert_method_name( $config_status_string_array[1], 'pascal_to_cap' );
-					if ( '1' === $value[ $config_status_option ] ) {
+					if ( (int) $value[ $config_status_option ] ) {
 						array_push( $configured_methods_arr, $config_method );
 					}
 				}
@@ -481,6 +484,16 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					'user_id'            => $user_id,
 				)
 			);
+			$html .= apply_filters(
+				'mo2f_premium_common_helper',
+				'',
+				'mo2f_get_rem_ip_consent_hidden_form',
+				array(
+					'redirect_to'        => $redirect_to,
+					'session_id_encrypt' => $session_id_encrypt,
+					'user_id'            => $user_id,
+				)
+			);
 			$html .= $this->mo2f_get_validation_success_form( $redirect_to, $session_id_encrypt, $user_id );
 			return $html;
 		}
@@ -499,7 +512,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			<input type="hidden" name="redirect_to" value="' . esc_url( $redirect_to ) . '"/>
 			<input type="hidden" name="session_id" value="' . esc_attr( $session_id ) . '"/>
 			<input type="hidden" name="option" value="mo2f_process_validation_success"/>
-			<input type="hidden" name="twofa_status" value="' . esc_attr( $mo2fdb_queries->get_user_detail( 'mo_2factor_user_registration_status', $current_user_id ) ) . '"/> 
+			<input type="hidden" name="twofa_status" value="' . esc_attr( $mo2fdb_queries->mo2f_get_user_detail( 'mo_2factor_user_registration_status', $current_user_id ) ) . '"/> 
 			<input type="hidden" name="miniorange_inline_save_2factor_method_nonce" value="' . esc_attr( wp_create_nonce( 'miniorange-2-factor-inline-save-2factor-method-nonce' ) ) . '"/>
 		</form>';
 
@@ -560,8 +573,14 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			jQuery("#miniorange_trust_device_no").click(function() {
 				jQuery("#mo2f_trust_device_cancel_form").submit();
 			});
+			jQuery("#mo2f_remember_ip_yes").click(function() {
+				jQuery("#mo2f_remember_ip_confirm_form").submit();
+			});
+			jQuery("#mo2f_remember_ip_no").click(function() {
+				jQuery("#mo2f_remember_ip_cancel_form").submit();
+			});
 			jQuery("a[href=\'#mo2f_login_form\']").click(function() {
-			jQuery("#mo2f_backto_mo_loginform").submit();
+			    jQuery("#mo2f_backto_mo_loginform").submit();
 			});</script>';
 			return $script;
 
@@ -584,7 +603,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				<input type="hidden" name="redirect_to" value="' . esc_url( $redirect_to ) . '"/>
 				<input type="hidden" name="tx_type"/>
 				<input type="hidden" name="session_id" value="' . esc_attr( $session_id_encrypt ) . '"/>
-				<input type="hidden" name="twofa_status" value="' . esc_attr( $mo2fdb_queries->get_user_detail( 'mo_2factor_user_registration_status', $user_id ) ) . '"/>    
+				<input type="hidden" name="twofa_status" value="' . esc_attr( $mo2fdb_queries->mo2f_get_user_detail( 'mo_2factor_user_registration_status', $user_id ) ) . '"/>    
 			</form>
 			<form name="f" id="mo2f_email_verification_failed_form" method="post" action="' . esc_url( wp_login_url() ) . '"
 			class="mo2f_display_none_forms">
@@ -646,7 +665,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 */
 		public function mo2f_sms_common_skeleton( $user_id ) {
 			global $mo2fdb_queries;
-			$mo2f_user_phone = $mo2fdb_queries->get_user_detail( 'mo2f_user_phone', $user_id );
+			$mo2f_user_phone = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_phone', $user_id );
 			$user_phone      = $mo2f_user_phone ? $mo2f_user_phone : '';
 			$skeleton        = array(
 				'##input_field##'  => '<br><span style="font-size:17px;"><i>Enter your Phone:</i></span><br><br><input class="mo2f_table_textbox mb-mo-4" style="width:200px;" type="text" name="mo2f_phone_email_telegram" id="mo2f_phone_field"
@@ -669,7 +688,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				$user    = wp_get_current_user();
 				$user_id = $user->ID;
 			}
-			$mo2f_user_email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user_id );
+			$mo2f_user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user_id );
 			$email           = $mo2f_user_email ? $mo2f_user_email : get_user_by( 'id', $user_id )->user_email;
 			$skeleton        = array(
 				'##input_field##'  => '<br><div class="modal-body" style="height:auto;">
@@ -700,6 +719,25 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			);
 			return $skeleton;
 
+		}
+
+		/**
+		 * Returns skeleton values for OTP Over WhatsApp.
+		 *
+		 * @param int $user_id User ID.
+		 * @return array
+		 */
+		public function mo2f_whatsapp_common_skeleton( $user_id ) {
+			global $mo2fdb_queries;
+			$mo2f_user_phone = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_whatsapp', $user_id );
+			$user_phone      = $mo2f_user_phone ? $mo2f_user_phone : '';
+			$skeleton        = array(
+				'##input_field##'  => '<br><span style="font-size:17px;" class="mo2f_middle_text"><i>Enter your Phone:</i></span><br><br><input class="mo2f_table_textbox mb-mo-4" style="width:200px;" type="text" name="mo2f_phone_email_telegram" id="mo2f_phone_field"
+                                    value="' . esc_attr( $user_phone ) . '" pattern="[\+]?[0-9]{1,4}\s?[0-9]{7,12}"
+                                    title="' . esc_attr__( 'Enter phone number without any space or dashes', 'miniorange-2-factor-authentication' ) . '"/>',
+				'##instructions##' => '',
+			);
+			return $skeleton;
 		}
 
 		/**
@@ -911,8 +949,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				$html            .= '</h4>
 				</div>';
 			$html                .= '<div class="mo2f_modal-body">
-						<div id="otpMessagehide" style="display: none;">
-							<p class="mo2fa_display_message_frontend" style="text-align: left !important; ">' . wp_kses( $login_message, array( 'b' => array() ) ) . '</p>
+						<div id="mo2f-otpMessagehide" class="hidden">
+							<p class="mo2fa_display_message_frontend mo_feedback_text">' . wp_kses( $login_message, array( 'b' => array() ) ) . '</p>
 						</div>
 
 						<div class="mo2f_row">
@@ -1040,9 +1078,9 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		});';
 			$html .= "
 		function mo2f_show_message(response) {
-			var html = '<div id=\"otpMessage\"><p class=\"mo2fa_display_message_frontend\">' + response + '</p></div>';
-			jQuery('#otpMessage').empty();
-			jQuery('#otpMessagehide').after(html);
+			var html = '<div id=\"mo2f-otpMessage\"><p class=\"mo2fa_display_message_frontend\">' + response + '</p></div>';
+			jQuery('#mo2f-otpMessage').empty();
+			jQuery('#mo2f-otpMessagehide').after(html);
 		}
 		</script>";
 			return $html;
@@ -1060,148 +1098,174 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return string
 		 */
 		public function mo2f_get_miniorange_user_registration_prompt( $login_message, $redirect_to, $session_id, $prev_screen, $skeleton ) {
-			$success_response                  = array( $this, 'mo2f_get_mo_login_registration_success_response_' . $prev_screen . '_script' );
-			$error_response                    = array( $this, 'mo2f_get_mo_login_registration_error_response_' . $prev_screen . '_script' );
-			$common_helper                     = new Mo2f_Common_Helper();
-			$html                              = '<div>';
-			$html                             .= $skeleton['##crossbutton##'];
-			$html                             .= $skeleton['##pagetitle##'];
-			$html                             .= '<div>';
-				$html                         .= '	<div id="otpMessagehide" class="hidden">
-				<p class="" style="">' . wp_kses( $login_message, array( 'b' => array() ) ) . '</p>
-			</div>';
-								$html         .= '<form name="mo2f_inline_register_form" id="mo2f_inline_register_form" method="post" action="">
-								<input type="hidden" name="option" value="miniorange_inline_register" />
-								<input type="hidden" name="mo2f_inline_register_nonce" value="' . esc_attr( wp_create_nonce( 'mo2f-inline-register-nonce' ) ) . '"/>
-								<p>This method requires you to have an account with miniOrange.</p>
-								<table class="w-full">
-									<tr>
-									<td><b><span>*</span>Email:</b></td>
-									<td><input class="w-full" type="email" name="email"
-									required placeholder="person@example.com"/></td>
-									</tr>
-									<tr>
-										<td><b><span>*</span>Password:</b></td>
-										<td><input class="w-full" required type="password"
-									name="password" placeholder="Choose your password (Min. length 6)" /></td>
-									</tr>
-									<tr>
-										<td><b><span>*</span>Confirm Password:</b></td>
-										<td><input class="w-full" required type="password"
-									name="confirmPassword" placeholder="Confirm your password" /></td>
-									</tr>
-									<tr>
-										<td>&nbsp;</td>
-										<td><br>';
-										$html .= '<input type="button" name="submit" value="Create Account" id="mo2f_register"
-									class="mo2f-save-settings-button" />';
-									$html     .= '&nbsp&nbsp&nbsp&nbsp<a href="#mo2f_account_exist"><button class="mo2f-reset-settings-button">Already have an account?</button></a>
-									</tr>
-								</table>
-							</form>
-				<form name="f" id="mo2f_inline_login_form" method="post" action="" hidden>
-					<p><b>It seems you already have an account with miniOrange. Please enter your miniOrange email and password.<br></b><a target="_blank" href="' . esc_url( MO_HOST_NAME . '/moas/idp/resetpassword' ) . '"> Click here if you forgot your password?</a></p>
-					<input type="hidden" name="option" value="miniorange_inline_login"/>
-					<input type="hidden" name="mo2f_inline_nonce" value="' . esc_attr( wp_create_nonce( 'mo2f-inline-login-nonce' ) ) . '"/>
-					<table class="w-full">
-						<tr>
-						<td><b><span>*</span>Email:</b></td>
-						<td><input class="w-full" type="email" name="miniorange_email" id="miniorange_email"
-						required placeholder="person@example.com"/></td>
-						</tr>
-						<tr>
-							<td><b><span>*</span>Password:</b></td>
-							<td><input class="w-full" required type="password"
-							name="miniorange_password" placeholder="Enter your miniOrange password" /></td>
-						</tr>
-						<tr>
-							<td>&nbsp;</td>
-							<td>';
-						$html                 .= '<br><input type="button" id="mo2f_login" class="mo2f-save-settings-button" value="' . esc_attr__( 'Sign In', 'miniorange-2-factor-authentication' ) . '" />';
-						$html                 .= '&nbsp&nbsp&nbsp&nbsp<input type="button" id="cancel_link" class="mo2f-reset-settings-button" value="' . esc_attr__( 'Go Back To Registration', 'miniorange-2-factor-authentication' ) . '" />
-						</tr>
-					</table>
-				</form>
-							<br>';
-							$html             .= $skeleton['##miniorangelogo##'];
-						$html                 .= '</div>
-				</div>
-				<div id="mo2f_2fa_popup_dashboard_loader" class="modal" hidden></div>
-			<form name="f" method="post" action="" id="mo2f_goto_two_factor_form" >              
-				<input type="hidden" name="option" value="miniorange_back_inline"/>
-				<input type="hidden" name="miniorange_inline_two_factor_setup" value="' . esc_attr( wp_create_nonce( 'miniorange-2-factor-inline-setup-nonce' ) ) . '" />
-			</form>
-         
-		<script>';
-			$html                             .= 'myaccount' === $prev_screen ? 'jQuery("#mo_2fa_my_account").addClass("side-nav-active"); jQuery("#mo2f-myaccount-details").addClass("side-nav-active");jQuery("#mo2f-myaccount-submenu").css("display", "block");' : '';
-			$html                             .= 'jQuery("#mo2f_inline_back_btn").click(function() {  
-					jQuery("#mo2f_goto_two_factor_form").submit();
-			});
-			jQuery("a[href=\'#mo2f_account_exist\']").click(function (e) {
-				e.preventDefault();
-				jQuery("#mo2f_inline_login_form").show();
-				var input = jQuery("input[name=miniorange_email]");
-				var len = input.val().length;
-				input[0].focus();
-				jQuery("#mo2f_inline_register_form").hide();
-				jQuery("#otpMessage").hide();
-			});
-			jQuery("#cancel_link").click(function(){                               
-					jQuery("#mo2f_inline_register_form").show();
-					jQuery("#mo2f_inline_login_form").hide();
-				});     
-			function mologinback(){
-				jQuery("#mo2f_backto_mo_loginform").submit();
-				jQuery("#mo2f_2fa_popup_dashboard").fadeOut();
-				closeVerification = true;
-			}
-			var ajaxurl = "' . esc_url( admin_url( 'admin-ajax.php' ) ) . '";	
-			jQuery("#mo2f_login").click(function() {
-				var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
-				' . $common_helper->mo2f_show_loader() . '
-				var data = {
-					action: "mo_two_factor_ajax",
-					mo_2f_two_factor_ajax: "mo2f_miniorange_sign_in",
-					email: jQuery("input[name=\'miniorange_email\']").val(),
-					password: jQuery("input[name=\'miniorange_password\']").val(),
-					nonce: nonce,
-				};
-				jQuery.post(ajaxurl, data, function(response) {
-				    ' . $common_helper->mo2f_hide_loader() . '
-					if (response.success) {
-						' . call_user_func( $success_response ) . '
-					} else {
-					 ' . call_user_func( $error_response ) . '
+			$success_response = array( $this, 'mo2f_get_mo_login_registration_success_response_' . $prev_screen . '_script' );
+			$error_response   = array( $this, 'mo2f_get_mo_login_registration_error_response_' . $prev_screen . '_script' );
+			$common_helper    = new Mo2f_Common_Helper();
+
+			$html  = '<div>';
+			$html .= $skeleton['##crossbutton##'];
+			$html .= '<div>';
+			$html .= '<div id="mo2f-otpMessagehide" class="hidden">
+						<p>' . wp_kses( $login_message, array( 'b' => array() ) ) . '</p>
+					  </div>';
+			$html .= '<form name="mo2f_inline_register_form" id="mo2f_inline_register_form" method="post" class="mo2f-padding-6" hidden>
+						<input type="hidden" name="option" value="miniorange_inline_register" />
+						<input type="hidden" name="mo2f_inline_register_nonce" value="' . esc_attr( wp_create_nonce( 'mo2f-inline-register-nonce' ) ) . '"/>
+						<div class="mo2f-bg-white mo2f-rounded-xl flex flex-col">
+							<p class="mo2f-heading mo2f-mb-1_5">' . esc_html__( 'Create New Account', 'miniorange-2-factor-authentication' ) . '</p>
+							<div class="w-full mo-input-wrapper group">
+								<label class="mo-input-label">Email</label>
+								<input class="w-full mo2f-input" type="email" name="email" required placeholder="person@example.com" />
+							</div>
+							<div class="w-full mo-input-wrapper group">
+								<label class="mo-input-label">Password</label>
+								<input class="w-full mo2f-input" type="password" name="password" required placeholder="Choose your password (Min. length 6)" />
+							</div>
+							<div class="w-full mo-input-wrapper group">
+								<label class="mo-input-label">Confirm Password</label>
+								<input class="w-full mo2f-input" type="password" name="confirmPassword" required placeholder="Confirm your password" />
+							</div>
+							<div class="flex">
+								<input type="checkbox" class="mo2f-plugin-policy-check" id="mo2f_agree_plugin_policy" name="mo2f_customer_validation_agree_plugin_policy" value="1" />
+								<label for="mo2f_agree_plugin_policy">
+									' . wp_kses(
+								sprintf(
+									/* translators: %1$s: End User Agreement link, %2$s: Plugin Privacy Policy link */
+									esc_html__( 'I have read and agree to the %1$s and %2$s', 'miniorange-2-factor-authentication' ),
+									'<u><i><a target="_blank" class="mo2f-font-bold" href="https://plugins.miniorange.com/end-user-license-agreement#v5-software-warranty-refund-policy">' . esc_html__( 'refund policy', 'miniorange-2-factor-authentication' ) . '</a></i></u>',
+									'<u><i><a target="_blank" class="mo2f-font-bold" href="https://plugins.miniorange.com/wp-content/uploads/2023/08/Plugins-Privacy-Policy.pdf">' . esc_html__( 'plugin privacy policy', 'miniorange-2-factor-authentication' ) . '</a></i></u>'
+								),
+								array(
+									'a' => array(
+										'target' => array(),
+										'class'  => array(),
+										'href'   => array(),
+									),
+									'u' => array(),
+									'i' => array(),
+								)
+							) . '
+								</label>
+							</div>
+							<div class="mo2f_login_register_button">
+								<input type="button" name="submit" value="Create Account" id="mo2f_register" class="mo2f-save-settings-button" disabled />
+								&nbsp;&nbsp;&nbsp;&nbsp;
+								<a href="#mo2f_account_exist">
+									<button class="mo2f-reset-settings-button">Already have an account?</button>
+								</a>
+							</div>
+						</div>
+					  </form>';
+			$html .= '<form name="mo2f_inline_login_form" id="mo2f_inline_login_form" method="post" class="mo2f-padding-6 items-center">
+						<input type="hidden" name="option" value="miniorange_inline_login"/>
+						<input type="hidden" name="mo2f_inline_nonce" value="' . esc_attr( wp_create_nonce( 'mo2f-inline-login-nonce' ) ) . '"/>
+						<div class="mo2f-bg-white mo2f-rounded-xl w-[75%] flex px-mo-32 flex-col mo2f-gap-1">
+							<p class="mo2f-heading mo2f-mb-1_5">Login Using Miniorange Account</p>
+							<div class="mo-input-wrapper group">
+								<label class="mo-input-label">Email</label>
+								<input class="w-full mo2f-input" type="email" name="miniorange_email" id="miniorange_email" required placeholder="person@example.com"/>
+							</div>
+							<div class="w-full mo-input-wrapper group">
+								<label class="mo-input-label">Password</label>
+								<input class="w-full mo2f-input" required type="password" name="miniorange_password" placeholder="Enter your miniOrange password" />
+							</div>
+							<div>
+								<a href="' . esc_url( 'https://portal.miniorange.com/forgotpassword' ) . '" target="_blank" class="mo2f-text-right mo2f-font-bold hover:underline mo2f-float-right">Forgot Password?</a>
+							</div>
+							<div class="mo2f_login_register_button">
+								<br>
+								<input type="button" id="mo2f_login" class="mo2f-save-settings-button" value="' . esc_attr__( 'Sign In', 'miniorange-2-factor-authentication' ) . '" />
+								&nbsp;&nbsp;&nbsp;&nbsp;
+								<input type="button" id="mo2f_cancel_link" class="mo2f-reset-settings-button" value="' . esc_attr__( 'Go Back To Registration', 'miniorange-2-factor-authentication' ) . '" />
+							</div>
+						</div>
+					  </form>';
+			$html .= '<br>';
+			$html .= $skeleton['##miniorangelogo##'];
+			$html .= '</div></div>';
+			$html .= '<div id="mo2f_2fa_popup_dashboard_loader" class="modal hidden"></div>';
+			$html .= '<form name="mo2f_goto_two_factor_form" method="post" id="mo2f_goto_two_factor_form">
+						<input type="hidden" name="option" value="miniorange_back_inline"/>
+						<input type="hidden" name="miniorange_inline_two_factor_setup" value="' . esc_attr( wp_create_nonce( 'miniorange-2-factor-inline-setup-nonce' ) ) . '"/>
+					  </form>';
+			$html .= '<script>';
+			$html .= 'myaccount' === $prev_screen ? 'jQuery("#mo_2fa_my_account").addClass("side-nav-active"); jQuery("#mo2f-myaccount-details").addClass("side-nav-active");jQuery("#mo2f-myaccount-submenu").css("display", "block");' : '';
+			$html .= 'jQuery("#mo2f_inline_back_btn").click(function() {  
+						jQuery("#mo2f_goto_two_factor_form").submit();
+					});
+					jQuery("a[href=\'#mo2f_account_exist\']").click(function (e) {
+						e.preventDefault();
+						jQuery("#mo2f_inline_register_form").hide();
+						jQuery("#mo2f-otpMessage").hide();
+						jQuery("#mo2f_inline_login_form").show();
+						var input = jQuery("input[name=miniorange_email]");
+						var len = input.val().length;
+						input[0].focus();
+						
+					});
+					jQuery("#mo2f_cancel_link").click(function(){                               
+							jQuery("#mo2f_inline_register_form").show();
+							jQuery("#mo2f_inline_login_form").hide();
+					});     
+					function mologinback(){
+						jQuery("#mo2f_backto_mo_loginform").submit();
+						jQuery("#mo2f_2fa_popup_dashboard").fadeOut();
+						closeVerification = true;
 					}
-				});
-			});';
-			$html                             .= 'jQuery("#mo2f_register").click(function() {
-				var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
-			' . $common_helper->mo2f_show_loader() . '
-				var data = {
-					action: "mo_two_factor_ajax",
-					mo_2f_two_factor_ajax: "mo2f_miniorange_sign_up",
-					email: jQuery("input[name=\'email\']").val(),
-					password: jQuery("input[name=\'password\']").val(),
-					confirmPassword: jQuery("input[name=\'confirmPassword\']").val(),
-					nonce: nonce,
-				};
-				jQuery.post(ajaxurl, data, function(response) {
-				    ' . $common_helper->mo2f_hide_loader() . '
-					if (response.success) {
-						' . call_user_func( $success_response ) . '
-					} else {
-					 ' . call_user_func( $error_response ) . '
+					var ajaxurl = "' . esc_url( admin_url( 'admin-ajax.php' ) ) . '";	
+					jQuery("#mo2f_login").click(function() {
+						var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
+						' . $common_helper->mo2f_show_loader() . '
+						var data = {
+							action: "mo_two_factor_ajax",
+							mo_2f_two_factor_ajax: "mo2f_miniorange_sign_in",
+							email: jQuery("input[name=\'miniorange_email\']").val(),
+							password: jQuery("input[name=\'miniorange_password\']").val(),
+							nonce: nonce,
+						};
+						jQuery.post(ajaxurl, data, function(response) {
+							' . $common_helper->mo2f_hide_loader() . '
+							if (response.success) {
+								' . call_user_func( $success_response ) . '
+							} else {
+							' . call_user_func( $error_response ) . '
+							}
+						});
+					});';
+			$html .= 'jQuery("#mo2f_register").click(function() {
+						var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
+						' . $common_helper->mo2f_show_loader() . '
+						var data = {
+							action: "mo_two_factor_ajax",
+							mo_2f_two_factor_ajax: "mo2f_miniorange_sign_up",
+							email: jQuery("input[name=\'email\']").val(),
+							password: jQuery("input[name=\'password\']").val(),
+							confirmPassword: jQuery("input[name=\'confirmPassword\']").val(),
+							nonce: nonce,
+						};
+						jQuery.post(ajaxurl, data, function(response) {
+							' . $common_helper->mo2f_hide_loader() . '
+							if (response.success) {
+								' . call_user_func( $success_response ) . '
+							} else {
+							' . call_user_func( $error_response ) . '
+							}
+						});
+					});';
+			$html .= "
+					function mo2f_show_message(response) {
+						var html = '<div id=\"mo2f-otpMessage\"><p class=\"mo2fa_display_message_frontend\">' + response + '</p></div>';
+						jQuery('#mo2f-otpMessage').empty();
+						jQuery('#mo2f-otpMessagehide').after(html);
 					}
-				});
-			});';
-			$html                             .= "
-			function mo2f_show_message(response) {
-				var html = '<div id=\"otpMessage\"><p class=\"mo2fa_display_message_frontend\">' + response + '</p></div>';
-				jQuery('#otpMessage').empty();
-				jQuery('#otpMessagehide').after(html);
-			}";
-			$html                             .= '</script>';
+					const checkbox = document.getElementById('mo2f_agree_plugin_policy');
+					const button = document.getElementById('mo2f_register');
+					if(checkbox && button){
+						checkbox.addEventListener('change', function() {
+							button.disabled = !this.checked;
+						});
+					}";
+			$html .= '</script>';
 			return $html;
 		}
 
@@ -1270,7 +1334,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				$html .= '</h4>
 				</div>';
 				$html .= '<div class="mo2f_modal-body">';
-				$html .= '	<div id="otpMessagehide" style="display: none;">
+				$html .= '	<div id="mo2f-otpMessagehide" class="hidden">
 				<p class="mo2fa_display_message_frontend" style="text-align: left !important; ">' . wp_kses( $login_message, array( 'b' => array() ) ) . '</p>
 			</div>';
 
@@ -1295,9 +1359,9 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$html .= '<script>';
 			$html .= "
 		function mo2f_show_message(response) {
-			var html = '<div id=\"otpMessage\"><p class=\"mo2fa_display_message_frontend\">' + response + '</p></div>';
-			jQuery('#otpMessage').remove();
-			jQuery('#otpMessagehide').after(html);
+			var html = '<div id=\"mo2f-otpMessage\"><p class=\"mo2fa_display_message_frontend\">' + response + '</p></div>';
+			jQuery('#mo2f-otpMessage').remove();
+			jQuery('#mo2f-otpMessagehide').after(html);
 		}";
 			$html .= 'function mologinback() {
 				jQuery("#mo2f_backto_mo_loginform").submit();
@@ -1630,7 +1694,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					$html                     .= '<table class="mo2f_configure_ga">
 								<tr>
 									<td class="mo2f_google_authy_step2">';
-									$html     .= '<div id="otpMessage" style="display:none;"><p id="mo2f_gauth_inline_message" class="mo2fa_display_message_frontend" style="text-align: left !important;"></p>
+									$html     .= '<div id="mo2f-otpMessage" class="hidden"><p id="mo2f_gauth_inline_message" class="mo2fa_display_message_frontend mo_feedback_text"></p>
 										</div>';
 										$html .= '<div style="line-height: 4; margin-left:20px;" id = "mo2f_choose_app_tour">
 												<label for="authenticator_type"><b>1. Choose an Authenticator app:</b></label>
@@ -1847,7 +1911,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			global $mo2fdb_queries;
 			$user = wp_get_current_user();
 			if ( get_site_transient( 'mo2f_show_setup_success_prompt' . $user->ID ) ) {
-				$mo2f_configured_2_f_a_method = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
+				$mo2f_configured_2_f_a_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
 				wp_print_scripts( 'jquery' );
 				echo '<div id="twoFAtestAlertModal" class="modal" role="dialog">
 		<div class="mo2f_modal-dialog">
@@ -1924,7 +1988,11 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return array
 		 */
 		public function fetch_methods( $current_user = null ) {
+
 			$methods = array( MoWpnsConstants::OTP_OVER_SMS, MoWpnsConstants::OUT_OF_BAND_EMAIL, MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SECURITY_QUESTIONS, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OTP_OVER_TELEGRAM );
+			if ( apply_filters( 'mo2f_is_lv_needed', false ) ) {
+				array_push( $methods, MoWpnsConstants::OTP_OVER_WHATSAPP );
+			}
 			if ( ! is_null( $current_user ) && ( 'administrator' !== $current_user->roles[0] ) && ! get_site_option( 'mo2f_email' ) || ! get_site_option( 'mo2f_customerKey' ) ) {
 				$methods = array( MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SECURITY_QUESTIONS, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OTP_OVER_TELEGRAM, MoWpnsConstants::OUT_OF_BAND_EMAIL );
 			}
@@ -2071,19 +2139,19 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			echo ' <table  id="mo2f_unregistered_user_details" class="display" cellspacing="0" width="100%" style="display:none">
       <thead> 
         <tr>
-			<th>Username</th>
-			<th>Email</th>
-			<th>Role</th>
-			<th>Method Selected</th>
-			<th>Reset 2-Factor</th>             
+			<th>' . esc_html__( 'Username', 'miniorange-2-factor-authentication' ) . '</th>
+			<th>' . esc_html__( 'Email', 'miniorange-2-factor-authentication' ) . '</th>
+			<th>' . esc_html__( 'Role', 'miniorange-2-factor-authentication' ) . '</th>
+			<th>' . esc_html__( 'Method Selected', 'miniorange-2-factor-authentication' ) . '</th>
+			<th>' . esc_html__( 'Blocked User', 'miniorange-2-factor-authentication' ) . '</th>             
         </tr>
       </thead><tbody>';
 			$entries = false;
 			foreach ( $users as $user ) {
 				$user_role                     = $user->roles[0];
 				$wp_user                       = get_user_by( 'id', $user->ID );
-				$mo2f_user_registration_status = $mo2fdb_queries->get_user_detail( 'mo_2factor_user_registration_status', $user->ID );
-				$mo2f_method_selected          = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
+				$mo2f_user_registration_status = $mo2fdb_queries->mo2f_get_user_detail( 'mo_2factor_user_registration_status', $user->ID );
+				$mo2f_method_selected          = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
 				if ( 'MO_2_FACTOR_PLUGIN_SETTINGS' !== $mo2f_user_registration_status ) {
 					$entries = true;
 					echo '<tr><td>' . esc_html( $wp_user->user_login ) .
@@ -2094,6 +2162,11 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					echo esc_html( ( empty( $mo2f_method_selected ) ) ? 'None' : $mo2f_method_selected );
 					echo '</span>';
 					echo '</td><td>';
+					if ( get_site_option( 'mo2f_grace_period' ) && $this->mo2f_is_grace_period_expired( $user ) && 'block_user_login' === get_site_option( 'mo2f_graceperiod_action' ) ) {
+						?>
+					<button onclick="mo2f_unblock_user(<?php echo esc_js( $user->ID ); ?>)" id="unblock-button-<?php echo esc_attr( $user->ID ); ?>" class="mo2f-reset-settings-button"><?php echo esc_html__( 'Unblock User', 'miniorange-2-factor-authentication' ); ?></button>
+						<?php
+					}
 					echo '</td> </tr>';
 				} else {
 					continue;
@@ -2124,9 +2197,9 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			foreach ( $users as $user ) {
 				$user_role                     = $user->roles[0];
 				$wp_user                       = get_user_by( 'id', $user->ID );
-				$mo2f_user_registration_status = $mo2fdb_queries->get_user_detail( 'mo_2factor_user_registration_status', $user->ID );
+				$mo2f_user_registration_status = $mo2fdb_queries->mo2f_get_user_detail( 'mo_2factor_user_registration_status', $user->ID );
 				if ( 'MO_2_FACTOR_PLUGIN_SETTINGS' === $mo2f_user_registration_status ) {
-						$mo2f_method_selected = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
+						$mo2f_method_selected = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
 						echo '<tr class="mo2f-registered-row" ><td>' . esc_html( $wp_user->user_login ) .
 						'</td><td>' . esc_html( $user->user_email ) .
 						'</td><td>' . esc_html( $user_role ) .

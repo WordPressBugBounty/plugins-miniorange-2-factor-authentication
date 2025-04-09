@@ -30,7 +30,7 @@ use TwoFA\Helper\MoWpnsConstants;
 	<br>
 	<div class="mo2f-settings-items ml-mo-20">
 		<div class="mr-mo-4">
-			<input type="radio" name="mo2f_login_option" id="mo2f_without_password" value="0" <?php checked( get_site_option( 'mo2f_login_option' ) === '0' ); ?>>
+			<input type="radio" name="mo2f_login_option" id="mo2f_without_password" value="0" <?php checked( ! (int) get_site_option( 'mo2f_login_option' ) ); ?>>
 			<?php esc_html_e( 'Username + 2FA', 'miniorange-2-factor-authentication' ); ?>
 			(<span class="text-mo-blue-txt"><?php esc_html_e( 'No password required', 'miniorange-2-factor-authentication' ); ?></span>) &nbsp;<a class="btn-link" data-toggle="collapse" id="mo2f-showpreview" href="#mo2f-preview1" aria-expanded="false"><?php esc_html_e( $lv_needed ? 'Show Preview' : 'Hide Preview', 'miniorange-2-factor-authentication' ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?></a>
 		</div>

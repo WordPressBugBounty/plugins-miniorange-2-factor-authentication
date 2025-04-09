@@ -125,7 +125,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 				if ( 'SUCCESS' === $customer_key['status'] ) {
 					if ( isset( $customer_key['phone'] ) ) {
 						update_option( 'mo_wpns_admin_phone', $customer_key['phone'] );
-						$mo2fdb_queries->update_user_details( $user_id, array( 'mo2f_user_phone' => $customer_key['phone'] ) );
+						$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'mo2f_user_phone' => $customer_key['phone'] ) );
 					}
 					update_option( 'mo2f_email', $email );
 					$id         = isset( $customer_key['id'] ) ? $customer_key['id'] : '';
@@ -138,7 +138,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 					$this->miniorange_pass2login_form_fields( $login_status, $login_message, $redirect_to, null, $session_id_encrypt );
 					return;
 				} else {
-					$mo2fdb_queries->update_user_details( $user_id, array( 'mo_2factor_user_registration_status' => 'MO_2_FACTOR_VERIFY_CUSTOMER' ) );
+					$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'mo_2factor_user_registration_status' => 'MO_2_FACTOR_VERIFY_CUSTOMER' ) );
 					$login_message = MoWpnsMessages::lang_translate( MoWpnsMessages::ACCOUNT_EXISTS );
 					$login_status  = 'MO_2_FACTOR_PROMPT_USER_FOR_2FA_METHODS';
 					$this->miniorange_pass2login_form_fields( $login_status, $login_message, $redirect_to, null, $session_id_encrypt );
@@ -172,7 +172,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 			update_option( 'mo_wpns_enable_log_requests', true );
 			update_option( 'mo2f_miniorange_admin', $id );
 			update_site_option( 'mo_2factor_admin_registration_status', 'MO_2_FACTOR_CUSTOMER_REGISTERED_SUCCESS' );
-			$mo2fdb_queries->update_user_details(
+			$mo2fdb_queries->mo2f_update_user_details(
 				$user_id,
 				array(
 					'mo2f_user_email' => sanitize_email( $email ),
@@ -221,8 +221,8 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 					$user_id = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
 
 					$redirect_to             = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : null;
-					$selected_2factor_method = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2fa_method', $user_id );
-					$email                   = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user_id );
+					$selected_2factor_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id );
+					$email                   = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user_id );
 					$mo2fa_login_message     = '';
 					$mo2fa_login_status      = 'MO_2_FACTOR_PROMPT_USER_FOR_2FA_METHODS';
 					$enduser                 = new MO2f_Cloud_Onprem_Interface();
@@ -263,7 +263,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 					$user_id     = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
 					$redirect_to = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : null;
 
-					$mo2fdb_queries->update_user_details(
+					$mo2fdb_queries->mo2f_update_user_details(
 						$user_id,
 						array(
 							'mobile_registration_status' => true,
@@ -296,9 +296,9 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 					MO2f_Utility::unset_temp_user_details_in_table( 'mo2f_transactionId', $session_id_encrypt );
 					$user_id                 = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
 					$redirect_to             = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : null;
-					$selected_2factor_method = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2fa_method', $user_id );
-					$email                   = sanitize_email( $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user_id ) );
-					$mo2fdb_queries->update_user_details(
+					$selected_2factor_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id );
+					$email                   = sanitize_email( $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user_id ) );
+					$mo2fdb_queries->mo2f_update_user_details(
 						$user_id,
 						array(
 							'mobile_registration_status' => true,
@@ -355,7 +355,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 
 					$redirect_to  = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : null;
 					$current_user = get_user_by( 'id', $user_id );
-					$mo2fdb_queries->update_user_details( $current_user->ID, array( 'mo2f_configured_2fa_method' => '' ) );
+					$mo2fdb_queries->mo2f_update_user_details( $current_user->ID, array( 'mo2f_configured_2FA_method' => '' ) );
 					$mo2fa_login_message = '';
 					$mo2fa_login_status  = 'MO_2_FACTOR_PROMPT_USER_FOR_2FA_METHODS';
 					$this->miniorange_pass2login_form_fields( $mo2fa_login_status, $mo2fa_login_message, $redirect_to, null, $session_id_encrypt );
@@ -388,7 +388,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 					$content      = json_decode( $mocurl->mo_create_user( $current_user, $email ), true );
 
 						update_site_option( base64_encode( 'totalUsersCloud' ), get_site_option( base64_encode( 'totalUsersCloud' ) ) + 1 ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Not using for obfuscation
-						$mo2fdb_queries->update_user_details(
+						$mo2fdb_queries->mo2f_update_user_details(
 							$current_user_id,
 							array(
 								'user_registration_with_miniorange' => 'SUCCESS',
@@ -401,7 +401,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 						$mo2fa_login_status  = 'MO_2_FACTOR_PROMPT_USER_FOR_2FA_METHODS';
 
 				} elseif ( strcasecmp( $check_user['status'], 'USER_FOUND' ) === 0 ) {
-					$mo2fdb_queries->update_user_details(
+					$mo2fdb_queries->mo2f_update_user_details(
 						$current_user_id,
 						array(
 							'user_registration_with_miniorange' => 'SUCCESS',
@@ -419,7 +419,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 					if ( JSON_ERROR_NONE === json_last_error() ) {
 						if ( 0 === strcasecmp( $content['status'], 'SUCCESS' ) ) {
 							update_site_option( base64_encode( 'totalUsersCloud' ), get_site_option( base64_encode( 'totalUsersCloud' ) ) + 1 ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Not using for obfuscation
-							$mo2fdb_queries->update_user_details(
+							$mo2fdb_queries->mo2f_update_user_details(
 								$current_user_id,
 								array(
 									'user_registration_with_miniorange' => 'SUCCESS',
@@ -529,18 +529,18 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 					MO2f_Utility::unset_temp_user_details_in_table( 'mo2f_transactionId', $session_id_encrypt );
 					$user_id                 = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
 					$redirect_to             = isset( $posted['redirect_to'] ) ? esc_url_raw( $posted['redirect_to'] ) : null;
-					$selected_2factor_method = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2fa_method', $user_id );
-					$email                   = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user_id );
+					$selected_2factor_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id );
+					$email                   = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user_id );
 					$mo2fa_login_message     = '';
 
 					delete_user_meta( $user_id, 'user_not_enroll' );
 					delete_site_option( 'current_user_email' );
-					$mo2fdb_queries->update_user_details(
+					$mo2fdb_queries->mo2f_update_user_details(
 						$user_id,
 						array(
 							'mobile_registration_status' => true,
 							'mo2f_DuoAuthenticator_config_status' => true,
-							'mo2f_configured_2fa_method' => $selected_2factor_method,
+							'mo2f_configured_2FA_method' => $selected_2factor_method,
 							'mo_2factor_user_registration_status' => 'MO_2_FACTOR_PLUGIN_SETTINGS',
 						)
 					);
@@ -571,7 +571,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 				MO2f_Utility::unset_temp_user_details_in_table( 'mo2f_transactionId', $session_id_encrypt );
 				$user_id = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
 
-				$mo2fdb_queries->update_user_details(
+				$mo2fdb_queries->mo2f_update_user_details(
 					$user_id,
 					array(
 						'mobile_registration_status' => false,
@@ -594,14 +594,14 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 				$methodget = isset( $_GET['reconfigureMethod'] ) ? sanitize_text_field( wp_unslash( $_GET['reconfigureMethod'] ) ) : '';
 				if ( get_site_option( $txidget ) === $useridget && ctype_xdigit( $txidget ) && ctype_xdigit( $methodget ) ) {
 					$method = get_site_option( $methodget );
-					$mo2fdb_queries->update_user_details(
+					$mo2fdb_queries->mo2f_update_user_details(
 						$useridget,
 						array(
 							'mo_2factor_user_registration_status' => 'MO_2_FACTOR_CUSTOMER_REGISTERED_SUCCESS',
-							'mo2f_configured_2fa_method' => $method,
+							'mo2f_configured_2FA_method' => $method,
 						)
 					);
-					$is_authy_configured = $mo2fdb_queries->get_user_detail( 'mo2f_AuthyAuthenticator_config_status', $useridget );
+					$is_authy_configured = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_AuthyAuthenticator_config_status', $useridget );
 					if ( MoWpnsConstants::GOOGLE_AUTHENTICATOR === $method || $is_authy_configured ) {
 						update_user_meta( $useridget, 'mo2fa_set_Authy_inline', true );
 					}
@@ -632,11 +632,11 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 					$redirect_to        = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : null;
 					if ( filter_var( $email, FILTER_VALIDATE_EMAIL ) ) {
 						global  $mo2fdb_queries;
-						$mo2fdb_queries->update_user_details(
+						$mo2fdb_queries->mo2f_update_user_details(
 							$current_user_id,
 							array(
 								'mo2f_user_email' => $email,
-								'mo2f_configured_2fa_method' => '',
+								'mo2f_configured_2FA_method' => '',
 							)
 						);
 						prompt_user_to_select_2factor_mthod_inline( $current_user_id, 'MO_2_FACTOR_INITIALIZE_TWO_FACTOR', '', $redirect_to, $session_id_encrypt, null );
@@ -987,7 +987,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 				MoWpnsConstants::GOOGLE_AUTHENTICATOR => array( $this, 'mo2f_pass2login_otp_verification' ),
 				MoWpnsConstants::SECURITY_QUESTIONS   => array( $this->mo2f_onprem_cloud_obj, 'mo2f_pass2login_kba_verification' ),
 				MoWpnsConstants::DUO_AUTHENTICATOR    => array( $this, 'mo2f_pass2login_duo_push_verification' ),
-
+				MoWpnsConstants::OTP_OVER_WHATSAPP    => array( $this, 'mo2f_pass2login_otp_verification' ),
 			);
 			if ( ! empty( $mo_2fa_load_2fa_login_method_view[ $mo2f_second_factor ] ) ) {
 				call_user_func( $mo_2fa_load_2fa_login_method_view[ $mo2f_second_factor ], $currentuser, $mo2f_second_factor, $redirect_to, $session_id_encrypt );
@@ -1024,7 +1024,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 		 */
 		public function mo2f_validate_soft_token( $currentuser, $mo2f_second_factor, $softtoken, $session_id_encrypt, $redirect_to = null ) {
 			global $mo2fdb_queries;
-			$email   = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $currentuser->ID );
+			$email   = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $currentuser->ID );
 			$content = json_decode( $this->mo2f_onprem_cloud_obj->validate_otp_token( $mo2f_second_factor, $email, null, $softtoken ), true );
 			if ( strcasecmp( $content['status'], 'SUCCESS' ) === 0 ) {
 				$this->mo2fa_pass2login( $redirect_to, $session_id_encrypt );
@@ -1122,9 +1122,10 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 		 * @param boolean $enable_byuser Enable 2FA for user.
 		 * @param string  $email user's email.
 		 * @param string  $phone user'phone.
+		 * @param string  $whatsapp user'whatsapp.
 		 * @return void
 		 */
-		public function mo2fa_update_user_details( $user_id, $config_status, $twofa_method, $user_registation, $tfastatus, $enable_byuser, $email = null, $phone = null ) {
+		public function mo2fa_update_user_details( $user_id, $config_status, $twofa_method, $user_registation, $tfastatus, $enable_byuser, $email = null, $phone = null, $whatsapp = null ) {
 			global $mo2fdb_queries;
 			$details_to_be_updated  = array();
 			$user_details_key_value = array(
@@ -1135,6 +1136,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 				'mo2f_2factor_enable_2fa_byusers'     => $enable_byuser,
 				'mo2f_user_email'                     => $email,
 				'mo2f_user_phone'                     => $phone,
+				'mo2f_user_whatsapp'                  => $whatsapp,
 			);
 
 			foreach ( $user_details_key_value as $key => $value ) {
@@ -1144,7 +1146,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 				}
 			}
 			delete_user_meta( $user_id, 'mo2f_grace_period_start_time' );
-			$mo2fdb_queries->update_user_details( $user_id, $details_to_be_updated );
+			$mo2fdb_queries->mo2f_update_user_details( $user_id, $details_to_be_updated );
 		}
 
 	}

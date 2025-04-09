@@ -29,6 +29,8 @@ use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
 use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\TwoFAMoSessions;
+use TwoFA\Handler\Mo2f_All_Inclusive_Premium_Settings;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -92,13 +94,19 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 					'desc'  => 'Configure and Answer Three Security Questions to login',
 					'crown' => false,
 				),
+				MoWpnsConstants::OTP_OVER_WHATSAPP    => array(
+					'doc'   => MoWpnsConstants::OTP_OVER_WA_DOCUMENT_LINK,
+					'video' => null,
+					'desc'  => 'Enter the One Time Passcode sent to your WhatsApp number.',
+					'crown' => false,
+				),
 			);
 			$lv_needed                  = apply_filters( 'mo2f_is_lv_needed', false );
 			if ( ! $lv_needed ) { // To do - Remove this after adding OTP Over Whatsapp functionaly.
 				$two_factor_methods_details[ MoWpnsConstants::OTP_OVER_WHATSAPP ] = array(
 					'doc'   => MoWpnsConstants::OTP_OVER_WA_DOCUMENT_LINK,
 					'video' => null,
-					'desc'  => 'Enter the One Time Passcode sent to your WhatsApp account.',
+					'desc'  => 'Enter the One Time Passcode sent to your WhatsApp number.',
 					'crown' => true,
 				);
 			}
@@ -121,6 +129,9 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 			if ( MoWpnsConstants::OTP_OVER_SMS === $auth_type ) {
 				$mo2f_sms_mo2f_curl_redirect = new MocURL();
 				$content                     = $mo2f_sms_mo2f_curl_redirect->send_otp_token( $auth_type, $phone, $email );
+			} else if ( ( MoWpnsConstants::OTP_OVER_WHATSAPP === $auth_type ) ) {
+				$mo2f_wa_mo2f_all_inclusive_redirect = new Mo2f_All_Inclusive_Premium_Settings();
+				$content                             = $mo2f_wa_mo2f_all_inclusive_redirect->mo2f_send_whatsapp_otp_token( $auth_type, $phone, $email );
 			} else {
 				$mo2f_email_on_prem_redirect = new Mo2f_OnPremRedirect();
 				$content                     = $mo2f_email_on_prem_redirect->on_prem_send_redirect( $email, $auth_type, $currentuser );
@@ -145,6 +156,9 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 			if ( MoWpnsConstants::OTP_OVER_SMS === $auth_type ) {
 				$mo2f_sms_mo2f_curl_redirect = new MocURL();
 				$content                     = $mo2f_sms_mo2f_curl_redirect->validate_otp_token( $transaction_id, $otp_token, $username, $auth_type );
+			} else if ( MoWpnsConstants::OTP_OVER_WHATSAPP === $auth_type ) {
+				$mo2f_wa_mo2f_all_inclusive_redirect = new Mo2f_All_Inclusive_Premium_Settings();
+				$content                             = $mo2f_wa_mo2f_all_inclusive_redirect->mo_wa_validate_otp_token( $transaction_id, $otp_token );
 			} else {
 				$mo2f_email_on_prem_redirect = new Mo2f_OnPremRedirect();
 				$content                     = $mo2f_email_on_prem_redirect->on_prem_validate_redirect( $auth_type, $otp_token, $transaction_id, $current_user );
@@ -176,7 +190,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 				update_user_meta( $user_id, 'mo2f_2FA_method_to_configure', MoWpnsConstants::GOOGLE_AUTHENTICATOR );
 				update_user_meta( $user_id, 'mo2f_external_app_type', MoWpnsConstants::GOOGLE_AUTHENTICATOR );
 				global $mo2fdb_queries;
-				$mo2fdb_queries->update_user_details( $user_id, array( 'mo2f_configured_2FA_method' => MoWpnsConstants::GOOGLE_AUTHENTICATOR ) );
+				$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'mo2f_configured_2FA_method' => MoWpnsConstants::GOOGLE_AUTHENTICATOR ) );
 			}
 			return $content;
 		}
@@ -192,12 +206,13 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		 * @param boolean $twofa_by_user enable 2fa by user.
 		 * @param string  $email user's email.
 		 * @param string  $phone user'phone.
+		 * @param string  $Whatsapp user'WhatsApp.
 		 * @return mixed
 		 */
-		public function mo2f_update_user_info( $user_id, $config_status, $twofa_method, $user_registration, $twofa_reg_status, $twofa_by_user, $email, $phone = null ) {
+		public function mo2f_update_user_info( $user_id, $config_status, $twofa_method, $user_registration, $twofa_reg_status, $twofa_by_user, $email, $phone = null, $whatsapp = null ) {
 			if ( isset( $user_id ) ) {
 				$update_details = new Miniorange_Password_2Factor_Login();
-				$update_details->mo2fa_update_user_details( $user_id, $config_status, $twofa_method, $user_registration, $twofa_reg_status, $twofa_by_user, $email, $phone );
+				$update_details->mo2fa_update_user_details( $user_id, $config_status, $twofa_method, $user_registration, $twofa_reg_status, $twofa_by_user, $email, $phone, $whatsapp );
 			}
 			return wp_json_encode( array( 'status' => 'SUCCESS' ) );
 		}
@@ -223,7 +238,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 			}
 			update_user_meta( $user_id, 'mo2f_kba_challenge', $question_answer );
 			global $mo2fdb_queries;
-			$mo2fdb_queries->update_user_details( $user_id, array( 'mo2f_configured_2FA_method' => MoWpnsConstants::SECURITY_QUESTIONS ) );
+			$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'mo2f_configured_2FA_method' => MoWpnsConstants::SECURITY_QUESTIONS ) );
 			$response = wp_json_encode( array( 'status' => 'SUCCESS' ) );
 			return $response;
 		}
@@ -258,7 +273,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 			global $mo2fdb_queries;
 			include_once dirname( dirname( __FILE__ ) ) . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'twofa' . DIRECTORY_SEPARATOR . 'class-google-auth-onpremise.php';
 			$gauth_obj        = new Google_auth_onpremise();
-			$email            = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID );
+			$email            = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
 			$onpremise_secret = $gauth_obj->mo2f_create_secret();
 			$issuer           = get_site_option( 'mo2f_google_appname', DEFAULT_GOOGLE_APPNAME );
 			$url              = $gauth_obj->mo2f_geturl( $onpremise_secret, $issuer, $email );
@@ -444,7 +459,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		 */
 		public function mo2f_cloud_set_oob_email( $current_user, $selected_method ) {
 			global $mo2fdb_queries;
-			$mo2fdb_queries->update_user_details(
+			$mo2fdb_queries->mo2f_update_user_details(
 				$current_user->ID,
 				array(
 					'mo2f_EmailVerification_config_status' => true,
@@ -484,10 +499,10 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		 */
 		public function mo2f_set_google_authenticator( $current_user, $selected_method, $google_account_name, $session_id_encrypt ) {
 			global $mo2fdb_queries;
-			$mo2fdb_queries->update_user_details(
+			$mo2fdb_queries->mo2f_update_user_details(
 				$current_user->ID,
 				array(
-					'mo2f_configured_2fa_method' => $selected_method,
+					'mo2f_configured_2FA_method' => $selected_method,
 				)
 			);
 			include_once dirname( dirname( __FILE__ ) ) . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'twofa' . DIRECTORY_SEPARATOR . 'class-google-auth-onpremise.php';
@@ -552,7 +567,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		 */
 		public function mo2f_get_user_2ndfactor( $user ) {
 			global $mo2fdb_queries;
-			return $mo2fdb_queries->get_user_detail( 'mo2f_configured_2fa_method', $user->ID );
+			return $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
 		}
 
 	}

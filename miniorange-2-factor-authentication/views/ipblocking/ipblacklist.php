@@ -37,9 +37,9 @@ use TwoFA\Helper\MoWpnsHandler;
 						<tbody>
 
 							<?php
-							$mo_wpns_handler = new MoWpnsHandler();
-							$blockedips      = $mo_wpns_handler->get_blocked_ips();
-							$whitelisted_ips = $mo_wpns_handler->get_whitelisted_ips();
+							global $wpns_db_queries;
+							$blockedips      = $wpns_db_queries->mo2f_get_blocked_ip_list();
+							$whitelisted_ips = $wpns_db_queries->mo2f_get_whitelisted_ips_list();
 							$disabled        = '';
 							global $mo2f_dir_name;
 							foreach ( $blockedips as $blockedip ) {

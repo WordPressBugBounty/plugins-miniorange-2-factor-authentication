@@ -491,7 +491,7 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 			</div>
 			<div style="display:inline-flex;">
 				<div>
-					<input type="radio" name="mo2f_policy[mo2f_grace_period]" id="mo2f-use-grace-period" value="1" <?php checked( MoWpnsUtility::get_mo2f_db_option( 'mo2f_grace_period', 'site_option' ), '1' ); ?> data-unhide-when-checked=".mo2f-grace-period-inputs">
+					<input type="radio" name="mo2f_policy[mo2f_grace_period]" id="mo2f-use-grace-period" value="1" <?php checked( (int) MoWpnsUtility::get_mo2f_db_option( 'mo2f_grace_period', 'site_option' ), 1 ); ?> data-unhide-when-checked=".mo2f-grace-period-inputs">
 				</div> 
 				<div class="mo2f_setupwizard_grace_period">
 					<p><?php esc_html_e( 'Give users a grace period to configure 2FA (Users will be enforced to setup 2FA after grace period expiry).', 'miniorange-2-factor-authentication' ); ?></p>

@@ -43,7 +43,7 @@ if ( ! class_exists( 'RegistrationHandler' ) ) {
 				$email_field             = isset( $reg_form_configurations['custom_email_selector'] ) ? $reg_form_configurations['custom_email_selector'] : '';
 				$auth_type               = isset( $reg_form_configurations['custom_auth_type'] ) ? $reg_form_configurations['custom_auth_type'] : '';
 				$phone_selector          = isset( $reg_form_configurations['custom_phone_selector'] ) ? $reg_form_configurations['custom_phone_selector'] : '';
-				$notification_selector   = get_site_option( 'mo2f_custom_notification_selector', '#otpmessage' );
+				$notification_selector   = get_site_option( 'mo2f_custom_notification_selector', '#mo2f-otpmessage' );
 				$success_class           = get_site_option( 'mo2f_custom_success_selector', 'mo2f_green' );
 				$error_class             = get_site_option( 'mo2f_custom_error_selector', 'mo2f_red' );
 				if ( get_site_option( 'mo2f_customerkey' ) > 0 ) {

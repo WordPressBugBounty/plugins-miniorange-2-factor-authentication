@@ -79,7 +79,7 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 			$user_ip        = $mo_wpns_utility->get_client_ip();
 			$user_ip        = sanitize_text_field( $user_ip );
 			$mo_wpns_config = new MoWpnsHandler();
-			$is_whitelisted = $mo_wpns_config->is_whitelisted( $user_ip );
+			$is_whitelisted = $mo_wpns_config->mo2f_is_whitelisted( $user_ip );
 			$is_ip_blocked  = false;
 			if ( ! $is_whitelisted ) {
 				$is_ip_blocked = $mo_wpns_config->is_ip_blocked_in_anyway( $user_ip );
@@ -138,12 +138,13 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 					break;
 				}
 			}
-			$is_customer_registered = 'SUCCESS' === $mo2fdb_queries->get_user_detail( 'user_registration_with_miniorange', $user->ID );
-			if ( get_site_option( 'mo_wpns_enable_unusual_activity_email_to_user' ) && $user_role_enabled && $is_customer_registered ) {
+			$is_customer_registered = 'SUCCESS' === $mo2fdb_queries->mo2f_get_user_detail( 'user_registration_with_miniorange', $user->ID );
+			if ( $user_role_enabled && $is_customer_registered && get_site_option( 'mo_wpns_enable_unusual_activity_email_to_user' ) ) {
 				$mo_wpns_utility->send_notification_to_user_for_unusual_activities( $username, $user_ip, MoWpnsConstants::LOGGED_IN_FROM_NEW_IP );
 			}
 			if ( 'true' === get_site_option( 'mo2f_enable_login_report' ) ) {
-				$mo_wpns_config->add_transactions( $user_ip, $username, MoWpnsConstants::LOGIN_TRANSACTION, MoWpnsConstants::SUCCESS );
+				global $wpns_db_queries;
+				$wpns_db_queries->mo2f_insert_transaction_audit( $user_ip, $username, MoWpnsConstants::LOGIN_TRANSACTION, MoWpnsConstants::SUCCESS );
 			}
 
 		}
@@ -161,9 +162,10 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 				return;
 			}
 			$mo_wpns_config = new MoWpnsHandler();
-			$is_whitelisted = $mo_wpns_config->is_whitelisted( $user_ip );
+			$is_whitelisted = $mo_wpns_config->mo2f_is_whitelisted( $user_ip );
 			if ( 'true' === get_site_option( 'mo2f_enable_login_report' ) ) {
-				$mo_wpns_config->add_transactions( $user_ip, $username, MoWpnsConstants::LOGIN_TRANSACTION, MoWpnsConstants::FAILED );
+				global $wpns_db_queries;
+				$wpns_db_queries->mo2f_insert_transaction_audit( $user_ip, $username, MoWpnsConstants::LOGIN_TRANSACTION, MoWpnsConstants::FAILED );
 			}
 			if ( ! $is_whitelisted ) {
 				$user              = get_user_by( 'login', $username );
@@ -175,7 +177,7 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 						break;
 					}
 				}
-				$is_customer_registered = 'SUCCESS' === $mo2fdb_queries->get_user_detail( 'user_registration_with_miniorange', $user->ID );
+				$is_customer_registered = 'SUCCESS' === $mo2fdb_queries->mo2f_get_user_detail( 'user_registration_with_miniorange', $user->ID );
 				if ( get_site_option( 'mo_wpns_enable_unusual_activity_email_to_user' ) && $user_role_enabled && $is_customer_registered ) {
 					$mo_wpns_utility->send_notification_to_user_for_unusual_activities( $username, $user_ip, MoWpnsConstants::FAILED_LOGIN_ATTEMPTS_FROM_NEW_IP );
 				}
@@ -183,5 +185,4 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 		}
 
 	}
-	new LoginHandler();
 }

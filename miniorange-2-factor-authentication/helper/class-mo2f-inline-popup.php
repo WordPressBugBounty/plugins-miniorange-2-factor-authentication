@@ -95,7 +95,7 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 								echo '<br><br>';
 								?>
 
-								<div  id="otpMessage">
+								<div  id="mo2f-otpMessage">
 									<p class="mo2fa_display_message_frontend" style="text-align: left !important;"><?php echo wp_kses( $login_message, array( 'b' => array() ) ); ?></p>
 								</div>
 										<?php
@@ -132,6 +132,20 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 								<br>
 								</span>
 								<span class="
+										<?php
+										if ( ! ( in_array( MoWpnsConstants::OUT_OF_BAND_EMAIL, $selected_methods, true ) ) ) {
+											echo 'mo2f_td_hide';
+										} else {
+											echo 'mo2f_td_show'; }
+										?>
+								" >
+									<label title="<?php esc_attr_e( 'You will receive an email with link. You have to click the ACCEPT or DENY link to verify your email. Supported in Desktops, Laptops, Smartphones.', 'miniorange-2-factor-authentication' ); ?>">
+												<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::OUT_OF_BAND_EMAIL ); ?>"  />
+										<?php esc_html_e( MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OUT_OF_BAND_EMAIL, 'cap_to_small' ), 'miniorange-2-factor-authentication' ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?>
+									</label>
+									<br>
+								</span> 
+								<span class="
 								<?php
 								if ( ! ( in_array( MoWpnsConstants::OTP_OVER_SMS, $selected_methods, true ) ) ) {
 									echo 'mo2f_td_hide';
@@ -147,45 +161,17 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 								</span>
 								<span class="
 								<?php
-								if ( ! ( in_array( MoWpnsConstants::OTP_OVER_EMAIL, $selected_methods, true ) ) ) {
+								if ( ! ( in_array( MoWpnsConstants::OTP_OVER_WHATSAPP, $selected_methods, true ) ) ) {
 									echo 'mo2f_td_hide';
 								} else {
 									echo 'mo2f_td_show'; }
 								?>
-								">
-									<label title="<?php esc_attr_e( 'You will receive a one time passcode on your email. You have to enter the otp on your screen to login. Supported in Smartphones, Feature Phones.', 'miniorange-2-factor-authentication' ); ?>" >
-									<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::OTP_OVER_EMAIL ); ?>"  />
-										<?php esc_html_e( MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OTP_OVER_EMAIL, 'cap_to_small' ), 'miniorange-2-factor-authentication' ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?>
-											</label>
-											<br>
-								</span>
-								<span class="
-										<?php
-										if ( ! ( in_array( MoWpnsConstants::OUT_OF_BAND_EMAIL, $selected_methods, true ) ) ) {
-											echo 'mo2f_td_hide';
-										} else {
-											echo 'mo2f_td_show'; }
-										?>
 								" >
-									<label title="<?php esc_attr_e( 'You will receive an email with link. You have to click the ACCEPT or DENY link to verify your email. Supported in Desktops, Laptops, Smartphones.', 'miniorange-2-factor-authentication' ); ?>">
-												<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::OUT_OF_BAND_EMAIL ); ?>"  />
-										<?php esc_html_e( MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OUT_OF_BAND_EMAIL, 'cap_to_small' ) . ' Via Link', 'miniorange-2-factor-authentication' ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?>
-									</label>
+										<label title="<?php esc_attr_e( 'You will receive a one time passcode via WhatsApp on your phone. You have to enter the otp on your screen to login. Supported in Smartphones, Feature Phones.', 'miniorange-2-factor-authentication' ); ?>">
+											<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::OTP_OVER_WHATSAPP ); ?>"  />
+									<?php esc_html_e( MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OTP_OVER_WHATSAPP, 'cap_to_small' ), 'miniorange-2-factor-authentication' ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?>
+										</label>
 									<br>
-								</span> 
-								<span class="
-								<?php
-								if ( ! ( in_array( MoWpnsConstants::SECURITY_QUESTIONS, $selected_methods, true ) ) ) {
-									echo 'mo2f_td_hide';
-								} else {
-									echo 'mo2f_td_show'; }
-								?>
-								">
-									<label title="<?php esc_attr_e( 'You have to answers some knowledge based security questions which are only known to you to authenticate yourself. Supported in Desktops, Laptops, Smartphones.', 'miniorange-2-factor-authentication' ); ?>" >
-									<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::SECURITY_QUESTIONS ); ?>"  />
-										<?php esc_html_e( 'Security Questions ( KBA )', 'miniorange-2-factor-authentication' ); ?>
-											</label>
-											<br>
 								</span>
 								<span class="
 								<?php
@@ -215,6 +201,35 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 											</label>
 											<br>
 								</span>
+								<span class="
+								<?php
+								if ( ! ( in_array( MoWpnsConstants::SECURITY_QUESTIONS, $selected_methods, true ) ) ) {
+									echo 'mo2f_td_hide';
+								} else {
+									echo 'mo2f_td_show'; }
+								?>
+								">
+									<label title="<?php esc_attr_e( 'You have to answers some knowledge based security questions which are only known to you to authenticate yourself. Supported in Desktops,Laptops,Smartphones.', 'miniorange-2-factor-authentication' ); ?>" >
+									<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::SECURITY_QUESTIONS ); ?>"  />
+										<?php esc_html_e( 'Security Questions ( KBA )', 'miniorange-2-factor-authentication' ); ?>
+											</label>
+											<br>
+								</span>
+								<span class="
+								<?php
+								if ( ! ( in_array( MoWpnsConstants::OTP_OVER_EMAIL, $selected_methods, true ) ) ) {
+									echo 'mo2f_td_hide';
+								} else {
+									echo 'mo2f_td_show'; }
+								?>
+								">
+									<label title="<?php esc_attr_e( 'You will receive a one time passcode on your email. You have to enter the otp on your screen to login. Supported in Smartphones, Feature Phones.', 'miniorange-2-factor-authentication' ); ?>" >
+									<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::OTP_OVER_EMAIL ); ?>"  />
+										<?php esc_html_e( MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OTP_OVER_EMAIL, 'cap_to_small' ), 'miniorange-2-factor-authentication' ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?>
+											</label>
+											<br>
+								</span>
+								</div>
 								<?php
 
 								$check_grace_period = new Mo2f_Common_Helper();

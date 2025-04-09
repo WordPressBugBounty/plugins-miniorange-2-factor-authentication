@@ -193,10 +193,10 @@ if ( ! class_exists( 'MocURL' ) ) {
 				if ( $cmvtywluaw5nt1rq > 0 ) {
 					update_site_option( 'cmVtYWluaW5nT1RQ', $cmvtywluaw5nt1rq - 1 );
 				}
-				if ( '4' === get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' ) && MoWpnsConstants::OTP_OVER_SMS === $auth_type ) {
+				if ( MoWpnsConstants::OTP_OVER_SMS === $auth_type && 5 === (int) get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' ) ) {
 					Miniorange_Authentication::mo2f_low_otp_alert( 'sms' );
 				}
-				if ( '5' === get_site_option( 'cmVtYWluaW5nT1RQ' ) && ( MoWpnsConstants::OTP_OVER_EMAIL === $auth_type || MoWpnsConstants::OUT_OF_BAND_EMAIL === $auth_type ) ) {
+				if ( ! apply_filters( 'mo2f_is_lv_needed', false ) && ( MoWpnsConstants::OTP_OVER_EMAIL === $auth_type || MoWpnsConstants::OUT_OF_BAND_EMAIL === $auth_type ) && 5 === (int) get_site_option( 'cmVtYWluaW5nT1RQ' ) ) {
 					Miniorange_Authentication::mo2f_low_otp_alert( 'email' );
 				}
 			}
@@ -271,6 +271,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 			$response     = self::call_api( $url, $json, $auth_header );
 			return $response;
 		}
+
 		/**
 		 * It will check the customer.
 		 *
@@ -431,7 +432,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 		 * @param array  $http_header_array .
 		 * @return string
 		 */
-		private static function call_api( $url, $json_string, $http_header_array = array(
+		public static function call_api( $url, $json_string, $http_header_array = array(
 			'Content-Type'  => 'application/json',
 			'charset'       => 'UTF-8',
 			'Authorization' => 'Basic',

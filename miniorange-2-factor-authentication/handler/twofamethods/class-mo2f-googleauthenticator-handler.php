@@ -69,7 +69,7 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 			}
 			global $mo2fdb_queries;
 			if ( empty( $data ) || ! MO2F_IS_ONPREM ) {
-				$email     = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID );
+				$email     = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
 				$ga_secret = $this->mo2f_create_secret();
 				$data      = $this->mo2f_geturl( $ga_secret, $gauth_name, $email );
 				MO2f_Utility::mo2f_set_transient( $session_id, 'ga_qrCode', $data );
@@ -103,7 +103,6 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 		public function mo2f_prompt_2fa_setup_dashboard() {
 			global $mo2fdb_queries;
 			$current_user = wp_get_current_user();
-			$mo2fdb_queries->insert_user( $current_user->ID );
 			$common_helper = new Mo2f_Common_Helper();
 			$gauth_name    = get_option( 'mo2f_google_appname', DEFAULT_GOOGLE_APPNAME );
 			$gauth_obj     = new Google_auth_onpremise();
@@ -174,7 +173,7 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 						if (response.success) {
 							' . call_user_func( $call_to_function ) . '
 						} else {
-							jQuery("#otpMessage").css("display","block");
+							jQuery("#mo2f-otpMessage").css("display","block");
 							jQuery("#mo2f_gauth_inline_message").text(response.data);
 						}
 					}
@@ -287,7 +286,7 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
 			$ga_secret = isset( $post['ga_secret'] ) ? sanitize_text_field( wp_unslash( $post['ga_secret'] ) ) : ( isset( $post['session_id'] ) ? MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'secret_ga' ) : null );
 			if ( MO2f_Utility::mo2f_check_number_length( $otp_token ) ) {
-				$email           = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID );
+				$email           = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
 				$email           = ( empty( $email ) ) ? $user->user_email : $email;
 				$google_response = json_decode( $mo2f_onprem_cloud_obj->mo2f_validate_google_auth( $email, $otp_token, $ga_secret ), true );
 				$this->mo2f_process_inline_ga_validate( $google_response, $user, $email, $ga_secret );
@@ -405,7 +404,7 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 			}
 			$attempts = TwoFAMoSessions::get_session_var( 'mo2f_attempts_before_redirect' );
 			$user     = get_user_by( 'id', $user_id );
-			$email    = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user_id );
+			$email    = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user_id );
 			$content  = json_decode( $mo2f_onprem_cloud_obj->validate_otp_token( $this->mo2f_current_method, $email, null, $otp_token, $user ), true );
 			if ( 0 === strcasecmp( $content['status'], 'SUCCESS' ) ) {
 				TwoFAMoSessions::add_session_var( 'mo2f_attempts_before_redirect', 3 );

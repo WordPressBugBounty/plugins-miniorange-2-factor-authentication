@@ -20,7 +20,7 @@ use TwoFA\Helper\MoWpnsConstants;
 	<br>
 	<div class="ml-mo-16">
 	<label class="mo2f_checkbox_container">
-		<input type="checkbox" id="mo2f_check_rba" <?php checked( get_site_option( 'mo2f_remember_device' ) === '1' ); ?>/>
+		<input type="checkbox" id="mo2f_check_rba" <?php checked( (int) get_site_option( 'mo2f_remember_device' ) ); ?>/>
 	</label>
 
 			<span>
@@ -51,7 +51,7 @@ use TwoFA\Helper\MoWpnsConstants;
 	<div id="mo2f-rba-content">
 	<div class="mo2f-settings-items ml-mo-20">
 		<div class="mr-mo-4">
-			<input type="radio" name="mo2f_enable_rba_types" id="mo2f_block_users" value="1" <?php checked( get_site_option( 'mo2f_enable_rba_types', '1' ) ); ?>>
+			<input type="radio" name="mo2f_enable_rba_types" id="mo2f_block_users" value="1" <?php checked( (int) get_site_option( 'mo2f_enable_rba_types', 1 ) ); ?>>
 			<?php
 				printf(
 					/* Translators: %s: bold tags */
@@ -65,7 +65,7 @@ use TwoFA\Helper\MoWpnsConstants;
 	<br>
 	<div class="mo2f-settings-items ml-mo-20">
 		<div class="mr-mo-4">
-			<input type="radio" name="mo2f_enable_rba_types" id="mo2f_enforce_2fa" value="0" <?php checked( get_site_option( 'mo2f_enable_rba_types' ) === '0' ); ?>>
+			<input type="radio" name="mo2f_enable_rba_types" id="mo2f_enforce_2fa" value="0" <?php checked( ! (int) get_site_option( 'mo2f_enable_rba_types' ) ); ?>>
 			<?php
 				printf(
 					/* Translators: %s: bold tags */
@@ -93,12 +93,12 @@ use TwoFA\Helper\MoWpnsConstants;
 	<div class="mo2f-settings-items ml-mo-20">
 		<span><b><?php esc_html_e( 'Action on exceeding device limit', 'miniorange-2-factor-authentication' ); ?></b></span>
 		&nbsp;&nbsp;&nbsp;&nbsp;<div class="mr-mo-4">
-			<input type="radio" name="mo2f_rba_login_limit" id="mo2f_block_users" value="1" <?php checked( get_site_option( 'mo2f_action_rba_limit_exceed', '1' ) === '1' ); ?>>
+			<input type="radio" name="mo2f_rba_login_limit" id="mo2f_block_users" value="1" <?php checked( (int) get_site_option( 'mo2f_action_rba_limit_exceed', 1 ) ); ?>>
 			<?php esc_html_e( 'Ask for Two Factor', 'miniorange-2-factor-authentication' ); ?>
 		</div>
 			&nbsp;&nbsp;
 		<div class="mr-mo-4">
-			<input type="radio" name="mo2f_rba_login_limit" id="mo2f_enforce_2fa" value="0" <?php checked( get_site_option( 'mo2f_action_rba_limit_exceed', '0' ) === '0' ); ?>>
+			<input type="radio" name="mo2f_rba_login_limit" id="mo2f_enforce_2fa" value="0" <?php checked( ! (int) get_site_option( 'mo2f_action_rba_limit_exceed', 0 ) ); ?>>
 			<?php esc_html_e( 'Deny Access', 'miniorange-2-factor-authentication' ); ?>
 		</div>
 	</div>

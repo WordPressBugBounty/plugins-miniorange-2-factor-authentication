@@ -125,8 +125,8 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 				MoWpnsConstants::OTP_OVER_WHATSAPP    => array(
 					'doc'   => MoWpnsConstants::OTP_OVER_WA_DOCUMENT_LINK,
 					'video' => null,
-					'desc'  => 'Enter the One Time Passcode sent to your WhatsApp account.',
-					'crown' => true,
+					'desc'  => 'Enter the One Time Passcode sent to your WhatsApp number.',
+					'crown' => false,
 				),
 			);
 			return $two_factor_methods_details;
@@ -448,11 +448,11 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 				$mo2fa_login_message = $response['message'] . 'Skip the two-factor for login';
 			} else {
 
-				$mo2fdb_queries->update_user_details(
+				$mo2fdb_queries->mo2f_update_user_details(
 					$current_user->ID,
 					array(
 						'mo2f_email_verification_status' => true,
-						'mo2f_configured_2fa_method'     => MoWpnsConstants::OUT_OF_BAND_EMAIL,
+						'mo2f_configured_2FA_method'     => MoWpnsConstants::OUT_OF_BAND_EMAIL,
 						'mo2f_user_email'                => $email,
 					)
 				);
@@ -487,7 +487,7 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 					'mo2fa_login_message' => $mo2fa_login_message,
 				);
 			} else {
-				$user_email = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $current_user->ID );
+				$user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $current_user->ID );
 				if ( ! empty( $user_email ) && ! is_null( $user_email ) ) {
 					$email = $user_email;
 				}
@@ -506,7 +506,7 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 		public function mo2f_set_google_authenticator( $current_user, $selected_method, $google_account_name, $session_id_encrypt ) {
 			global $mo2fdb_queries;
 			$email     = $current_user->user_email;
-			$tempemail = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $current_user->ID );
+			$tempemail = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $current_user->ID );
 
 			if ( ! isset( $tempemail ) && ! is_null( $tempemail ) && ! empty( $tempemail ) ) {
 				$email = $tempemail;
@@ -519,10 +519,10 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 				$mo2fa_login_message = $response['message'];
 				$mo2fa_login_status  = MoWpnsConstants::MO_2_FACTOR_PROMPT_USER_FOR_2FA_METHODS;
 			} else {
-				$mo2fdb_queries->update_user_details(
+				$mo2fdb_queries->mo2f_update_user_details(
 					$current_user->ID,
 					array(
-						'mo2f_configured_2fa_method' => $selected_method,
+						'mo2f_configured_2FA_method' => $selected_method,
 					)
 				);
 				$google_auth     = new Mo2f_Cloud_Utility();
@@ -565,7 +565,7 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 				$mo2fa_login_message = $response['message'];
 			} else {
 				$mo2fa_login_status = MoWpnsConstants::MO_2_FACTOR_PROMPT_USER_FOR_2FA_METHODS;
-				$mo2fdb_queries->update_user_details( $current_user->ID, array( 'mo2f_configured_2fa_method' => $selected_method ) );
+				$mo2fdb_queries->mo2f_update_user_details( $current_user->ID, array( 'mo2f_configured_2FA_method' => $selected_method ) );
 			}
 
 			return array(
@@ -614,8 +614,8 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 		 */
 		public function mo2f_get_user_2ndfactor( $user ) {
 			global $mo2fdb_queries;
-			$mo2f_user_email        = $mo2fdb_queries->get_user_detail( 'mo2f_user_email', $user->ID );
-			$auth_type              = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2fa_method', $user->ID );
+			$mo2f_user_email        = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
+			$auth_type              = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
 			$is_telegram_configured = MoWpnsConstants::OTP_OVER_TELEGRAM === $auth_type;
 			if ( $is_telegram_configured ) {
 				$mo2f_second_factor = $auth_type;
@@ -689,7 +689,7 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( $check_user['message'] ), 'ERROR' );
 					return;
 				} elseif ( strcasecmp( $check_user['status'], 'USER_FOUND' ) === 0 ) {
-					$mo2fdb_queries->update_user_details(
+					$mo2fdb_queries->mo2f_update_user_details(
 						$user->ID,
 						array(
 							'user_registration_with_miniorange' => 'SUCCESS',
@@ -702,7 +702,7 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 					if ( json_last_error() === JSON_ERROR_NONE ) {
 						if ( strcasecmp( $content['status'], 'SUCCESS' ) === 0 ) {
 							update_site_option( base64_encode( 'totalUsersCloud' ), intval( get_site_option( base64_encode( 'totalUsersCloud' ) ) ) + 1 ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
-							$mo2fdb_queries->update_user_details(
+							$mo2fdb_queries->mo2f_update_user_details(
 								$user->ID,
 								array(
 									'user_registration_with_miniorange' => 'SUCCESS',

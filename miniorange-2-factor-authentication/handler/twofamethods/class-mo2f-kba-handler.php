@@ -158,7 +158,6 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 		public function mo2f_prompt_2fa_setup_dashboard() {
 			global $mo2fdb_queries;
 			$current_user = wp_get_current_user();
-			$mo2fdb_queries->insert_user( $current_user->ID );
 			$common_helper = new Mo2f_Common_Helper();
 			$html          = $common_helper->prompt_user_for_kba_setup( $current_user->ID, '', '', '', 'dashboard' );
 			$html         .= $common_helper->mo2f_get_dashboard_hidden_forms();
@@ -205,7 +204,7 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 			update_user_meta( $current_user->ID, 'mo2f_kba_challenge', $question_answer );
 			if ( TwoFAMoSessions::get_session_var( 'mo2f_is_kba_backup_configured' . $user_id ) ) {
 				update_user_meta( $user_id, 'mo2f_backup_method_set', 1 );
-				$mo2fdb_queries->update_user_details( $user_id, array( 'mo2f_SecurityQuestions_config_status' => true ) );
+				$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'mo2f_SecurityQuestions_config_status' => true ) );
 			} else {
 				$this->mo2f_update_user_details( $post, $current_user->ID, $current_user->user_email );
 			}

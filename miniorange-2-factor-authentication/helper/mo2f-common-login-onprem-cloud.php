@@ -78,7 +78,7 @@ function mo2f_get_forgotphone_form( $login_status, $login_message, $redirect_to,
 					if ( $mo2f_forgotphone_enabled ) {
 						if ( isset( $login_message ) && ! empty( $login_message ) ) {
 							?>
-							<div id="otpMessage" class="mo2fa_display_message_frontend">
+							<div id="mo2f-otpMessage" class="mo2fa_display_message_frontend">
 								<p class="mo2fa_display_message_frontend"><?php echo wp_kses( $login_message, array( 'b' => array() ) ); ?></p>
 							</div>
 						<?php } ?>
@@ -157,7 +157,7 @@ function mo2f_get_duo_push_authentication_prompt( $login_status, $login_message,
 
 	global $mo2fdb_queries,$txid,$mo_wpns_utility;
 	$mo2f_enable_forgotphone = MoWpnsUtility::get_mo2f_db_option( 'mo2f_enable_forgotphone', 'get_option' );
-	$mo2f_kba_config_status  = $mo2fdb_queries->get_user_detail( 'mo2f_SecurityQuestions_config_status', $user_id );
+	$mo2f_kba_config_status  = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_SecurityQuestions_config_status', $user_id );
 	$mo2f_ev_txid            = get_user_meta( $user_id, 'mo2f_transactionId', true );
 	$user_id                 = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
 
@@ -189,7 +189,7 @@ function mo2f_get_duo_push_authentication_prompt( $login_status, $login_message,
 				</div>
 				<div class="mo2f_modal-body">
 					<?php if ( isset( $login_message ) && ! empty( $login_message ) ) { ?>
-						<div id="otpMessage">
+						<div id="mo2f-otpMessage">
 							<p class="mo2fa_display_message_frontend"><?php echo wp_kses( $login_message, array( 'b' => array() ) ); ?></p>
 						</div>
 					<?php } ?>

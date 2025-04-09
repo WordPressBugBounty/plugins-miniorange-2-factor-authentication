@@ -103,7 +103,7 @@ if ( ! class_exists( 'Mo2f_Setupwizard' ) ) {
 			}
 			$email            = $user->user_email;
 			$kba_registration = new MO2f_Cloud_Onprem_Interface();
-			$mo2fdb_queries->update_user_details(
+			$mo2fdb_queries->mo2f_update_user_details(
 				$user->ID,
 				array(
 					'mo2f_SecurityQuestions_config_status' => true,
@@ -148,7 +148,7 @@ if ( ! class_exists( 'Mo2f_Setupwizard' ) ) {
 			} else {
 				$obj_google_auth->mo_g_auth_set_secret( $user_id, $secret );
 				$this->mo2f_check_and_create_user( $user_id );
-				$mo2fdb_queries->update_user_details(
+				$mo2fdb_queries->mo2f_update_user_details(
 					$user_id,
 					array(
 						'mo2f_GoogleAuthenticator_config_status' => true,
@@ -197,7 +197,6 @@ if ( ! class_exists( 'Mo2f_Setupwizard' ) ) {
 				echo 'User Limit has been exceeded';
 				exit;
 			}
-			$mo2fdb_queries->insert_user( $user_id );
 		}
 
 	}

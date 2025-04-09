@@ -187,6 +187,12 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 				case 'mo2f_remeber_device_false':
 					do_action( 'mo2f_enterprise_plan_settings_action', 'mo2f_remeber_device_false', $_POST );
 					break;
+				case 'mo2f_remember_ip_true':
+					do_action( 'mo2f_all_inclusive_plan_settings_action', 'mo2f_remember_ip_true', $_POST );
+					break;
+				case 'mo2f_remember_ip_false':
+					do_action( 'mo2f_all_inclusive_plan_settings_action', 'mo2f_remember_ip_false', $_POST );
+					break;
 			}
 		}
 
@@ -334,7 +340,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$user_id                           = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
 			$redirect_to                       = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : null;
 			$current_user                      = get_user_by( 'id', $user_id );
-			$user_registration_with_miniorange = $mo2fdb_queries->get_user_detail( 'user_registration_with_miniorange', $current_user->ID );
+			$user_registration_with_miniorange = $mo2fdb_queries->mo2f_get_user_detail( 'user_registration_with_miniorange', $current_user->ID );
 			if ( 'SUCCESS' === $user_registration_with_miniorange ) {
 				$selected_method = isset( $post['mo2f_selected_2factor_method'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_selected_2factor_method'] ) ) : 'NONE';
 				$inline_popup    = new Mo2f_Common_Helper();
@@ -485,6 +491,19 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 						)
 					);
 				}
+				$remember_ip_configurations = (array) get_site_option( 'mo2f_remember_ip_configurations' );
+				if ( isset( $remember_ip_configurations['mo2f_remember_ip_feature'] ) && $remember_ip_configurations['mo2f_remember_ip_feature'] ) {
+					do_action(
+						'mo2f_all_inclusive_plan_settings_action',
+						'mo2f_remember_ip_details',
+						array(
+							'user_id'       => $user_id,
+							'session_id'    => $session_id_encrypt,
+							'redirect_to'   => $redirect_to,
+							'rem_ip_choice' => isset( $remember_ip_configurations['mo2f_give_rem_ip_choice'] ) ? $remember_ip_configurations['mo2f_give_rem_ip_choice'] : 0,
+						)
+					);
+				}
 				$this->mo2fa_pass2login( $redirect_to, $session_id_encrypt );
 			}
 		}
@@ -617,6 +636,15 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 							'redirect_to' => $redirect_to,
 						)
 					);
+					do_action(
+						'mo2f_all_inclusive_plan_settings_action',
+						'mo2f_check_remember_ip_details',
+						array(
+							'user_id'     => $currentuser->ID,
+							'session_id'  => $session_id_encrypt,
+							'redirect_to' => $redirect_to,
+						)
+					);
 					$this->mo2f_remove_miniorange_auth_entries( $currentuser->ID ); // To do- remove this in next to next release.
 					$mo2f_second_factor     = $mo2f_onprem_cloud_obj->mo2f_get_user_2ndfactor( $currentuser );
 					$configure_array_method = $common_helper->mo2fa_return_methods_value( $currentuser->ID );
@@ -661,7 +689,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$roles             = (array) $currentuser->roles;
 			$twofactor_enabled = 0;
 			foreach ( $roles as $role ) {
-				if ( get_site_option( 'mo2fa_' . $role ) === '1' ) {
+				if ( (int) get_site_option( 'mo2fa_' . $role ) ) {
 					$twofactor_enabled = 1;
 					break;
 				}
@@ -680,8 +708,8 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		 */
 		public function mo2f_remove_miniorange_auth_entries( $user_id ) {
 			global $mo2fdb_queries;
-			if ( $mo2fdb_queries->get_user_detail( 'mo2f_miniOrangeSoftToken_config_status', $user_id ) || $mo2fdb_queries->get_user_detail( 'mo2f_miniOrangeQRCodeAuthentication_config_status', $user_id ) || $mo2fdb_queries->get_user_detail( 'mo2f_miniOrangePushNotification_config_status', $user_id ) ) {
-				$mo2fdb_queries->delete_user_details( $user_id );
+			if ( $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_miniOrangeSoftToken_config_status', $user_id ) || $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_miniOrangeQRCodeAuthentication_config_status', $user_id ) || $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_miniOrangePushNotification_config_status', $user_id ) ) {
+				$mo2fdb_queries->mo2f_delete_user_details( $user_id );
 			}
 		}
 		/**
@@ -696,7 +724,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			global $mo2fdb_queries;
 			$common_helper = new Mo2f_Common_Helper();
 			if ( get_user_meta( $currentuser->ID, 'mo2f_user_profile_set', true ) ) {
-				$selected_method = $mo2fdb_queries->get_user_detail( 'mo2f_configured_2FA_method', $currentuser->ID );
+				$selected_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $currentuser->ID );
 				$inline_popup    = new Mo2f_Common_Helper();
 				$show_method     = $inline_popup->mo2f_get_object( $selected_method );
 				$show_method->mo2f_prompt_2fa_setup_inline( $session_id_encrypt, $redirect_to, $currentuser->ID, '' );
@@ -780,6 +808,19 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 							'user_id'     => $user_id,
 							'session_id'  => $session_id_encrypt,
 							'redirect_to' => $redirect_to,
+						)
+					);
+				}
+				$remember_ip_configurations = (array) get_site_option( 'mo2f_remember_ip_configurations' );
+				if ( isset( $remember_ip_configurations['mo2f_remember_ip_feature'] ) && $remember_ip_configurations['mo2f_remember_ip_feature'] ) {
+					do_action(
+						'mo2f_all_inclusive_plan_settings_action',
+						'mo2f_remember_ip_details',
+						array(
+							'user_id'       => $user_id,
+							'session_id'    => $session_id_encrypt,
+							'redirect_to'   => $redirect_to,
+							'rem_ip_choice' => isset( $remember_ip_configurations['mo2f_give_rem_ip_choice'] ) ? $remember_ip_configurations['mo2f_give_rem_ip_choice'] : 0,
 						)
 					);
 				}

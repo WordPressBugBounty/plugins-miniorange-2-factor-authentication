@@ -8,6 +8,7 @@
 // Needed in both.
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\MoWpnsUtility;
+use TwoFA\Helper\MoWpnsConstants;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -72,6 +73,26 @@ if ( $date_timestamp2 <= $date_timestamp1 && ( $user_id === $onprem_admin ) && !
 				echo ' <div class="mo2f-admin-options"> <div class="mx-mo-3"> <img width="30" height="30" src="' . esc_url( $logo_url ) . '"></div>';
 
 	echo '<span class="mo2f-plugin-name">Two-Factor Authentication</span>';
+	echo '
+		<div class="flex mo2f-text-xs-white">
+    		<div id="mo2f_check_transactions" class="mo2f-transaction-show">
+				<div id="mo2f_remaining_transactions_sms_email">
+        			SMS: ' . esc_attr( $remaining_transaction['sms_transactions'] ) . '  |  Email: ' . esc_attr( $remaining_transaction['email_transactions'] ) . '   
+				</div>      
+        		<div class="relative mo2f-30x30">
+            		<button id="mo2f_transaction_check" class="mo2f-refresh-btn mo2f-full-size">
+						<svg width="18" height="18" viewBox="0 0 512 512">
+							<path d="M320,146s24.36-12-64-12A160,160,0,1,0,416,294" class="mo2f-stroke"/>
+							<polyline points="256 58 336 138 256 218" class="mo2f-stroke"/>
+						</svg>
+            		</button>
+            		<span id="mo2f_transaction_loader" class="mo2f_transaction_loader mo2f-full-size hidden"></span>
+        		</div>
+    		</div>
+    		<div> 
+        		<a href=' . esc_url( MoWpnsConstants::RECHARGELINK ) . ' target="_blank" class="mo2f-button">' . esc_html__( 'Recharge', 'miniorange-2-factor-authentication' ) . '</a>
+    		</div>
+		</div>';
 	echo '</div>';
 if ( current_user_can( 'administrator' ) && get_site_option( 'mo_wpns_2fa_with_network_security' ) || get_site_option( 'mo2f_is_old_customer' ) ) {
 			update_site_option( 'mo2f_is_old_customer', 1 );

@@ -24,5 +24,6 @@ if ( ! class_exists( 'Mo2f_Tabs' ) ) {
 		const TROUBLESHOOTING      = 'troubleshooting';
 		const CONTACT_US           = 'contact_us';
 		const IP_BLOCKING          = 'ip_blocking';
+		const WHATSAPP             = 'whatsapp';
 	}
 }

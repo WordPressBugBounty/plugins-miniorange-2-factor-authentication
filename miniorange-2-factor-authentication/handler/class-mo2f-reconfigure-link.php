@@ -210,7 +210,7 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 			delete_user_meta( $user_id, 'mo2f_2FA_method_to_configure' );
 			delete_user_meta( $user_id, 'Security Questions' );
 			delete_user_meta( $user_id, 'mo2f_chat_id' );
-			$mo2fdb_queries->delete_user_details( $user_id );
+			$mo2fdb_queries->mo2f_delete_user_details( $user_id );
 			delete_user_meta( $user_id, 'mo2f_2FA_method_to_test' );
 		}
 
