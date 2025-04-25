@@ -227,8 +227,8 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 */
 		public function mo2f_get_specific_method_users_count( $method ) {
 			global $wpdb;
-			$users_meta = $wpdb->get_results(
-				$wpdb->prepare(
+			$users_meta = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
 					"SELECT user_id, meta_value
 					FROM {$wpdb->usermeta}
 					WHERE meta_key = %s",
@@ -267,8 +267,8 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 */
 		public function mo2f_get_no_of_2fa_users() {
 			global $wpdb;
-			$count = $wpdb->get_var(
-				$wpdb->prepare(
+			$count = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
 					"SELECT COUNT(DISTINCT user_id) FROM {$wpdb->usermeta} WHERE meta_key = %s",
 					MoWpnsConstants::USER_DEATIL_META_KEY
 				)
@@ -284,8 +284,8 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		public function get_all_user_2fa_methods() {
 			global $wpdb;
 			$all_methods = array();
-			$users_meta  = $wpdb->get_results(
-				$wpdb->prepare(
+			$users_meta  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
 					"SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s",
 					MoWpnsConstants::USER_DEATIL_META_KEY
 				)
@@ -470,8 +470,8 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 */
 		public function check_alluser_limit_exceeded( $user_id ) {
 			global $wpdb;
-			$total_users_configured  = $wpdb->get_var(
-				$wpdb->prepare(
+			$total_users_configured  = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
 					"SELECT COUNT(DISTINCT user_id) FROM {$wpdb->usermeta} WHERE meta_key = %s",
 					MoWpnsConstants::USER_DEATIL_META_KEY
 				)
@@ -543,8 +543,7 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		public function mo2f_drop_table( $table_name ) {
 			global $wpdb;
 			$table_name = esc_sql( $wpdb->base_prefix . $table_name );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-			$wpdb->query( "DROP TABLE IF EXISTS `{$table_name}`" );
+			$wpdb->query( "DROP TABLE IF EXISTS `{$table_name}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- DB Direct Query is necessary here.
 		}
 	}
 }

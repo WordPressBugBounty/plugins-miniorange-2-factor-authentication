@@ -9,7 +9,7 @@
  * Plugin Name: miniOrange 2 Factor Authentication
  * Plugin URI: https://miniorange.com
  * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. We Support Google/Authy/LastPass/Microsoft Authenticator, QR Code, Push Notification, Soft Token and Security Questions(KBA) for 3 User in the free version of the plugin.
- * Version: 6.0.7
+ * Version: 6.0.8
  * Author: miniOrange
  * Author URI: https://miniorange.com
  * Text Domain: miniorange-2-factor-authentication
@@ -43,7 +43,7 @@ require dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
 require_once dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
 define( 'MO_HOST_NAME', 'https://login.xecurify.com' );
-define( 'MO2F_VERSION', '6.0.7' );
+define( 'MO2F_VERSION', '6.0.8' );
 define( 'MO2F_PLUGIN_URL', ( plugin_dir_url( __FILE__ ) ) );
 define( 'MO2F_TEST_MODE', false );
 define( 'MO2F_IS_ONPREM', get_option( 'is_onprem', 1 ) );
@@ -97,7 +97,6 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			add_action( 'user_profile_update_errors', array( $this, 'mo2f_user_profile_errors' ), 10, 3 );
 			add_action( 'admin_init', array( $this, 'mo2f_migrate_whitelisted_ips_table' ) );
 			add_action( 'admin_init', array( $this, 'mo2f_migrate_network_blocked_ips_table' ) );
-			add_action( 'admin_init', array( $this, 'mo2f_migrate_network_transactions_table' ) );
 			add_action( 'admin_init', array( $this, 'mo2f_migrate_user_details' ) );
 			add_action( 'admin_init', array( $this, 'mo2f_drop_wpns_attack_logs_and_network_email_sent_audit' ) );
 		}
@@ -674,47 +673,6 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			update_site_option( 'mo2f_blocked_ips_migrated', true );
 		}
 
-		/**
-		 * Migrate network transactions from the custom `mo2f_network_transactions` table to a WordPress site option.
-		 *
-		 * This function retrieves all the transaction details from the `mo2f_network_transactions` table,
-		 * filters out the invalid entries, and updates the `mo2f_network_transactions_data` site option
-		 * with the valid transaction data. After a successful migration, it deletes the old table
-		 * and sets an option to indicate that the migration has been completed.
-		 *
-		 * @global wpdb $wpdb WordPress database abstraction object.
-		 * @return void
-		 */
-		public function mo2f_migrate_network_transactions_table() {
-			global $wpns_db_queries;
-			global $mo2fdb_queries;
-			if ( get_site_option( 'mo2f_network_transactions_migrated' ) ) {
-				return;
-			}
-			$old_network_transactions_data = $wpns_db_queries->mo2f_get_old_table_data( 'mo2f_network_transactions' );
-			if ( ! empty( $old_network_transactions_data ) ) {
-				$network_transactions = array();
-				foreach ( $old_network_transactions_data as $row ) {
-					$transaction_data       = array_filter(
-						array(
-							'ip_address'        => $row['ip_address'],
-							'username'          => $row['username'],
-							'type'              => $row['type'],
-							'url'               => $row['url'],
-							'status'            => $row['status'],
-							'created_timestamp' => $row['created_timestamp'],
-						),
-						function ( $value ) {
-							return null !== $value;
-						}
-					);
-					$network_transactions[] = $transaction_data;
-				}
-				update_site_option( 'mo2f_network_transactions_data', $network_transactions );
-			}
-			$mo2fdb_queries->mo2f_drop_table( 'mo2f_network_transactions' );
-			update_site_option( 'mo2f_network_transactions_migrated', true );
-		}
 		/**
 		 * Migrate user details from the custom `mo2f_user_details` table to the WordPress `usermeta` table.
 		 *

@@ -32,6 +32,13 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 *
 		 * @var string
 		 */
+		private $transaction_table;
+
+		/**
+		 * Transaction table name.
+		 *
+		 * @var string
+		 */
 		private $filescan;
 
 		/**
@@ -39,6 +46,7 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 */
 		public function __construct() {
 			global $wpdb;
+			$this->transaction_table   = $wpdb->base_prefix . 'mo2f_network_transactions';
 		}
 
 		/**
@@ -49,11 +57,27 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		public function mo_plugin_activate() {
 			if ( ! get_site_option( 'mo_wpns_dbversion' ) || get_site_option( 'mo_wpns_dbversion' ) < MoWpnsConstants::DB_VERSION ) {
 				update_site_option( 'mo_wpns_dbversion', MoWpnsConstants::DB_VERSION );
+				$this->mo2f_generate_tables();
 			} else {
 				$current_db_version = get_site_option( 'mo_wpns_dbversion' );
 				if ( $current_db_version < MoWpnsConstants::DB_VERSION ) {
 					update_site_option( 'mo_wpns_dbversion', MoWpnsConstants::DB_VERSION );
 				}
+			}
+		}
+
+		/**
+		 * This function generates tables.
+		 *
+		 * @return void
+		 */
+		public function mo2f_generate_tables() {
+			global $wpdb;
+
+			$table_name = $this->transaction_table;
+			if ( $wpdb->get_var( $wpdb->prepare( 'show tables like %s', array( $table_name ) ) ) !== $table_name ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery -- Ignoring warning related to Schema change
+				$sql = 'CREATE TABLE ' . $table_name . ' ( `id` bigint NOT NULL AUTO_INCREMENT, `ip_address` mediumtext NOT NULL ,  `username` mediumtext NOT NULL , `type` mediumtext NOT NULL , `url` mediumtext NOT NULL , `status` mediumtext NOT NULL , `created_timestamp` int, UNIQUE KEY id (id) );'; // phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange -- Ignoring warning related to Schema change
+				dbDelta( $sql );
 			}
 		}
 
@@ -98,15 +122,9 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 * @return void
 		 */
 		public function mo_wpns_clear_login_report() {
-			$option_key            = 'mo2f_network_transactions_data';
-			$transactions          = get_site_option( $option_key, array() );
-			$filtered_transactions = array_filter(
-				$transactions,
-				function ( $transaction ) {
-					return ! in_array( $transaction['status'], array( 'success', 'pastfailed', 'failed' ) );
-				}
-			);
-			update_site_option( $option_key, $filtered_transactions );
+			global $wpdb;
+			$wpdb->query( 'DELETE FROM ' . $wpdb->base_prefix . "mo2f_network_transactions WHERE Status='success' or Status= 'pastfailed' or Status='failed' " ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery, Direct database call without caching detected -- DB Direct Query is necessary here.
+		    delete_site_option('mo2f_network_transactions_data'); // This is to delete the data from options table.
 		}
 
 
@@ -261,18 +279,18 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 * @return void
 		 */
 		public function mo2f_insert_transaction_audit( $ip_address, $username, $type, $status, $url = null ) {
-			$option_key       = 'mo2f_network_transactions_data';
-			$transaction_data = array(
-				'ip_address'        => sanitize_text_field( $ip_address ),
-				'username'          => sanitize_text_field( $username ),
-				'type'              => sanitize_text_field( $type ),
-				'status'            => sanitize_text_field( $status ),
-				'url'               => is_null( $url ) ? '' : esc_url_raw( $url ),
-				'created_timestamp' => strtotime( current_time( 'mysql' ) ),
+			global $wpdb;
+			$data        = array(
+				'ip_address'        => $ip_address,
+				'username'          => $username,
+				'type'              => $type,
+				'status'            => $status,
+				'created_timestamp' => current_time( 'timestamp' ), // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- Ignoring warning related to timestamp use
 			);
-			$existing_data    = get_site_option( $option_key, array() );
-			$existing_data[]  = $transaction_data;
-			update_site_option( $option_key, $existing_data );
+			$format      = array( '%s', '%s', '%s', '%s', '%d' );
+			$data['url'] = is_null( $url ) ? '' : $url;
+			$url         = esc_url_raw( $url );
+			$wpdb->insert( $this->transaction_table, $data, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery , WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring the warnings related to DB caching, Dirct DB access, and complex placeholder
 		}
 
 		/**
@@ -281,15 +299,8 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 * @return object.
 		 */
 		public function mo2f_get_transaction_list() {
-			$option_key   = 'mo2f_network_transactions_data';
-			$transactions = get_site_option( $option_key, array() );
-			usort(
-				$transactions,
-				function ( $a, $b ) {
-					return $b['created_timestamp'] - $a['created_timestamp'];
-				}
-			);
-			return $transactions;
+			global $wpdb;
+			return $wpdb->get_results( $wpdb->prepare( 'SELECT ip_address, username, type, status, created_timestamp FROM %1s order by id desc limit 5000', array( $this->transaction_table ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery , WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring the warnings related to DB caching, Dirct DB access, and complex placeholder
 		}
 
 		/**
@@ -298,6 +309,17 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 * @return object
 		 */
 		public function mo2f_get_login_transaction_report() {
+			global $wpdb;
+			return $wpdb->get_results( $wpdb->prepare( "SELECT ip_address, username, status, created_timestamp FROM %1s WHERE type='User Login' order by id desc limit 5000", array( $this->transaction_table ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery , WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring the warnings related to DB caching, Dirct DB access, and complex placeholder
+		}
+
+		
+		/**
+		 * Get login old transaction.
+		 *
+		 * @return object
+		 */
+		public function mo2f_get_old_login_transaction_report() {
 			$option_key         = 'mo2f_network_transactions_data';
 			$transactions       = get_site_option( $option_key, array() );
 			$login_transactions = array_filter(
@@ -324,21 +346,36 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 * @return void
 		 */
 		public function mo2f_update_transaction_table( $where, $update ) {
-			$option_key   = 'mo2f_network_transactions_data';
-			$transactions = get_site_option( $option_key, array() );
-			foreach ( $transactions as &$transaction ) {
-				$match = true;
-				foreach ( $where as $where_key => $where_value ) {
-					if ( ! isset( $transaction [ $where_key ] ) || $transaction [ $where_key ] !== $where_value ) {
-						$match = false;
-						break;
-					}
+			global $wpdb;
+
+			$sql = 'UPDATE ' . $this->transaction_table . ' SET ';
+			$i   = 0;
+			foreach ( $update as $key => $value ) {
+				if ( 0 !== $i % 2 ) {
+					$sql .= ' , ';
 				}
-				if ( $match ) {
-					$transaction = array_merge( $transaction, $update );
+				if ( 'created_timestamp' === $key || 'id' === $key ) {
+					$sql .= $wpdb->prepare( '%1s = %d', array( $key, $value ) ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring complex placeholder warning as it is used for table name
+				} else {
+					$sql .= $wpdb->prepare( '%1s = %s', array( $key, $value ) ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring complex placeholder warning as it is used for table name
 				}
+				$i++;
 			}
-			update_site_option( $option_key, $transactions );
+			$sql .= ' WHERE ';
+			$i    = 0;
+			foreach ( $where as $key => $value ) {
+				if ( 0 !== $i % 2 ) {
+					$sql .= ' AND ';
+				}
+				if ( 'created_timestamp' === $key || 'id' === $key ) {
+					$sql .= $wpdb->prepare( ' %1s = %d ', array( $key, $value ) ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring complex placeholder warning as it is used for table name
+				} else {
+					$sql .= $wpdb->prepare( ' %1s = %s ', array( $key, $value ) );  // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring complex placeholder warning as it is used for table name
+				}
+				$i++;
+			}
+
+			$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery , WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Ignoring warnings as prepare() is used in above statement
 		}
 
 		/**
@@ -347,16 +384,8 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 * @return string
 		 */
 		public function mo2f_get_count_of_attacks_blocked() {
-			$option_key        = 'mo2f_network_transactions_data';
-			$transactions      = get_site_option( $option_key, array() );
-			$statuses_to_count = array( MoWpnsConstants::FAILED, MoWpnsConstants::PAST_FAILED );
-			$count             = 0;
-			foreach ( $transactions as $transaction ) {
-				if ( in_array( $transaction['status'], $statuses_to_count, true ) ) {
-					++$count;
-				}
-			}
-			return $count;
+			global $wpdb;
+			return $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %1s WHERE status = %s OR status = %s', array( $this->transaction_table, MoWpnsConstants::FAILED, MoWpnsConstants::PAST_FAILED ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery , WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring the warnings related to DB caching, Dirct DB access, and complex placeholder
 		}
 
 		/**
@@ -366,17 +395,8 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 * @return string
 		 */
 		public function mo2f_get_failed_transaction_count( $ip_address ) {
-			$option_key   = 'mo2f_network_transactions_data';
-			$transactions = get_site_option( $option_key, array() );
-			$count        = 0;
-			foreach ( $transactions as $transaction ) {
-				if ( isset( $transaction['ip_address'], $transaction['status'] ) &&
-					$transaction['ip_address'] === $ip_address &&
-					MoWpnsConstants::FAILED === $transaction['status'] ) {
-					++$count;
-				}
-			}
-			return $count;
+			global $wpdb;
+			return $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %1s WHERE ip_address = %s AND status = %s', array( $this->transaction_table, $ip_address, MoWpnsConstants::FAILED ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery , WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring the warnings related to DB caching, Dirct DB access, and complex placeholder
 		}
 
 		/**
@@ -386,19 +406,8 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 * @return void
 		 */
 		public function mo2f_delete_transaction( $ip_address ) {
-			$option_key            = 'mo2f_network_transactions_data';
-			$transactions          = get_site_option( $option_key, array() );
-			$filtered_transactions = array_filter(
-				$transactions,
-				function ( $transaction ) use ( $ip_address ) {
-					return ! (
-						isset( $transaction['ip_address'], $transaction['status'] ) &&
-						$transaction['ip_address'] === $ip_address &&
-						MoWpnsConstants::FAILED === $transaction['status']
-					);
-				}
-			);
-			update_site_option( $option_key, $filtered_transactions );
+			global $wpdb;
+			$wpdb->query( $wpdb->prepare( 'DELETE FROM %1s WHERE ip_address = %s AND status= %s ', array( $this->transaction_table, $ip_address, MoWpnsConstants::FAILED ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery , WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring the warnings related to DB caching, Dirct DB access, and complex placeholder
 		}
 
 		/**
@@ -410,12 +419,12 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		public function mo2f_get_old_table_data( $table_name ) {
 			global $wpdb;
 			$full_table_name = $wpdb->base_prefix . $table_name;
-			$table_exists    = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $full_table_name ) );
+			$table_exists    = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $full_table_name ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- DB Direct Query is necessary here.
 			if ( $table_exists !== $full_table_name ) {
 				return null;
 			}
 			$query    = $wpdb->prepare( 'SELECT * FROM %1s', $full_table_name );
-			$old_data = $wpdb->get_results( $query, ARRAY_A );
+			$old_data = $wpdb->get_results( $query, ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- DB Direct Query is necessary here.
 			return ! empty( $old_data ) ? $old_data : null;
 		}
 	}

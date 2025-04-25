@@ -1,16 +1,16 @@
-=== Google Authenticator - WordPress 2FA, MFA, OTP SMS and Email ===
+=== Google Authenticator – 2FA, MFA, OTP SMS and Email ===
 
  Contributors: twofactor, twofactorauthentication, hsn97, cyberlord92
  Tags:2FA, MFA, two-factor authentication, google authenticator, WordPress 2FA
  Donate link: https://miniorange.com/
  Requires at least: 3.0.1
- Tested up to: 6.7.1
+ Tested up to: 6.8
  Requires PHP: 7.2.24
- Stable tag: 6.0.7
+ Stable tag: 6.0.8
  License: MIT/Expat
  License URI: https://docs.miniorange.com/mit-license
 
- Google Authenticator - WordPress 2FA, MFA is an easy-to-use plugin for WordPress. It adds Two-Factor Authentication (2FA) to protect your WordPress login.
+ Two-Factor Authentication (2FA) secures WordPress login and registration forms with TOTP apps, OTP via SMS and Email verification for all users.
 
  == Description ==
 
@@ -155,7 +155,7 @@ TOTP (Time-Based One-Time Password) is a type of Two-Factor Authentication (2FA)
  2. If you had set up KBA questions as 2FA earlier, you can use them as an alternate method to log in to your website instead of the configured 2FA method.
  3. Rename the plugin from FTP - this disables the Two-Factor Authentication - WordPress 2FA (WP 2FA) plugin and you will be able to log in without 2FA.
 
- For detailed information, please check on our website. <a href="https://faq.miniorange.com/knowledgebase/how-to-gain-access-to-my-website-if-i-get-locked-out/" target="_blank">Locked Out</a>.<br>
+For more detailed information, please refer to the guide- <a href="https://faq.miniorange.com/knowledgebase/how-to-gain-access-to-my-website-if-i-get-locked-out/" target="_blank">Locked Out</a>.<br>
  You can also check our video tutorial:
  [youtube https://www.youtube.com/watch?v=wLFKakQkpk8]
 
@@ -169,7 +169,7 @@ TOTP (Time-Based One-Time Password) is a type of Two-Factor Authentication (2FA)
 
  = How can I enable only one authentication method for my users? =
 
- You can select the specific Two-Factor Authentication (2FA) or two-step authentication methods under the Login Settings tab. Only the selected authentication methods will be shown to the user during inline registration for example if you select Google Authenticator or any specific 2FA/MFA methods, only they will be shown on login. [PREMIUM FEATURE]
+ You can select the specific Two-Factor Authentication (2FA) or two-step authentication methods under the Quick Setup tab. Only the selected authentication methods will be shown to the user during inline registration for example if you select Google Authenticator or any specific 2FA/MFA methods, only they will be shown on login. [PREMIUM FEATURE]
 
  = How can I make the look and feel of custom/front-end login page on my site to remain the same when I add Two-Factor Authentication? =
 
@@ -185,7 +185,7 @@ TOTP (Time-Based One-Time Password) is a type of Two-Factor Authentication (2FA)
 
  = I am upgrading my phone. What should I do to shift 2FA to my new phone? =
 
- You should go to <b>2FA For Me</b> Tab and click on <b>Reconfigure</b> to reconfigure Two-Factor with your new phone.
+Go to the <b>Setup 2FA</b> subtab under the <b>My Account</b> tab and reconfigure your method on your new phone.
 
  == Screenshots ==
 
@@ -199,6 +199,10 @@ TOTP (Time-Based One-Time Password) is a type of Two-Factor Authentication (2FA)
  8. Google Authenticator (WP 2FA/MFA) - miniOrange User Account Details
 
  == Changelog ==
+
+ = 6.0.8 =
+ * Compatibility with WordPress 6.8
+ * Bug Fixes - 2FA Login Transaction Report
 
  = 6.0.7 =
  * UI/UX Improvements - miniOrange user Login & Registration form | Sync Transactions button
@@ -340,6 +344,10 @@ TOTP (Time-Based One-Time Password) is a type of Two-Factor Authentication (2FA)
  For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/miniorange-2-factor-authentication/trunk/changelog.txt) provided with the plugin.
 
  == Upgrade Notice ==
+
+= 6.0.8 =
+ * Compatibility with WordPress 6.8
+ * Bug Fixes - 2FA Login Transaction Report
 
  = 6.0.7 =
  * UI/UX Improvements - miniOrange user Login & Registration form | Sync Transactions button

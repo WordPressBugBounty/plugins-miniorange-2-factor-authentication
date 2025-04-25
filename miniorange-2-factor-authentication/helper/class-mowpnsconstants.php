@@ -49,7 +49,7 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const ERR_403               = '403';
 		const DEFAULT_CUSTOMER_KEY  = '16555';
 		const DEFAULT_API_KEY       = 'fFd2XcvTGDemZvbw1bcUesNJWEqKbbUq';
-		const DB_VERSION            = 155;
+		const DB_VERSION            = 200;
 		const DB_FEATURE_MAIL       = 5;
 		const SMS_EMAIL_TRANSACTION = self::MO2F_PLUGINS_PAGE_URL . '/sms-and-email-transaction-pricing-2fa';
 
