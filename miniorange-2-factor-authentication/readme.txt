@@ -6,9 +6,9 @@
  Requires at least: 3.0.1
  Tested up to: 6.8
  Requires PHP: 7.2.24
- Stable tag: 6.0.8
- License: MIT/Expat
- License URI: https://docs.miniorange.com/mit-license
+ Stable tag: 6.0.9
+ License: Expat
+ License URI: https://plugins.miniorange.com/mit-license
 
  Two-Factor Authentication (2FA) secures WordPress login and registration forms with TOTP apps, OTP via SMS and Email verification for all users.
 
@@ -200,6 +200,9 @@ Go to the <b>Setup 2FA</b> subtab under the <b>My Account</b> tab and reconfigur
 
  == Changelog ==
 
+ = 6.0.9 =
+ * Bug Fixes - 2FA Backup Code Validation
+
  = 6.0.8 =
  * Compatibility with WordPress 6.8
  * Bug Fixes - 2FA Login Transaction Report
@@ -345,7 +348,10 @@ Go to the <b>Setup 2FA</b> subtab under the <b>My Account</b> tab and reconfigur
 
  == Upgrade Notice ==
 
-= 6.0.8 =
+ = 6.0.9 =
+ * Bug Fixes - 2FA Backup Code Validation
+
+ = 6.0.8 =
  * Compatibility with WordPress 6.8
  * Bug Fixes - 2FA Login Transaction Report
 
