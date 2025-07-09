@@ -16,9 +16,9 @@ $mo2f_login_popup = array(
 	'Button  Color:'                  => 'mo2f_custom_button_color',
 	'Popup Message Text Color:'       => 'mo2f_custom_notif_text_color',
 	'Popup Message Background Color:' => 'mo2f_custom_notif_bg_color',
-	'OTP Token BackgroundColor:'      => 'mo2f_custom_otp_bg_color',
+	'OTP Token Background Color:'      => 'mo2f_custom_otp_bg_color',
 	'OTP Token Text Color:'           => 'mo2f_custom_otp_text_color',
-	'Header TextColor:'               => 'mo2f_custom_header_text_color',
+	'Header Text Color:'               => 'mo2f_custom_header_text_color',
 	'Middle Text Color:'              => 'mo2f_custom_middle_text_color',
 	'Footer Text Color:'              => 'mo2f_custom_footer_text_color',
 

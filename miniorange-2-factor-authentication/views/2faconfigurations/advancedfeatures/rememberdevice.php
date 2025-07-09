@@ -11,10 +11,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Helper\Mo2f_Common_Helper;
 ?>
 <div class="mo2f-settings-div mo2f-enterprise-plan">
 	<div class="mo2f-settings-head">
-		<span><?php esc_html_e( 'Remember Device to Bypass 2FA', 'miniorange-2-factor-authentication' ); ?></span><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+		<span><?php esc_html_e( 'Remember Device to Bypass 2FA', 'miniorange-2-factor-authentication' ); ?></span>
+					<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'enterprise', MoWpnsConstants::MO2F_PREMIUM_2PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+
 		<span class="mo2f-rba-link">[<a  href="<?php echo esc_url( admin_url( 'admin.php?page=mo_2fa_reports&subpage=remembereddevices' ) ); ?>" target="_blank"><?php esc_html_e( 'View Remembered Devices', 'miniorange-2-factor-authentication' ); ?></a>]</span>
 	</div>
 	<br>

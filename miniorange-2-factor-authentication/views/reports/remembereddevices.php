@@ -6,6 +6,7 @@
  */
 
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Helper\Mo2f_Common_Helper;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -13,7 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="mo2f-settings-div mo2f-enterprise-plan">
 	<br>
 <div class="mo2f_saved_devices">
-<span><?php esc_html_e( 'Saved Devices', 'miniorange-2-factor-authentication' ); ?></span><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+<span><?php esc_html_e( 'Saved Devices', 'miniorange-2-factor-authentication' ); ?></span>
+					<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'enterprise', MoWpnsConstants::MO2F_PREMIUM_2PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+
 </div>
 <br>
 <table id="mo2f_device_details" class="display" cellspacing="0" width="100%">

@@ -516,6 +516,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2fa_pass2login( $redirect_to = null, $session_id_encrypted = null ) {
+			global $mo_wpns_utility;
 			$common_helper = new Mo2f_Common_Helper();
 			if ( empty( $this->mo2f_user_id ) && empty( $this->fstfactor ) ) {
 				$user_id               = MO2f_Utility::mo2f_get_transient( $session_id_encrypted, 'mo2f_current_user_id' );
@@ -523,6 +524,13 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			} else {
 				$user_id               = $this->mo2f_user_id;
 				$mo2f_1stfactor_status = $this->fstfactor;
+			}
+			$is_page_protection_flow = get_site_transient( 'mo2f_page_protection_flow_' . $user_id );
+			if ( ! empty( $is_page_protection_flow ) ) {
+				$page_protection_addon = apply_filters( 'mo2f_page_protection_addon_filter', false, 'mo2f_page_protection_update_details', array( 'user_id'=> $user_id ) );
+				$redirect_url = $mo_wpns_utility->get_current_url();
+				wp_safe_redirect( $redirect_url );
+				exit;
 			}
 			if ( $user_id && $mo2f_1stfactor_status && ( 'VALIDATE_SUCCESS' === $mo2f_1stfactor_status ) ) {
 				$currentuser = get_user_by( 'id', $user_id );
@@ -604,7 +612,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		 * @return string
 		 */
 		public function miniorange_initiate_2nd_factor( $currentuser, $redirect_to = '', $session_id_encrypt = null ) {
-			global $mo2fdb_queries,$mo_wpns_utility, $mo2f_onprem_cloud_obj;
+			global $mo2fdb_queries, $mo_wpns_utility, $mo2f_onprem_cloud_obj;
 			$pass2login = new Miniorange_Password_2Factor_Login();
 			MO2f_Utility::mo2f_debug_file( 'MO initiate 2nd factor User_IP-' . $mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );
 			MO2f_Utility::mo2f_start_session();

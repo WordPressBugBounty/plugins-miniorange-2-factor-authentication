@@ -8,6 +8,7 @@
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Helper\Mo2f_Common_Helper;
 ?>
 <div class="mo2f-settings-div">
 	<div class="mo2f-settings-head -ml-mo-9">
@@ -27,16 +28,19 @@ use TwoFA\Helper\MoWpnsConstants;
 <div class="mo2f-settings-div">
 	<div class="mo2f-settings-head -ml-mo-9">
 		<span><?php esc_html_e( 'OTP Over SMS', 'miniorange-2-factor-authentication' ); ?></span>
+		<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'basic', MoWpnsConstants::MO2F_PREMIUM_3PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
 	</div>
 	<div class="mo2f-sub-settings-div mo2f-basic-plan">
-	<div class="mb-mo-4"><?php esc_html_e( 'Change SMS Template: ', 'miniorange-2-factor-authentication' ); ?><span><a href="https://login.xecurify.com/moas/admin/customer/showsmstemplate" target="_blank"><?php esc_html_e( 'Click Here', 'miniorange-2-factor-authentication' ); ?></a></span><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?></div>
-	<div><?php esc_html_e( 'Configure Custom SMS Gateway: ', 'miniorange-2-factor-authentication' ); ?><sapn><a href="https://login.xecurify.com/moas/admin/customer/smsconfig" target="_blank"><?php esc_html_e( 'Click Here', 'miniorange-2-factor-authentication' ); ?></a></span><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?></div>
-	</div>
+	<div class="mb-mo-4"><?php esc_html_e( 'Change SMS Template: ', 'miniorange-2-factor-authentication' ); ?><span><a href="https://login.xecurify.com/moas/admin/customer/showsmstemplate" target="_blank"><?php esc_html_e( 'Click Here', 'miniorange-2-factor-authentication' ); ?></a></span>
+	</div><div><?php esc_html_e( 'Configure Custom SMS Gateway: ', 'miniorange-2-factor-authentication' ); ?><sapn><a href="https://login.xecurify.com/moas/admin/customer/smsconfig" target="_blank"><?php esc_html_e( 'Click Here', 'miniorange-2-factor-authentication' ); ?></a></span>
+</div>
+</div>
 </div>
 
 <div class="mo2f-settings-div">
 	<div class="mo2f-settings-head -ml-mo-9">
-		<span><?php esc_html_e( 'Customize Security Questions (KBA)', 'miniorange-2-factor-authentication' ); ?><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?></span>
+		<span><?php esc_html_e( 'Customize Security Questions (KBA)', 'miniorange-2-factor-authentication' ); ?>
+		<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'enterprise', MoWpnsConstants::MO2F_PREMIUM_2PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
 	</div>
 	<form name="f" id="mo2f_custom_security_questions_settings">
 	<div class="mo2f-sub-settings-div mo2f-enterprise-plan">

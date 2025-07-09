@@ -25,4 +25,5 @@ $registration_form_selector   = isset( $reg_form_configurations['custom_form_nam
 $registration_email_field     = isset( $reg_form_configurations['custom_email_selector'] ) ? $reg_form_configurations['custom_email_selector'] : '';
 $registration_auth_type       = isset( $reg_form_configurations['custom_auth_type'] ) ? $reg_form_configurations['custom_auth_type'] : MoWpnsConstants::OTP_OVER_EMAIL;
 $registration_phone_selector  = isset( $reg_form_configurations['custom_phone_selector'] ) ? $reg_form_configurations['custom_phone_selector'] : '';
+require_once dirname( dirname( dirname( __FILE__ ) ) ) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'twofa' . DIRECTORY_SEPARATOR . 'link-tracer.php';
 require_once dirname( dirname( dirname( __FILE__ ) ) ) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'formintegration.php';

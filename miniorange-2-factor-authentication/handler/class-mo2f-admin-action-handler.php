@@ -71,6 +71,9 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 				case 'mo2f_unblock_user':
 					$this->mo2f_unblock_user( $_POST );
 					break;
+				case 'mo2f_delete_log_file':
+					$this->mo2f_delete_log_file();
+					break;
 			}
 		}
 
@@ -281,6 +284,24 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 			echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped the necessary in the definition.
 			$popup_html = ob_get_clean();
 			wp_send_json_success( array( 'popup_html' => $popup_html ) );
+		}
+
+		/**
+		 * Deletes the log file.
+		 *
+		 * @return void
+		 */
+		public function mo2f_delete_log_file() {
+			$debug_log_path = wp_upload_dir();
+			$debug_log_path = $debug_log_path['basedir'];
+			$file_name      = 'miniorange_2FA_plugin_debug_log.txt';
+			$status         = file_exists( $debug_log_path . DIRECTORY_SEPARATOR . $file_name );
+			if ( $status ) {
+				wp_delete_file( $debug_log_path . DIRECTORY_SEPARATOR . $file_name );
+				wp_send_json_success( MoWpnsMessages::lang_translate( 'Log file deleted.' ) );
+			} else {
+				wp_send_json_error( MoWpnsMessages::lang_translate( 'Log file is not available.' ) );
+			}
 		}
 	}
 	new Mo2f_Admin_Action_Handler();

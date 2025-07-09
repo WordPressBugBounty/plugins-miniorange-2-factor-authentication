@@ -6,16 +6,17 @@
  */
 
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Helper\Mo2f_Common_Helper;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-echo '<div id="whatsappTable" class="mo2f-settings-div mo2f-whatsapp-div">
-                <input type="hidden" name="nonce" value="' . esc_attr( $manual_report_clear_nonce ) . '">
-                <input type="hidden" name="option" value="mo2f_enable_whatsapp_otp" />
-		    	<div class="mo2f-whatsapp-header">
-					<p class="mo-heading flex-1">' . esc_html( __( 'WhatsApp Configuration Settings', 'miniorange-2-factor-authentication' ) ) . '</p>';
-					echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping.
+echo '<div id="whatsappTable" class="mo2f-settings-div mo2f-whatsapp-div mo2f-all-inclusive-plan">
+        <input type="hidden" name="nonce" value="' . esc_attr( $manual_report_clear_nonce ) . '">
+        <input type="hidden" name="option" value="mo2f_enable_whatsapp_otp" />
+        <div class="mo2f-whatsapp-header">
+            <p class="mo-heading flex-1">' . esc_html__( 'WhatsApp Configuration Settings', 'miniorange-2-factor-authentication' ) . '</p>';
+echo Mo2f_Common_Helper::mo2f_check_plan( 'all-inclusive', MoWpnsConstants::MO2F_PREMIUM_1PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping.
 echo '			</div>
 				<div class="m-mo-4 mo2f-basic-plan">
 					<div style="padding-left:10px;">

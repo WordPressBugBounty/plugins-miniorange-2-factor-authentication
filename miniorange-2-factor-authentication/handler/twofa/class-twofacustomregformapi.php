@@ -60,18 +60,7 @@ if ( ! class_exists( 'TwoFACustomRegFormAPI' ) ) {
 		 */
 		public static function challenge( $phone_number, $email, $auth_type_send ) {
 			if ( MoWpnsConstants::OTP_OVER_EMAIL === $auth_type_send ) {
-				$auierpyasdc_ry   = MoWpnsUtility::get_mo2f_db_option( 'cmVtYWluaW5nT1RQ', 'site_option' );
-				$cmvtywluaw5nt1rq = $auierpyasdc_ry ? $auierpyasdc_ry : 0;
-				if ( $cmvtywluaw5nt1rq > 0 ) {
-					$response = TwoFAMOGateway::mo_send_otp_token( 'EMAIL', '', $email );
-					update_site_option( 'cmVtYWluaW5nT1RQ', $cmvtywluaw5nt1rq - 1 );
-				} else {
-					$response = array(
-						'status'  => 'ERROR',
-						'message' => __( 'Email Transaction Limit Exceeded', 'miniorange-2-factor-authentication' ),
-					);
-					wp_send_json( $response );
-				}
+				$response = TwoFAMOGateway::mo_send_otp_token( 'EMAIL', '', $email );
 			} else {
 				$response = TwoFAMOGateway::mo_send_otp_token( MoWpnsConstants::OTP_OVER_SMS, $phone_number, $email );
 			}

@@ -7,6 +7,7 @@
 
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\MoWpnsUtility;
+use TwoFA\Helper\Mo2f_Common_Helper;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -14,24 +15,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $login_forms = array(
 	'WooCommerce Login'     => array(
-		'form_logo' => 'woocommerce',
-		'form_link' => 'Woocommerce',
+		'form_logo'  => 'woocommerce',
+		'form_guide' => $two_factor_premium_doc['Woocommerce'],
 	),
 	'Elementor Pro'         => array(
-		'form_logo' => 'elementor-pro',
-		'form_link' => 'Elementor Pro',
+		'form_logo'  => 'elementor-pro',
+		'form_guide' => $two_factor_premium_doc['Elementor Pro'],
 	),
 	'Ultimate Member Login' => array(
-		'form_logo' => 'ultimate_member',
-		'form_link' => 'Ultimate Member',
+		'form_logo'  => 'ultimate_member',
+		'form_guide' => $two_factor_premium_doc['Ultimate Member'],
 	),
 	'Admin Custom Login'    => array(
-		'form_logo' => 'Admin_Custom_Login',
-		'form_link' => 'Admin Custom Login',
+		'form_logo'  => 'Admin_Custom_Login',
+		'form_guide' => $two_factor_premium_doc['Admin Custom Login'],
 	),
 	'Login with Ajax'       => array(
-		'form_logo' => 'login-with-ajax',
-		'form_link' => 'Login with Ajax',
+		'form_logo'  => 'login-with-ajax',
+		'form_guide' => $two_factor_premium_doc['Login with Ajax'],
 	),
 );
 
@@ -68,9 +69,9 @@ $registration_forms = array(
 			<?php
 			foreach ( $login_forms as $key => $value ) {
 				?>
-					<div class="mo2f_forms_advertise">
-						<div class="text-center"><img height=40 width=40 src="<?php echo esc_url( plugins_url( 'includes/images/' . esc_attr( $value['form_logo'] ) . '.png', dirname( dirname( __FILE__ ) ) ) ); ?>"/></div><div class="text-center my-mo-2"><?php echo esc_html( $key ); ?></div>
-					</div>
+					<a href="<?php echo esc_url( $value['form_guide'] ); ?>" target="_blank" rel="noopener noreferrer" class="mo2f_forms_advertise mo2f_login_forms_guide_links">
+						<div class="text-center "><img height=40 width=40 src="<?php echo esc_url( plugins_url( 'includes/images/' . esc_attr( $value['form_logo'] ) . '.png', dirname( dirname( __FILE__ ) ) ) ); ?>"/></div><div class="text-center my-mo-2"><?php echo esc_html( $key ); ?></div>
+					</a>
 				<?php
 			}
 			?>
@@ -84,8 +85,8 @@ $registration_forms = array(
 					'<b>',
 					'</b>',
 				);
-			?>
-	    </div>
+				?>
+		</div>
 	</div>
 	<div class="mo2f-settings-div mo2f-all-inclusive-plan">
 		<div class="mo2f-settings-head">
@@ -93,7 +94,9 @@ $registration_forms = array(
 			<span><?php esc_html_e( 'Enable 2FA On Any Custom Login Form', 'miniorange-2-factor-authentication' ); ?></span>
 		</div>
 		<div class="mo2f-sub-settings-div mo2f-all-inclusive-plan">
-			<span><?php esc_html_e( 'Enter the selectors of your login form', 'miniorange-2-factor-authentication' ); ?></span><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+			<span><?php esc_html_e( 'Enter the selectors of your login form', 'miniorange-2-factor-authentication' ); ?></span>
+			<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'all-inclusive', MoWpnsConstants::MO2F_PREMIUM_1PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+
 		</div>
 		<div class="mo2f-sub-settings-div mo2f-all-inclusive-plan">
 			<div class="mt-mo-2"><?php esc_html_e( 'URL of Login Form', 'miniorange-2-factor-authentication' ); ?><span class="mo2f_forms_asterisk">*</span></div>
@@ -143,11 +146,14 @@ $registration_forms = array(
 
 		</div>
 	</div>
+
 	<div class="mo2f-settings-div mo2f-basic-plan">
 		<div class="mo2f-settings-head">
 		<form name="form_custom_form_config" method="post" action="" id="mo2f_custom_form_config" >
 			<label class="mo2f_checkbox_container"><input type="checkbox" name="mo2fa_use_shortcode_config" id="mo2fa_use_shortcode_config" <?php echo checked( get_site_option( 'mo2f_enable_form_shortcode' ) ); ?>/><span class="mo2f-settings-checkmark"></span></label>
-			<span><?php esc_html_e( 'Enable OTP Verification on your Registration Form', 'miniorange-2-factor-authentication' ); ?><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?></span>
+			<span><?php esc_html_e( 'Enable OTP Verification on your Registration Form', 'miniorange-2-factor-authentication' ); ?>
+			<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'basic', MoWpnsConstants::MO2F_PREMIUM_3PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+
 		</div>
 		<div class="mo2f-sub-settings-div hidden">
 			<?php

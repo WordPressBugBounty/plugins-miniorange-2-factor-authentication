@@ -7,6 +7,7 @@
 
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Helper\Mo2f_Common_Helper;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -71,7 +72,7 @@ if ( current_user_can( 'administrator' ) ) {
 		<div class="relative mb-mo-3 mo2f-basic-plan mo2f_reduce_margin">
 			<div class="my-mo-3">
 				<?php esc_html_e( 'Enable 2FA for specific users', 'miniorange-2-factor-authentication' ); ?>
-				<?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+							<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'basic', MoWpnsConstants::MO2F_PREMIUM_3PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
 			</div>
 			<div class="mo2f-settings-items">
 				<?php esc_html_e( 'Click', 'miniorange-2-factor-authentication' ); ?>
@@ -81,6 +82,7 @@ if ( current_user_can( 'administrator' ) ) {
 			</div>
 		</div>
 	</div>
+	
 	<div class="justify-start flex" id="mo2f_enable2FA_save">
 		<div class="mo2f_enable2FA_save_button">
 			<button id="mo2f_enable2FA_save_button" class="mo2f-save-settings-button">
@@ -89,6 +91,11 @@ if ( current_user_can( 'administrator' ) ) {
 		</div>
 	</div>
 	</div>
+	<?php 
+	if ( $pp_addon_installed ){
+		require_once ( $mo2f_addon_dir ) . DIRECTORY_SEPARATOR .  'views' . DIRECTORY_SEPARATOR . 'settings.php';
+	}
+	?>
 	<div class="mo2f-settings-div mo2f-basic-plan">
 		<div class="mo2f-settings-head">
 			<label class="mo2f_checkbox_container"><input type="checkbox" id="mo2f_select_methods_for_users" value="mo2f_select_methods_for_users"  onclick="mo2f_showSettings(this)" <?php checked( $mo2fa_enable_method_selection ); ?>/><span class="mo2f-settings-checkmark"></span></label>
@@ -96,7 +103,9 @@ if ( current_user_can( 'administrator' ) ) {
 		</div>
 		<div class="mo2f-sub-settings-div mo2f-basic-plan" id="mo2f_select_methods_for_users_settings" <?php echo $mo2fa_enable_method_selection ? 'flex' : 'hidden'; ?> >
 		<div class="my-mo-3">
-			<input type="radio" name="mo2f_methods_for_users" value="1" id="2fa_methods_for_all" <?php checked( $selected_type ); ?> ><?php esc_html_e( 'Use 2FA methods for All Users', 'miniorange-2-factor-authentication' ); ?><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+			<input type="radio" name="mo2f_methods_for_users" value="1" id="2fa_methods_for_all" <?php checked( $selected_type ); ?> ><?php esc_html_e( 'Use 2FA methods for All Users', 'miniorange-2-factor-authentication' ); ?>
+			<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'basic', MoWpnsConstants::MO2F_PREMIUM_3PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+
 		</div>
 		<div class="mo2f-sub-settings-div mo2f_table_styling mo2f-settings-items <?php echo ( esc_attr( $lv_needed ) ? ( $selected_type ? 'flex' : 'mo2f-hide-div' ) : 'flex' ); ?>" id="mo2f_all_2fa_methods_div">
 			<table>
@@ -124,7 +133,9 @@ if ( current_user_can( 'administrator' ) ) {
 			</table>
 		</div>
 		<div class="my-mo-3">
-			<input type="radio" name="mo2f_methods_for_users" value="0" id="2fa_methods_for_roles"  <?php checked( ! $selected_type ); ?>><?php esc_html_e( 'Use 2FA methods for Specific Roles', 'miniorange-2-factor-authentication' ); ?><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+			<input type="radio" name="mo2f_methods_for_users" value="0" id="2fa_methods_for_roles"  <?php checked( ! $selected_type ); ?>><?php esc_html_e( 'Use 2FA methods for Specific Roles', 'miniorange-2-factor-authentication' ); ?>
+			<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'basic', MoWpnsConstants::MO2F_PREMIUM_3PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+
 		</div>
 		<div class="<?php echo ! $selected_type ? 'flex' : 'mo2f-hide-div'; ?>" id="mo2f_2fa_methods_for_roles_div">
 		<div class="mo2f-settings-items flex-col" >
@@ -180,10 +191,14 @@ if ( current_user_can( 'administrator' ) ) {
 				<?php $enabled_backup_methods = (array) get_site_option( 'mo2f_enabled_backup_methods' ); ?>
 				<div class="my-mo-3 mr-mo-4"><input type="checkbox" name="mo2f_enabled_backup_method" value="mo2f_back_up_codes" <?php echo in_array( 'mo2f_back_up_codes', $enabled_backup_methods, true ) ? 'checked' : ''; ?>/><?php esc_html_e( 'Backup Codes', 'miniorange-2-factor-authentication' ); ?></div>
 				<div class="my-mo-3 mr-mo-4"><input type="checkbox" name="mo2f_enabled_backup_method" value="mo2f_reconfig_link_show" <?php echo in_array( 'mo2f_reconfig_link_show', $enabled_backup_methods, true ) ? 'checked' : ''; ?>/><?php esc_html_e( 'Account Recovery Via Email Verification', 'miniorange-2-factor-authentication' ); ?></div>
-				<div class="my-mo-3 mr-mo-4 mo2f-basic-plan"><input type="checkbox" name="mo2f_enabled_backup_method" value="backup_kba" <?php echo in_array( 'backup_kba', $enabled_backup_methods, true ) ? 'checked' : ''; ?>/><?php esc_html_e( 'Security Questions (KBA)', 'miniorange-2-factor-authentication' ); ?><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?></div>
+				<div class="my-mo-3 mr-mo-4 mo2f-basic-plan"><input type="checkbox" name="mo2f_enabled_backup_method" value="backup_kba" <?php echo in_array( 'backup_kba', $enabled_backup_methods, true ) ? 'checked' : ''; ?>/><?php esc_html_e( 'Security Questions (KBA)', 'miniorange-2-factor-authentication' ); ?>
+					<?php echo Mo2f_Common_Helper::mo2f_check_plan('basic',MoWpnsConstants::MO2F_PREMIUM_3PLAN_NAME);?>
+				</div>
 			</div>
 		</div>
-		<div class="justify-start <?php echo $enable_backup_login ? 'flex' : 'hidden'; ?>" id="mo2f_enable_backup_methods_save"><div class="mo2f_enable_backup_methods_save_button"><button id="mo2f_enable_backup_methods_save_button" class="mo2f-save-settings-button"><?php esc_html_e( 'Save Settings', 'miniorange-2-factor-authentication' ); ?></button></div></div>
+		<div class="justify-start <?php echo $enable_backup_login ? 'flex' : 'hidden'; ?>" id="mo2f_enable_backup_methods_save"><div class="mo2f_enable_backup_methods_save_button"><button id="mo2f_enable_backup_methods_save_button" class="mo2f-save-settings-button"><?php esc_html_e( 'Save Settings', 'miniorange-2-factor-authentication' ); ?></button>
+		</div>
+	</div>
 	</div>
 	<div class="mo2f-settings-div">
 		<div class="mo2f-settings-head">

@@ -100,7 +100,6 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 				});
 				jQuery(\'#mo2f_next_step3\').css(\'display\',\'none\');
 				var ajaxurl = "' . esc_js( admin_url( 'admin-ajax.php' ) ) . '";
-				var userId = "' . esc_js( $user_id ) . '";
 				jQuery("#mo2f_save_kba").click(function() {
 					' . $common_helper->mo2f_show_loader() . '
 					var nonce = "' . esc_js( wp_create_nonce( 'mo-two-factor-ajax-nonce' ) ) . '";
@@ -135,7 +134,6 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 			$data                   = 'var data = {
 				action: "mo_two_factor_ajax",
 				mo_2f_two_factor_ajax: "mo2f_set_kba",
-				user_id: userId,
 				nonce: nonce,
 			};';
 			for ( $i = 1; $i <= $total_questions; $i++ ) {
@@ -194,13 +192,19 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 		public function mo2f_set_kba( $post ) {
 			global $mo2fdb_queries;
 			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : null;
-			$redirect_to        = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : null;
-			$user_id            = isset( $post['user_id'] ) ? sanitize_text_field( wp_unslash( $post['user_id'] ) ) : null;
-			$current_user       = get_user_by( 'id', $user_id );
-			$kba_ques_ans       = $this->mo2f_get_ques_ans( $post );
-			$kba_questions      = $this->mo2f_validate_questions( $kba_ques_ans, $session_id_encrypt, $redirect_to, $user_id );
-			$kba_answers        = $this->mo2f_validate_answers( $kba_ques_ans, $session_id_encrypt, $redirect_to, $user_id );
-			$question_answer    = $this->mo2f_encode_question_answer( $kba_questions, $kba_answers );
+			if ( empty( $session_id_encrypt ) && ! is_user_logged_in() ) {
+				wp_send_json_error( __( 'Oops! There was a problem completing the setup. Please refresh the page and try again.', 'miniorange-2-factor-authentication' ) );
+			}
+			$redirect_to  = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : null;
+			$user_id      = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
+			$current_user = empty( $user_id ) ? wp_get_current_user() : get_user_by( 'id', $user_id );
+			if ( empty( $current_user ) ) {
+				wp_send_json_error( __( 'Something went wrong. Please try again.', 'miniorange-2-factor-authentication' ) );
+			}
+			$kba_ques_ans    = $this->mo2f_get_ques_ans( $post );
+			$kba_questions   = $this->mo2f_validate_questions( $kba_ques_ans, $session_id_encrypt, $redirect_to, $user_id );
+			$kba_answers     = $this->mo2f_validate_answers( $kba_ques_ans, $session_id_encrypt, $redirect_to, $user_id );
+			$question_answer = $this->mo2f_encode_question_answer( $kba_questions, $kba_answers );
 			update_user_meta( $current_user->ID, 'mo2f_kba_challenge', $question_answer );
 			if ( TwoFAMoSessions::get_session_var( 'mo2f_is_kba_backup_configured' . $user_id ) ) {
 				update_user_meta( $user_id, 'mo2f_backup_method_set', 1 );
@@ -230,6 +234,46 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 		}
 
 		/**
+		 * Validates uniqueness of items (questions or answers) by normalizing them.
+		 *
+		 * @param array  $items Array of items to validate.
+		 * @param string $error_message Error message to display if duplicates found.
+		 * @return void
+		 */
+		private function mo2f_validate_uniqueness( $items, $error_message ) {
+			$normalized_items = array();
+			foreach ( $items as $item ) {
+				$normalized_items[] = strtolower( preg_replace( '/\s+/', '', $item ) );
+			}
+			if ( count( $items ) !== count( array_unique( $normalized_items ) ) ) {
+				wp_send_json_error( $error_message );
+			}
+		}
+
+		/**
+		 * Common validation logic for KBA items (questions or answers).
+		 *
+		 * @param array  $kba_ques_ans The question-answer array from post data.
+		 * @param string $key_prefix The key prefix to filter by ('kba_q' or 'kba_a').
+		 * @return array Sanitized array of items.
+		 */
+		private function mo2f_validate_kba_items( $kba_ques_ans, $key_prefix ) {
+			$items = array();
+			foreach ( $kba_ques_ans as $key => $item ) {
+				if ( strpos( $key, $key_prefix ) === 0 ) {
+					if ( MO2f_Utility::mo2f_check_empty_or_null( $item ) ) {
+						$mo2fa_login_message = __( 'All the fields are required. Please enter valid entries.', 'miniorange-2-factor-authentication' );
+						wp_send_json_error( $mo2fa_login_message );
+					} else {
+						$sanitized_item = sanitize_text_field( $item );
+						array_push( $items, $sanitized_item );
+					}
+				}
+			}
+			return $items;
+		}
+
+		/**
 		 * Validates questions.
 		 *
 		 * @param array  $kba_ques_ans Questions-Answeres array.
@@ -239,23 +283,12 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 		 * @return array
 		 */
 		public function mo2f_validate_questions( $kba_ques_ans, $session_id_encrypt, $redirect_to, $user_id ) {
-			$kba_questions = array();
-			foreach ( $kba_ques_ans as $key => $question ) {
-				if ( strpos( $key, 'kba_q' ) === 0 ) {
-					if ( MO2f_Utility::mo2f_check_empty_or_null( $question ) ) {
-						$mo2fa_login_message = __( 'All the fields are required. Please enter valid entries.', 'miniorange-2-factor-authentication' );
-						wp_send_json_error( $mo2fa_login_message );
-					} else {
-						$ques = sanitize_text_field( $question );
-						$ques = addcslashes( stripslashes( $ques ), '"\\' );
-						array_push( $kba_questions, $ques );
-					}
-				}
+			$kba_questions = $this->mo2f_validate_kba_items( $kba_ques_ans, 'kba_q' );
+			// Apply question-specific processing.
+			foreach ( $kba_questions as &$question ) {
+				$question = addcslashes( stripslashes( $question ), '"\\' );
 			}
-			if ( count( $kba_questions ) !== count( array_unique( $kba_questions ) ) ) {
-				$mo2fa_login_message = __( 'The questions you select must be unique.', 'miniorange-2-factor-authentication' );
-				wp_send_json_error( $mo2fa_login_message );
-			}
+			$this->mo2f_validate_uniqueness( $kba_questions, __( 'The questions you select must be unique.', 'miniorange-2-factor-authentication' ) );
 			return $kba_questions;
 		}
 
@@ -269,19 +302,12 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 		 * @return array
 		 */
 		public function mo2f_validate_answers( $kba_ques_ans, $session_id_encrypt, $redirect_to, $user_id ) {
-			$kba_answers = array();
-			foreach ( $kba_ques_ans as $key => $answer ) {
-				if ( strpos( $key, 'kba_a' ) === 0 ) {
-					if ( MO2f_Utility::mo2f_check_empty_or_null( $answer ) ) {
-						$mo2fa_login_message = __( 'All the fields are required. Please enter valid entries.', 'miniorange-2-factor-authentication' );
-						wp_send_json_error( $mo2fa_login_message );
-					} else {
-						$sanitized_answer = sanitize_text_field( $answer );
-						$lowercase_answer = strtolower( $sanitized_answer );
-						array_push( $kba_answers, $lowercase_answer );
-					}
-				}
+			$kba_answers = $this->mo2f_validate_kba_items( $kba_ques_ans, 'kba_a' );
+			// Apply answer-specific processing.
+			foreach ( $kba_answers as &$answer ) {
+				$answer = strtolower( $answer );
 			}
+			$this->mo2f_validate_uniqueness( $kba_answers, __( 'The answers you select must be unique.', 'miniorange-2-factor-authentication' ) );
 			return $kba_answers;
 		}
 

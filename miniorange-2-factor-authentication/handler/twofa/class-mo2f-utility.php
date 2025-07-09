@@ -287,13 +287,13 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		 */
 		public static function mo2f_get_transient( $session_id, $key ) {
 			self::mo2f_start_session();
-
+			$enc_session_id = base64_encode( $session_id ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Not using for obfuscation
 			if ( isset( $_SESSION[ $session_id ] ) ) {
 				$transient_array = $_SESSION[ $session_id ];
 				$transient_value = isset( $transient_array[ $key ] ) ? $transient_array[ $key ] : null;
 				return $transient_value;
-			} elseif ( isset( $_COOKIE[ base64_decode( $session_id ) ] ) ) { //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Not using for obfuscation
-				$transient_value = self::mo2f_get_cookie_values( base64_decode( $session_id ) ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Not using for obfuscation
+			} elseif ( isset( $_COOKIE[ $enc_session_id ] ) ) {
+				$transient_value = self::mo2f_get_cookie_values( $enc_session_id );
 				return $transient_value;
 			} else {
 				$transient_value = get_transient( $session_id . $key );
@@ -491,21 +491,26 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		/**
 		 * It will unset the session value
 		 *
-		 * @param object $variables .
+		 * @param object $variables Variables to unset.
+		 * @param string $session_id It will carry the session id.
 		 * @return void
 		 */
-		public static function unset_session_variables( $variables ) {
-			if ( 'array' === gettype( $variables ) ) {
+		public static function unset_session_variables( $variables, $session_id ) {
+			$enc_session_id = base64_encode( $session_id ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Not using for obfuscation
+			if ( isset( $_SESSION[ $session_id ] ) ) {
+				unset( $_SESSION[ $session_id ] );
+			}
+			if ( isset( $_COOKIE[ $enc_session_id ] ) ) {
+				unset( $_COOKIE[ $enc_session_id ] );
+			}
+			if ( is_array( $variables ) ) {
 				foreach ( $variables as $variable ) {
-					if ( isset( $_SESSION[ $variable ] ) ) {
-						unset( $_SESSION[ $variable ] );
-					}
+					delete_transient( $session_id . $variable );
 				}
 			} else {
-				if ( isset( $_SESSION[ $variables ] ) ) {
-					unset( $_SESSION[ $variables ] );
-				}
+				delete_transient( $session_id . $variables );
 			}
+			delete_site_option( $session_id );
 		}
 
 		/**
@@ -641,7 +646,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 			if ( (int) MoWpnsUtility::get_mo2f_db_option( 'mo2f_enable_debug_log', 'site_option' ) ) {
 				$debug_log_path = wp_upload_dir();
 				$debug_log_path = $debug_log_path['basedir'] . DIRECTORY_SEPARATOR;
-				$filename       = 'miniorange_debug_log.txt';
+				$filename       = 'miniorange_2FA_plugin_debug_log.txt';
 				$data           = '[' . gmdate( 'Y/m/d' ) . ' ' . time() . ']:' . $text . "\n";
 				$handle         = fopen( $debug_log_path . DIRECTORY_SEPARATOR . $filename, 'a+' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fopen -- fopen
 				fwrite( $handle, $data ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite -- fclose

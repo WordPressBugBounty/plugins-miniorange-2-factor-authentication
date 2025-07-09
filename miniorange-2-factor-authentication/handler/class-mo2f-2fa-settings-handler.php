@@ -172,6 +172,14 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 					do_action( 'mo2f_basic_plan_settings_action', 'mo2f_enable_custom_registration_form_shortcodes', $_POST );
 					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
 					break;
+				case 'mo2f_debug_log_disable':
+					update_site_option( 'mo2f_enable_debug_log', 0 );
+					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+					break;
+				case 'mo2f_debug_log_enable':
+					update_site_option( 'mo2f_enable_debug_log', 1 );
+					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+					break;
 			}
 		}
 

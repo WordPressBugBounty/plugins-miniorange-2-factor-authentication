@@ -1219,9 +1219,9 @@ if ( ! class_exists( 'Miniorange_Authentication' ) ) {
 			<td>
 			<td>
 			<p style="margin-top:0;margin-bottom:20px">Dear Customer,</p>
-			<p style="margin-top:0;margin-bottom:20px"> You are going to exhaust all your ' . $string . '. You have only <b>' . $count . '</b> ' . $string . ' remaining. You can recharge || add ' . $string . ' to your account: <a href=' . MoWpnsConstants::RECHARGELINK . '>Recharge</a></p>
-			<p style="margin-top:0;margin-bottom:10px">After Recharge you can continue using your current plan. To know more about our plans you can also visit our site: <a href=' . $url[0] . '/wp-admin/admin.php?page=mo_2fa_upgrade>2FA Plans</a>.</p>
-			<p style="margin-top:0;margin-bottom:10px">If you do not wish to recharge, we advise you to <a href=' . $url[0] . '/wp-admin/admin.php?page=mo_2fa_two_fa>change the 2FA method</a> before you have no ' . $string . ' left. In case you get locked out, please use this guide to gain access: <a href=' . MoWpnsConstants::ONPREMISELOCKEDOUT . '>Guide link</a></p>
+			<p style="margin-top:0;margin-bottom:20px"> You are going to exhaust all your ' . $string . '. You have only <b>' . $count . '</b> ' . $string . ' remaining. You can recharge || add ' . $string . ' to your account: <a target="_blank" href=' . MoWpnsConstants::RECHARGELINK . '>Recharge</a></p>
+			<p style="margin-top:0;margin-bottom:10px">After Recharge you can continue using your current plan. To know more about our plans you can also visit our site: <a target="_blank" href="https://plugins.miniorange.com/2-factor-authentication-for-wordpress-wp-2fa#pricing">2FA Plans</a>.</p>
+			<p style="margin-top:0;margin-bottom:10px">If you do not wish to recharge, we advise you to <a target="_blank" href=' . $url[0] . '/wp-admin/admin.php?page=mo_2fa_two_fa>change the 2FA method</a> before you have no ' . $string . ' left. In case you get locked out, please use this guide to gain access: <a target="_blank" href=' . MoWpnsConstants::ONPREMISELOCKEDOUT . '>Guide link</a></p>
 			<p style="margin-top:0;margin-bottom:20px">For more information, you can contact us directly at 2fasupport@xecurify.com.</p>
 			<p style="margin-top:0;margin-bottom:15px">Thank you,<br>miniOrange Team</p>
 			<p style="margin-top:0;margin-bottom:0px;font-size:11px">Disclaimer: This email and any files transmitted with it are confidential and intended solely for the use of the individual || entity to whom they are addressed.</p>

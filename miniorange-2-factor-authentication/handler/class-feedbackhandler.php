@@ -141,6 +141,14 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 					}
 
 					if ( 'mo_wpns_feedback' === $feedback_option || 'mo_wpns_skip_feedback' === $feedback_option ) {
+						echo '<script>
+							localStorage.removeItem("ip_last_tab");
+							localStorage.removeItem("last_tab");
+							localStorage.removeItem("activeTemplate");
+							localStorage.removeItem("activeTab");
+							localStorage.removeItem("test");
+							localStorage.removeItem("formsActiveTab");
+						</script>';
 						deactivate_plugins( dirname( dirname( __FILE__ ) ) . '\\miniorange_2_factor_settings.php' );
 					}
 					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::FEEDBACK_APPRECIATION ), 'SUCCESS' );
@@ -163,7 +171,7 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 			} else {
 				$debug_log_path = wp_upload_dir();
 				$debug_log_path = $debug_log_path['basedir'];
-				$file_name      = 'miniorange_debug_log.txt';
+				$file_name      = 'miniorange_2FA_plugin_debug_log.txt';
 				$status         = file_exists( $debug_log_path . DIRECTORY_SEPARATOR . $file_name );
 				$file_system    = new Mo2f_Filesystem();
 				if ( $status ) {

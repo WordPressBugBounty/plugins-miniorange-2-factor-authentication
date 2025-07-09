@@ -73,8 +73,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 			} else {
 				$is_auth_method_configured = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_' . $auth_method_abr . '_config_status', $user->ID );
 			}
-			$is_mfa_enabled = get_site_option( 'mo2f_multi_factor_authentication' );
-			echo '<div class="mo2f-tw-thumbnail ';
+			$is_mfa_enabled            = get_site_option( 'mo2f_multi_factor_authentication' );
+			$is_all_inclusive_file     = file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-all-inclusive-premium-settings.php' );
+			echo '<div class="mo2f-tw-thumbnail ' . ( ( ! $is_all_inclusive_file && 'WHATSAPP' === $auth_method ) ? 'mo2f-all-inclusive-plan' : ' ' ) . '"';
 			echo ( $is_mfa_enabled && $is_auth_method_configured || $is_auth_method_selected ) ? 'bg-indigo-50' : 'bg-indigo-white';
 			echo '" id="' . esc_attr( $auth_method_abr ) . '_thumbnail_2_factor"';
 			echo $is_auth_method_selected ? '#07b52a' : 'var(--mo2f-theme-blue)';
@@ -89,13 +90,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 				echo esc_html( MoWpnsConstants::mo2f_convert_method_name( $auth_method, 'cap_to_small' ) . ' Via Link' );
 			} else {
 				echo esc_html( MoWpnsConstants::mo2f_convert_method_name( $auth_method, 'cap_to_small' ) );
-				if ( $is_premium_feature ) {
-					echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. 
-				}
 			}
 
 			echo '</b></div></div>';
-			echo '   <div class="mo2f-guide-icons">';
+			echo '<div>';
+			if ( ! $is_all_inclusive_file && 'WHATSAPP' === $auth_method ) {
+				echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. 
+			}
+			echo '</div>';
+			echo '   <div class="mo2f-guide-icons" >';
 			if ( isset( $doc_link ) ) {
 				echo '<a href=' . esc_url( $doc_link ) . ' class="mx-auto" target="_blank">
                 <span title="View Setup Guide" class="dashicons dashicons-text-page  mo2f-dash-icons-doc"></span>
@@ -130,7 +133,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 				$disabled = $can_user_configure_2fa_method ? '' : '  ';
 			}
 			echo '<div>';
-			if ( $display_configure_button ) {
+			if ( ! $is_all_inclusive_file && 'WHATSAPP' === $auth_method ) {
+				echo '<span class="mo2f-tw-configure-2fa-whatsapp" id="' . esc_attr( $auth_method_abr ) . '_configuration" >Configure</span>';
+			} elseif ( $display_configure_button ) {
 				echo '<button type="button" id="' . esc_attr( $auth_method_abr ) . '_configuration" class="mo2f-tw-configure-2fa" onclick="configureOrSet2ndFactor_free_plan(\'' . esc_js( $auth_method_abr ) . '\', \'configure2factor\');"';
 				echo esc_attr( $disabled );
 				echo '>';

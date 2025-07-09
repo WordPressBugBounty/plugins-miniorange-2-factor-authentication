@@ -97,7 +97,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 				MoWpnsConstants::OTP_OVER_WHATSAPP    => array(
 					'doc'   => MoWpnsConstants::OTP_OVER_WA_DOCUMENT_LINK,
 					'video' => null,
-					'desc'  => 'Enter the One Time Passcode sent to your WhatsApp number.',
+					'desc'  => 'Enter the One Time Passcode sent to your WhatsApp number. <a href="' . admin_url( 'admin.php?page=mo_2fa_whatsapp' ) . '" target="_blank" >[Configure your business account]</a>',
 					'crown' => false,
 				),
 			);

@@ -6,7 +6,7 @@
  */
 
 use TwoFA\Helper\MoWpnsConstants;
-
+use TwoFA\Helper\Mo2f_Common_Helper;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -24,7 +24,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</div>
 			<div class="relative mo2f-enterprise-plan">
 				<table class="my-mo-3 w-3/4" id="mo2f_custom_redirect_url_table">
-					<tr><td><div class="my-mo-3"><input type="radio" name="mo2f_redirect_url_for_users" value="redirect_user_roles" <?php checked( 'redirect_user_roles' === get_site_option( 'mo2f_redirect_url_for_users' ) ); ?>/><?php esc_html_e( 'Redirection URL based on user roles:', 'miniorange-2-factor-authentication' ); ?><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?></div></td><td></td></tr>	
+					<tr><td><div class="my-mo-3"><input type="radio" name="mo2f_redirect_url_for_users" value="redirect_user_roles" <?php checked( 'redirect_user_roles' === get_site_option( 'mo2f_redirect_url_for_users' ) ); ?>/><?php esc_html_e( 'Redirection URL based on user roles:', 'miniorange-2-factor-authentication' ); ?>
+					<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'enterprise', MoWpnsConstants::MO2F_PREMIUM_2PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+				</div></td><td></td></tr>	
 			<?php
 
 			foreach ( $custom_login_urls as $selected_role_name => $redirection_url ) {
@@ -104,6 +106,42 @@ if ( ! defined( 'ABSPATH' ) ) {
 				?>
 	</div>
 </div>
+<div class="mo2f-settings-div">
+	<div class="mo2f-settings-head">
+		<label class="mo2f_checkbox_container">
+			<input type="checkbox" id="mo2f_debug_log" name="mo2f_activate_plugin_log" onclick="mo2f_showSettings(this)" <?php checked( $enable_debug_log ); ?> />
+			<span class="mo2f-settings-checkmark"></span>
+		</label>
+		<span><?php esc_html_e( 'Enable Plugin Logs', 'miniorange-2-factor-authentication' ); ?></span>
+	</div>
+	<br>
+	<div class="text-mo-tertiary-txt ml-mo-8">
+		<?php
+			printf(
+				/* Translators: %s: bold tags */
+				esc_html__( ' %1$sNote:%2$s The plugin debug log file is very helpful for debugging issues if you encounter any.', 'miniorange-2-factor-authentication' ),
+				'<b>',
+				'</b>'
+			);
+			?>
+	</div>
+	<br>
+	<div class=" justify-start <?php echo $enable_debug_log ? 'flex' : 'hidden'; ?>" id="mo2f_debug_log_save">
+		<div>
+			<button class="mo2f-save-settings-button" id="mo2f_debug_download_form" name="mo2f_debug_download_form">
+				<?php esc_html_e( 'Download log file', 'miniorange-2-factor-authentication' ); ?>
+			</button>
+			<button class="mo2f-reset-settings-button" id="mo2f_debug_delete_form" name="mo2f_debug_delete_form">
+				<?php esc_html_e( 'Delete log file', 'miniorange-2-factor-authentication' ); ?>
+			</button>
+			<input type="hidden" id="mo2f_delete_log" name="mo2f_nonce_delete_log" value="<?php echo esc_html( wp_create_nonce( 'mo-two-factor-ajax-nonce' ) ); ?>" />
+		</div>
+	</div>	
+</div>
+<form name="mo2f_form" method="post" id="mo2f_download_log_file"> 
+	<input type="hidden" id="mo2f_download_log" name="mo_wpns_feedback_nonce" value="<?php echo esc_html( wp_create_nonce( 'mo-wpns-feedback-nonce' ) ); ?>"/>
+	<input type="hidden" id="mo2f_download_logs" name="option" value="log_file_download"/> 
+</form>
 <script>
 jQuery("#settings").addClass("mo2f-subtab-active");
 jQuery("#mo_2fa_two_fa").addClass("side-nav-active");

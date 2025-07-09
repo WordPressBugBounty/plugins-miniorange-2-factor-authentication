@@ -52,10 +52,6 @@ if ( ! class_exists( 'Mo2f_Whitelabelling' ) ) {
 				case 'mo2f_google_app_name':
 					$this->mo2f_google_app_name( $_POST );
 					break;
-				case 'mo2f_login_popup_customization':
-					do_action( 'mo2f_enterprise_plan_settings_action', 'mo2f_login_popup_customization', $_POST );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
-					break;
 				case 'mo2f_custom_security_questions_settings':
 					do_action( 'mo2f_enterprise_plan_settings_action', 'mo2f_save_custom_security_questions_settings', $_POST );
 					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );

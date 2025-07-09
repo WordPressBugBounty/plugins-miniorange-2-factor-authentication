@@ -8,13 +8,15 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-
+use TwoFA\Helper\Mo2f_Common_Helper;
 use TwoFA\Helper\MoWpnsConstants;
 
 ?>
-<div class="mo2f-settings-div mo2f-enterprise-plan">
+<div class="mo2f-settings-div mo2f-all-inclusive-plan">
 	<div class="mo2f-settings-head">
-		<span><?php esc_html_e( 'Remember (Whitelist) IP to Bypass 2FA', 'miniorange-2-factor-authentication' ); ?></span><?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+		<span><?php esc_html_e( 'Remember (Whitelist) IP to Bypass 2FA', 'miniorange-2-factor-authentication' ); ?></span>
+					<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'all-inclusive', MoWpnsConstants::MO2F_PREMIUM_1PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+
 	</div>
 	<br>
 	<div class="ml-mo-16">
@@ -58,10 +60,10 @@ use TwoFA\Helper\MoWpnsConstants;
 					?>
 			</div>
 		</div>
-	    <br>
+		<br>
 		<div class="mo2f-settings-items ml-mo-20">
 			<div class="mr-mo-4">
-				<input type="radio" name="mo2f_give_rem_ip_choice" id="mo2f_give_rem_ip_no_choice" value="0" <?php checked( '0' === $configurations['mo2f_give_rem_ip_choice']); ?>>
+				<input type="radio" name="mo2f_give_rem_ip_choice" id="mo2f_give_rem_ip_no_choice" value="0" <?php checked( '0' === $configurations['mo2f_give_rem_ip_choice'] ); ?>>
 				<?php
 					printf(
 						/* Translators: %s: bold tags */
@@ -72,7 +74,7 @@ use TwoFA\Helper\MoWpnsConstants;
 					?>
 			</div>
 		</div>
-	    <br>
+		<br>
 		<div id="mo2f-remember-ip-range-content">
 			<div class="mo2f-settings-items ml-mo-30" id="mo2f_range_of_ips_block" >
 				<form name="mo2f-remember-ip-form" method="post" action="" id="mo2f-remember-ip-form" >
@@ -94,7 +96,7 @@ use TwoFA\Helper\MoWpnsConstants;
 					<div class="mo2f-settings-items ml-mo-32">
 						<table>
 							<?php
-							foreach( $rem_ip_ranges as $index => $rem_ip_range ){
+							foreach ( $rem_ip_ranges as $index => $rem_ip_range ) {
 								?>
 							<tr>
 								<td>
@@ -106,7 +108,7 @@ use TwoFA\Helper\MoWpnsConstants;
 								<td>
 									<div class="mo2f-settings-items mo-input-wrapper mo2f-end-ips mb-mo-4">
 										<label class="mo-input-label"><?php esc_html_e( 'End IP', 'miniorange-2-factor-authentication' ); ?></label>
-										<input type="text" class="mo2f-adv-set-input mo2f_width_80 mo2f-end-ip-inputs" value="<?php echo esc_attr( is_array( $rem_ip_range ) && isset( $rem_ip_range[1] )  ? $rem_ip_range[1] : '' ); ?>"  placeholder=" e.g 192.168.0.190" />
+										<input type="text" class="mo2f-adv-set-input mo2f_width_80 mo2f-end-ip-inputs" value="<?php echo esc_attr( is_array( $rem_ip_range ) && isset( $rem_ip_range[1] ) ? $rem_ip_range[1] : '' ); ?>"  placeholder=" e.g 192.168.0.190" />
 									</div>
 								</td>
 								<td>
@@ -116,16 +118,16 @@ use TwoFA\Helper\MoWpnsConstants;
 								</div>
 								</td>
 							</tr>
-							<?php
-						}
-						?>
+								<?php
+							}
+							?>
 						</table>
 					</div>
 				</form>
 			</div>	
 		</div>	
-    </div>	
-    <br>
+	</div>	
+	<br>
 	<div class="justify-start ml-mo-16">
 		<div class="mo2f-enterprise-plan">
 		<button id="mo2f_remember_ip_settings" class="mo2f-save-settings-button"><?php esc_html_e( 'Save Settings', 'miniorange-2-factor-authentication' ); ?></button>

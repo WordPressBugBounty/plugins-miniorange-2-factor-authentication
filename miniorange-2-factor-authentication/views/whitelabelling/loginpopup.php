@@ -7,6 +7,7 @@
 
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Helper\Mo2f_Common_Helper;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -15,7 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="mo2f-settings-div mo2f-enterprise-plan">
 
 <div class="mo2f-settings-head">
-	<span><?php esc_html_e( 'Use your own branding logo on 2FA login Popup', 'miniorange-2-factor-authentication' ); ?></span>	<?php echo MoWpnsConstants::PREMIUM_CROWN;//phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+	<span><?php esc_html_e( 'Use your own branding logo on 2FA login Popup', 'miniorange-2-factor-authentication' ); ?></span>	
+					<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'enterprise', MoWpnsConstants::MO2F_PREMIUM_2PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+
 </div>
 <br>
 <div class="text-mo-tertiary-txt ml-mo-16"> 
@@ -60,10 +63,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="mo2f-settings-div mo2f-enterprise-plan">
 
 	<div class="mo2f-settings-head">
-	<label class="mo2f_checkbox_container">
-		<input type="checkbox" id="mo2f_enable_login_popup_customization" <?php checked( get_site_option( 'mo2f_enable_login_popup_customization' ) ); ?> /><span class="mo2f-settings-checkmark"></span>
-	</label>
-		<span><?php esc_html_e( 'Use custom 2FA login Popup', 'miniorange-2-factor-authentication' ); ?></span>	<?php echo MoWpnsConstants::PREMIUM_CROWN;//phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+		<span><?php esc_html_e( 'Use custom 2FA login Popup', 'miniorange-2-factor-authentication' ); ?></span>	
+		<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'enterprise', MoWpnsConstants::MO2F_PREMIUM_2PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
 	</div>
 
 		<div class="ml-mo-20">
@@ -108,7 +109,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="mo2f-settings-div mo2f-enterprise-plan">
 	<div class="mo2f-settings-head">
 		<span><?php esc_html_e( 'Customize Email Verification via Link Response Template', 'miniorange-2-factor-authentication' ); ?></span>	
-		<?php echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+		<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'enterprise', MoWpnsConstants::MO2F_PREMIUM_2PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+
 	</div>
 
 	<div class="ml-mo-20">

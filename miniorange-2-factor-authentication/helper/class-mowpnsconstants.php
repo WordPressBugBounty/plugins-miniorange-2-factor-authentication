@@ -122,6 +122,17 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			</g>
 		</g>
 		</svg>';
+		const MO2F_PREMIUM_3PLAN_NAME                     = 'Starter, Enterprise and All Inclusive Plan Feature';
+		const MO2F_PREMIUM_2PLAN_NAME                     = 'Enterprise and All Inclusive Plan Feature';
+		const MO2F_PREMIUM_1PLAN_NAME                     = 'All Inclusive Plan Feature';
+		const MO2F_PREMIUM_PLAN_DESCRIPTION               = 'Please upgrade your plan to unlock this feature';
+		const EMAIL_PATTERN                               = '[^@\s]+@[^@\s]+\.[^@\s]+';
+		const PHONE_PATTERN                               = '[\+]?[0-9]{1,4}\s?[0-9]{7,12}';
+		const MO2F_SVG_ARROW_ICON                         = '<svg class="mo2f-gauth-link-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" focusable="false"><path d="M432 320h-32a16 16 0 0 0-16 16v112H80V128h112a16 16 0 0 0 16-16V80a16 16 0 0 0-16-16H64A64 64 0 0 0 0 128v320a64 64 0 0 0 64 64h320a64 64 0 0 0 64-64V336a16 16 0 0 0-16-16zm56-320H336a24 24 0 0 0-17 41l35 35L176 309a24 24 0 0 0 0 34l22 22a24 24 0 0 0 34 0l178-178 35 35a24 24 0 0 0 41-17V32a32 32 0 0 0-32-32z"/>
+		</svg>';
+		const MO2F_SVG_ARROW_ICON_DROPDOWN                = '<svg class="mo2f-gauth-link-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 448 512" fill="currentColor" aria-hidden="true" focusable="false">
+		<path d="M207.029 381.476L12.686 187.132c-16.971-16.971-16.971-44.512 0-61.483l22.628-22.628c16.971-16.971 44.512-16.971 61.483 0L224 230.058l127.203-127.203c16.971-16.971 44.512-16.971 61.483 0l22.628 22.628c16.971 16.971 16.971 44.512 0 61.483L240.971 381.476c-16.971 16.971-44.512 16.971-61.483 0z"/>
+		</svg>';
 
 		// arrays .
 		/**

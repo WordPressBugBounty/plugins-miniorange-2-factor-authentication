@@ -43,7 +43,38 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$this->login_form_url = MoWpnsUtility::get_current_url();
 			add_action( 'admin_notices', array( $this, 'mo2f_display_test_2fa_notification' ) );
 		}
-
+		/**
+		 * Checks if a premium feature file exists for the given plan and returns a tooltip if not.
+		 *
+		 * @param mixed $feature Type of premium feature used to identify the corresponding file.
+		 * @param string $plan_name Name of the subscription plan used for displaying the upgrade tooltip.
+		 * @return string
+		 */
+		public static function mo2f_check_plan( $feature, $plan_name ) {
+			global $mo2f_dir_name;
+			$filename = 'class-mo2f-' . $feature . '-premium-settings.php';
+			$basic_path = rtrim( $mo2f_dir_name, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . $filename;
+			if ( file_exists( $basic_path ) ) {
+				return '';
+			} else {
+				return self::mo2f_get_premium_tooltip( $plan_name );
+			}
+		}
+		/**
+		 * Tooltip component for displaying the upgrade message.
+		 *
+		 * @param mixed $plan_name Name of the subscription plan used for displaying the upgrade tooltip.
+		 * @return string
+		 */
+		public static function mo2f_get_premium_tooltip( $plan_name ) {
+			return '<span class="mo2f_premium_tooltip">' . MoWpnsConstants::PREMIUM_CROWN . '
+                                <span class="mo2f_premium_tooltiptext">
+                                    <span class="mo2f_premium_header" onclick="upgradeLink()">' . esc_html( $plan_name ) . '</span><br/>
+                                    <span class="mo2f_premium_body">' . esc_html( MoWpnsConstants::MO2F_PREMIUM_PLAN_DESCRIPTION )  . '</span>
+                                </span>
+                            </span>';
+		}
+		
 		/**
 		 * Return the handler object for selected method.
 		 *
@@ -113,7 +144,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			global $mo2fdb_queries;
 			$backup_methods = (array) get_site_option( 'mo2f_enabled_backup_methods' );
 			if ( get_site_option( 'mo2f_enable_backup_methods' ) ) {
-				if ( in_array( 'backup_kba', $backup_methods, true ) && MoWpnsConstants::SECURITY_QUESTIONS !== $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2fa_method', $current_user_id ) && ! TwoFAMoSessions::get_session_var( 'mo2f_is_kba_backup_configured' . $current_user_id ) ) {
+				if ( in_array( 'backup_kba', $backup_methods, true ) && MoWpnsConstants::SECURITY_QUESTIONS !== $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $current_user_id ) && ! TwoFAMoSessions::get_session_var( 'mo2f_is_kba_backup_configured' . $current_user_id ) ) {
 					do_action(
 						'mo2f_basic_plan_settings_action',
 						'show_kba_registration_form',
@@ -212,7 +243,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				'mo2f_authy_keys',
 			);
 
-			MO2f_Utility::unset_session_variables( $session_variables );
+			MO2f_Utility::unset_session_variables( $session_variables, $session_id );
 			TwoFAMoSessions::unset_session( 'mo2f_show_error_message' );
 			TwoFAMoSessions::unset_session( 'mo2f_show_defult_login_form' );
 			TwoFAMoSessions::unset_session( 'mo2f_change_error_message' );
@@ -302,7 +333,6 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				update_user_meta( $user_id, 'mo_backup_code_generated', 0 );
 			}
 			return $mo2fa_login_message;
-
 		}
 
 		/**
@@ -517,7 +547,6 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		</form>';
 
 			return $html;
-
 		}
 
 		/**
@@ -583,7 +612,6 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			    jQuery("#mo2f_backto_mo_loginform").submit();
 			});</script>';
 			return $script;
-
 		}
 
 		/**
@@ -668,8 +696,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$mo2f_user_phone = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_phone', $user_id );
 			$user_phone      = $mo2f_user_phone ? $mo2f_user_phone : '';
 			$skeleton        = array(
-				'##input_field##'  => '<br><span style="font-size:17px;"><i>Enter your Phone:</i></span><br><br><input class="mo2f_table_textbox mb-mo-4" style="width:200px;" type="text" name="mo2f_phone_email_telegram" id="mo2f_phone_field"
-                                    value="' . esc_attr( $user_phone ) . '" pattern="[\+]?[0-9]{1,4}\s?[0-9]{7,12}"
+				'##input_field##'  => '<br><span class="mo2f_phone_field_label">' . esc_html__( 'Enter Your Phone', 'miniorange-2-factor-authentication' ) . '</span><br><br><input class="mo2f_phone_field mb-mo-4" type="text" name="mo2f_phone_email_telegram" id="mo2f_phone_field"
+                                    value="' . esc_attr( $user_phone ) . '" pattern="' . esc_attr( MoWpnsConstants::PHONE_PATTERN ) . '"
                                     title="' . esc_attr__( 'Enter phone number without any space or dashes', 'miniorange-2-factor-authentication' ) . '"/>',
 				'##instructions##' => '',
 			);
@@ -692,8 +720,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$email           = $mo2f_user_email ? $mo2f_user_email : get_user_by( 'id', $user_id )->user_email;
 			$skeleton        = array(
 				'##input_field##'  => '<br><div class="modal-body" style="height:auto;">
-                                    <span style="font-size:17px;">Enter your Email:</span>
-                                    <input type ="text" style="height:25px;margin-left:10px;" id="emailEntered" pattern="[^@\s]+@[^@\s]+\.[^@\s]+" name="mo2f_phone_email_telegram"  size="30" required value="' . esc_attr( $email ) . '"/><br>
+                                    <span class="mo2f_phone_field_label">' . esc_html__( 'Enter your Email:', 'miniorange-2-factor-authentication' ) . '</span>
+                                    <input type ="text" class="mo2f_phone_field" pattern="' . esc_attr( MoWpnsConstants::EMAIL_PATTERN ) . '" name="mo2f_phone_email_telegram"  size="30" required value="' . esc_attr( $email ) . '"/><br>
                                     </div>',
 				'##instructions##' => '',
 			);
@@ -710,7 +738,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$chat_id  = get_user_meta( $user_id, 'mo2f_chat_id', true );
 			$chat_id  = $chat_id ? $chat_id : '';
 			$skeleton = array(
-				'##input_field##'  => '<input class="mo2f_table_textbox" style="width:200px;height:25px;" type="text" name="mo2f_phone_email_telegram" id="mo2f_telegram"
+				'##input_field##'  => '<input class="mo2f_phone_field" type="text" name="mo2f_phone_email_telegram" id="mo2f_telegram"
                                     value="' . esc_attr( $chat_id ) . '" pattern="[0-9]+" 
                                     title="' . esc_attr__( 'Enter Chat ID recieved on your Telegram without any space or dashes', 'miniorange-2-factor-authentication' ) . '"/><br></h4>',
 				'##instructions##' => '<h4 class="mo_wpns_not_bold">' . esc_html__( '1. Open the telegram app and search for \'miniorange2fa\'. Click on start button or send \'/start\' message.', 'miniorange-2-factor-authentication' ) . '</h4>
@@ -718,7 +746,6 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 
 			);
 			return $skeleton;
-
 		}
 
 		/**
@@ -732,8 +759,9 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$mo2f_user_phone = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_whatsapp', $user_id );
 			$user_phone      = $mo2f_user_phone ? $mo2f_user_phone : '';
 			$skeleton        = array(
-				'##input_field##'  => '<br><span style="font-size:17px;" class="mo2f_middle_text"><i>Enter your Phone:</i></span><br><br><input class="mo2f_table_textbox mb-mo-4" style="width:200px;" type="text" name="mo2f_phone_email_telegram" id="mo2f_phone_field"
-                                    value="' . esc_attr( $user_phone ) . '" pattern="[\+]?[0-9]{1,4}\s?[0-9]{7,12}"
+				'##input_field##'  => '<br><span class="mo2f_phone_field_label" class="mo2f_middle_text"><i>' . esc_html__( 'Enter Your Phone', 'miniorange-2-factor-authentication' ) . ':</i></span><br><br>
+				                    <input class="mo2f_phone_field mb-mo-4" type="text" name="mo2f_phone_email_telegram" id="mo2f_phone_field"
+                                    value="' . esc_attr( $user_phone ) . '" pattern="' . esc_attr( MoWpnsConstants::PHONE_PATTERN ) . '"
                                     title="' . esc_attr__( 'Enter phone number without any space or dashes', 'miniorange-2-factor-authentication' ) . '"/>',
 				'##instructions##' => '',
 			);
@@ -795,7 +823,6 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			});
 			</script>';
 			return $script;
-
 		}
 
 		/**
@@ -833,6 +860,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 							} else{
 								jQuery("#go_back_verify").css("display","none");
 								jQuery("#mo2f_validateotp_form").css("display","block");
+								jQuery("#verify").css("display","none");
 								jQuery("input[name=otp_token]").focus();
 							}
 							mo2f_show_message(response["data"]);
@@ -948,7 +976,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				$html            .= esc_html__( 'Configure ' . MoWpnsConstants::mo2f_convert_method_name( $current_selected_method, 'cap_to_small' ), 'miniorange-2-factor-authentication' ); // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- This is a string literal.
 				$html            .= '</h4>
 				</div>';
-			$html                .= '<div class="mo2f_modal-body">
+			$html                .= '<div class="mo2f_modal-body"> 
+			        <div class="mo2f_login_form_border_otp">
 						<div id="mo2f-otpMessagehide" class="hidden">
 							<p class="mo2fa_display_message_frontend mo_feedback_text">' . wp_kses( $login_message, array( 'b' => array() ) ) . '</p>
 						</div>
@@ -1021,8 +1050,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 							<input type="hidden" name="option" value="mo2f_validate_otp_for_configuration"/>
 							<input type="hidden" name="mo2f_session_id" value="' . esc_attr( $session_id ) . '"/>
 							<input type="hidden" name="mo2f_otp_based_method" value="' . esc_attr( $current_selected_method ) . '"/>
-							<input type="hidden" name="mo2f_validate_otp_for_configuration_nonce" value=" ' . esc_attr( wp_create_nonce( 'mo2f-configure-otp-based-methods-validate-nonce' ) ) . '"/> <p>' . esc_html__( 'Enter One Time Passcode', 'miniorange-2-factor-authentication' ) . '</p>
-							<input class="mo2f_table_textbox" style="width:200px;" autofocus="true" type="text" name="otp_token" placeholder="' . esc_attr__( 'Enter OTP', 'miniorange-2-factor-authentication' ) . '" style="width:95%;"/> <a href="#resendsmslink" style="color:#a7a7a8 ;text-decoration:none;" >' . esc_html__( 'Resend OTP', 'miniorange-2-factor-authentication' ) . '</a>
+							<input type="hidden" name="mo2f_validate_otp_for_configuration_nonce" value=" ' . esc_attr( wp_create_nonce( 'mo2f-configure-otp-based-methods-validate-nonce' ) ) . '"/> <div class="mo2f_phone_field_label">' . esc_html__( 'Enter One Time Passcode', 'miniorange-2-factor-authentication' ) . '</div>
+							<input class="mo2f_enter_otp_field"  autofocus="true" type="text" name="otp_token" placeholder="' . esc_attr__( 'Enter OTP', 'miniorange-2-factor-authentication' ) . '"/> <a href="#resendsmslink" class="mo2f_resend_link">' . esc_html__( 'Resend OTP', 'miniorange-2-factor-authentication' ) . '</a>
 							<br><br>
 							<input type="button" name="validate" id="validate" class="mo2f-save-settings-button" value="' . esc_attr__( 'Validate OTP', 'miniorange-2-factor-authentication' ) . '"/>
 						</form>
@@ -1031,7 +1060,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 						<div class="mo2fa_text-align-center">We are waiting for your approval...</div>
 <div class="mo2fa_text-align-center">
    <img src="' . esc_url( plugins_url( 'includes/images/email-loader.gif', dirname( __FILE__ ) ) ) . '"/>
-</div></div><br>';
+</div></div></div><br>';
 			if ( 'mo2f_inline_form' === $prev_screen ) {
 				$prev_screen = 'mo2f_inline_form';
 				$html       .= $common_helper->mo2f_go_back_link_form( $prev_screen );
@@ -1042,6 +1071,14 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				</div>
 			</div>';
 			$html     .= '<script>
+			jQuery(document).ready(function ($) {
+				const otpInput = document.querySelector(".mo2f_enter_otp_field");
+				if (otpInput) {
+					otpInput.addEventListener("input", function () {
+					this.value = this.value.replace(/[^a-zA-Z0-9]/g, "");
+					});
+				}
+			});
 			function mologinback() {
 				jQuery("#mo2f_backto_mo_loginform").submit();
 				jQuery("#mo2f_2fa_popup_dashboard").fadeOut();
@@ -1079,12 +1116,11 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$html .= "
 		function mo2f_show_message(response) {
 			var html = '<div id=\"mo2f-otpMessage\"><p class=\"mo2fa_display_message_frontend\">' + response + '</p></div>';
-			jQuery('#mo2f-otpMessage').empty();
+			jQuery('#mo2f-otpMessage').remove();
 			jQuery('#mo2f-otpMessagehide').after(html);
 		}
 		</script>";
 			return $html;
-
 		}
 
 		/**
@@ -1255,7 +1291,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$html .= "
 					function mo2f_show_message(response) {
 						var html = '<div id=\"mo2f-otpMessage\"><p class=\"mo2fa_display_message_frontend\">' + response + '</p></div>';
-						jQuery('#mo2f-otpMessage').empty();
+						jQuery('#mo2f-otpMessage').remove();
 						jQuery('#mo2f-otpMessagehide').after(html);
 					}
 					const checkbox = document.getElementById('mo2f_agree_plugin_policy');
@@ -1338,7 +1374,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				<p class="mo2fa_display_message_frontend" style="text-align: left !important; ">' . wp_kses( $login_message, array( 'b' => array() ) ) . '</p>
 			</div>';
 
-			$html         .= '<form name="f" method="post" action="">
+			$html         .= '<form name="mo2f_configure_kba_method_form" method="post" action="" class="mo2f_kba_configure_form">
                 ' . $this->mo2f_configure_kba_questions() . '
                 <br/>
                 <div class="row">
@@ -1381,7 +1417,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$default_question_count = get_site_option( 'mo2f_default_kbaquestions_users', 2 );
 			$custom_question_count  = get_site_option( 'mo2f_custom_kbaquestions_users', 1 );
 			$total_questions        = $default_question_count + $custom_question_count;
-			$html                   = '<div class="mo2f_kba_header">' . esc_html__( 'Please choose ', 'miniorange-2-factor-authentication' ) . $total_questions . esc_html__( ' questions', 'miniorange-2-factor-authentication' ) . '</div>';
+			$html                   = '<div class="mo2f_kba_header mo2f_kba_header_background">' . esc_html__( 'Please choose ', 'miniorange-2-factor-authentication' ) . $total_questions . esc_html__( ' questions', 'miniorange-2-factor-authentication' ) . '</div>';
 			$html                  .= '<br>';
 			$html                  .= '<table id="mo2f_configure_kba" cellspacing="10">';
 			$html                  .= '<thead>';
@@ -1494,9 +1530,15 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					$app_secret = isset( $customer_key['appSecret'] ) ? $customer_key['appSecret'] : '';
 					$this->mo2f_save_customer_configurations( $id, $api_key, $token, $app_secret );
 					update_site_option( base64_encode( 'totalUsersCloud' ), get_site_option( base64_encode( 'totalUsersCloud' ) ) + 1 ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- We need to obfuscate the option as it will be stored in database.
-					$mocurl  = new MocURL();
-					$content = json_decode( $mocurl->get_customer_transactions( 'otp_recharge_plan', 'PREMIUM' ), true );
-					if ( 'SUCCESS' !== $content['status'] ) {
+					$mocurl = new MocURL();
+					$plans  = array( 'otp_recharge_plan', 'wp_otp_verification' );
+					foreach ( $plans as $plan ) {
+						$content = json_decode( $mocurl->get_customer_transactions( $plan, 'PREMIUM' ), true );
+						if ( isset( $content['status'] ) && 'SUCCESS' === $content['status'] ) {
+							break;
+						}
+					}
+					if ( ! isset( $content['status'] ) || 'SUCCESS' !== $content['status'] ) {
 						$content = json_decode( $mocurl->get_customer_transactions( '-1', 'DEMO' ), true );
 					}
 					update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', isset( $content['smsRemaining'] ) ? $content['smsRemaining'] : 0 );
@@ -1563,13 +1605,13 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 						jQuery("#mo2f_answer_1").val("");
 						jQuery("#mo2f_answer_2").val("");
 						jQuery("input[name=mo2f_answer_1]").focus();
+						jQuery("#mo2f_answer_1, #mo2f_answer_2").addClass("mo2f_kba_error");
 						mo2f_show_message("Invalid answers. Please enter the correct answers.");
 					}
 				});
 			});
 		</script>';
 			return $script;
-
 		}
 
 		/**
@@ -1609,6 +1651,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 						jQuery("#mo2f_answer_1").val("");
 						jQuery("#mo2f_answer_2").val("");
 						jQuery("input[name=mo2f_answer_1]").focus();
+						jQuery("#mo2f_answer_1, #mo2f_answer_2").addClass("mo2f_kba_error");
 						mo2f_show_message("Invalid answers. Please enter the correct answers.");	
 					} else{
 						jQuery("#mo2fa_softtoken").val("");
@@ -1622,7 +1665,6 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			});
 		</script>';
 			return $script;
-
 		}
 		/**
 		 * This function prints customized logo.
@@ -1635,7 +1677,6 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 							alt="logo"
 							src="' . esc_url( plugins_url( 'includes/images/' . $custom_logo_enabled, dirname( __FILE__ ) ) ) . '"/></div>';
 			return $html;
-
 		}
 
 		/**
@@ -1644,7 +1685,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return void
 		 */
 		public function mo2f_echo_js_css_files() {
-			if ( is_user_logged_in() ) {
+
+			if ( is_user_logged_in() && ! get_site_transient( 'mo2f_page_protection_flow_1' . wp_get_current_user()->ID ) ) {
 				wp_register_style( 'mo2f_style_settings', plugins_url( 'includes/css/twofa_style_settings.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
 				wp_print_styles( 'mo2f_style_settings' );
 			} else {
@@ -1657,8 +1699,41 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			wp_print_scripts( 'jquery' );
 			wp_print_scripts( 'mo2f_bootstrap_js' );
 			if ( get_site_option( 'mo2f_enable_login_popup_customization' ) ) {
-				wp_register_style( 'mo2f_custom-login-popup', plugins_url( 'includes/css/mo2f_login_popup_ui.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
-				wp_print_styles( 'mo2f_custom-login-popup' );
+				$this->mo2f_output_custom_login_popup_css();
+			}
+		}
+
+		/**
+		 * Outputs the custom CSS for the login popup.
+		 *
+		 * @return void
+		 */
+		public function mo2f_output_custom_login_popup_css() {
+			$custom_css        = '';
+			$current_popup_css = array(
+				'mo2f_custom_background_color'  => '.mo2f-modal-backdrop{background-color: ##custom_css## !important;}',
+				'mo2f_background_image'         => '.mo2f-modal-backdrop{ background-image: url("##custom_css##") !important; background-repeat: no-repeat, repeat; background-size:cover;background-attachment: fixed;background-position: center;  }',
+				'mo2f_custom_popup_bg_color'    => '.mo_customer_validation-modal-content, .mo2f_gauth_getapp, .mo2f-backup-codes-outer-container, .mo2f_dashboard_test_popup_background{background:##custom_css## !important;}',
+				'mo2f_custom_otp_bg_color'      => '.mo2f-otp-catchy{background-color:##custom_css## !important;}',
+				'mo2f_custom_otp_text_color'    => '.mo2f-otp-catchy{color:##custom_css## !important;}',
+				'mo2f_custom_middle_text_color' => '.mo2f_middle_text, .mo2f_dashboard_test_popup_text{color:##custom_css##!important;}',
+				'mo2f_custom_header_text_color' => '.mo2f_modal-title{color:##custom_css##!important;}',
+				'mo2f_custom_footer_text_color' => '.mo2f_footer_text{color:##custom_css##!important;}',
+				'mo2f_custom_links_text_color'  => '.pushHelpLink{color:##custom_css##!important;}',
+				'mo2f_custom_notif_text_color'  => '.mo2fa_display_message_frontend{color:##custom_css##!important;}',
+				'mo2f_custom_notif_bg_color'    => '#mo2f-otpMessage{background:##custom_css##!important;}',
+				'mo2f_custom_button_color'      => '.mo2f-save-settings-button, .miniorange_otp_token_submit, .miniorange_kba_validate, .miniorange_button {background:##custom_css##!important;}.miniorange_otp_token_submit:hover, .miniorange_kba_validate:hover {background:##custom_css##d6 !important;}.miniorange_otp_token_submit{border-color:##custom_css##!important;}',
+
+			);
+			$updated_popup_css = get_site_option( 'mo2f_custom_2fa_popup_css', array() );
+			foreach ( $current_popup_css as $element => $value ) {
+				if ( isset( $updated_popup_css[ $element ] ) ) {
+					$css_value   = $updated_popup_css[ $element ];
+					$custom_css .= str_replace( '##custom_css##', $css_value, $value );
+				}
+			}
+			if ( ! empty( $custom_css ) ) {
+				echo wp_kses( "<style>$custom_css</style>", array( 'style' => array() ) );
 			}
 		}
 
@@ -1676,230 +1751,205 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 */
 		public function mo2f_google_authenticator_popup_common_html( $gauth_name, $data, $microsoft_url, $secret, $prev_screen, $redirect_to, $session_id ) {
 			$common_helper = new Mo2f_Common_Helper();
-			require_once dirname( dirname( __FILE__ ) ) . DIRECTORY_SEPARATOR . 'helper' . DIRECTORY_SEPARATOR . 'mo2f-google-auth-app-links.php';
-			$html          = '<div class="mo2f_modal" tabindex="-1" role="dialog" id="myModal5">
-				<div class="mo2f-modal-backdrop">
-				</div>
-				<div class="mo2f_modal-dialog mo2f_modal-lg">
-				<div id="mo2f_2fa_popup_dashboard_loader" class="modal" hidden></div>
-					<div class="login mo_customer_validation-modal-content">';
-					$html .= '<h4>';
+			require_once dirname( __DIR__ ) . DIRECTORY_SEPARATOR . 'helper' . DIRECTORY_SEPARATOR . 'mo2f-google-auth-app-links.php';
 
-						$html                 .= '<button type="button" class="mo2f_close" data-dismiss="modal" aria-label="Close"
-						title="' . esc_attr__( 'Back to login', 'miniorange-2-factor-authentication' ) . '"
-						onclick="mologinback();"><span aria-hidden="true">&times;</span></button>';
-						$html                 .= esc_html__( 'Configure Google/Authy/Microsoft Authenticator', 'miniorange-2-factor-authentication' ) .
-						'</h4>';
-					$html                     .= '<hr>';
-					$html                     .= '<table class="mo2f_configure_ga">
-								<tr>
-									<td class="mo2f_google_authy_step2">';
-									$html     .= '<div id="mo2f-otpMessage" class="hidden"><p id="mo2f_gauth_inline_message" class="mo2fa_display_message_frontend mo_feedback_text"></p>
-										</div>';
-										$html .= '<div style="line-height: 4; margin-left:20px;" id = "mo2f_choose_app_tour">
-												<label for="authenticator_type"><b>1. Choose an Authenticator app:</b></label>
-						
-												<select id="authenticator_type">';
+			$html = '<div class="mo2f_modal" tabindex="-1" role="dialog" id="myModal5">
+			<div' . ( 'dashboard' !== $prev_screen ? ' class="mo2f-modal-backdrop"' : '' ) . '></div>
+			<div class="mo2f_modal-dialog mo2f_modal-lg">
+				<div id="mo2f_2fa_popup_dashboard_loader" class="modal" hidden></div>
+				<div class="login mo_customer_validation-modal-content mo2f_authenticator_popup_size">';
+
+			$html .= '<h4>';
+			$html .= '<button type="button" class="mo2f_close" data-dismiss="modal" aria-label="Close"
+				title="' . esc_attr__( 'Back to login', 'miniorange-2-factor-authentication' ) . '"
+				onclick="mologinback();"><span aria-hidden="true">&times;</span></button>';
+			$html .= esc_html__( 'Configure Google/Authy/Microsoft Authenticator', 'miniorange-2-factor-authentication' ) . '</h4>';
+
+			$html .= '<hr><table class="mo2f_configure_ga"><tr><td class="mo2f_google_authy_step2">';
+			$html .= '<div id="mo2f-otpMessage" class="hidden"><p id="mo2f_gauth_inline_message" class="mo2fa_display_message_frontend mo_feedback_text"></p></div>';
+
+			$html .= '<div id="mo2f_choose_app_tour" class="mo2f-choose-app-container">
+				<label for="authenticator_type"><b>' . esc_html__( '1. Choose an Authenticator App:', 'miniorange-2-factor-authentication' ) . '</b></label>
+				<select id="authenticator_type" class="mo2f-select-authenticator-app">';
 			foreach ( $auth_app_links as $auth_app => $auth_app_link ) {
 				$html .= '<option data-apptype="' . esc_attr( $auth_app ) . '" data-playstorelink="' . esc_attr( $auth_app_link['Android'] ) . '" data-appstorelink="' . esc_attr( $auth_app_link['Ios'] ) . '">' . esc_html( MoWpnsConstants::mo2f_convert_method_name( $auth_app_link['app_name'], 'cap_to_small' ) ) . '</option>';
 			}
-						$html .= '</select>
-											</div>';
+			$html .= '</select></div>';
 
-											$html .= '<h4 style="margin-left:20px;">';
-
-											$html .= esc_html__( '2. Scan the QR code from the Authenticator App.', 'miniorange-2-factor-authentication' );
-
-											$html .= '</h4>';
-											$html .= '<div style="margin-left:29px;">
-											<ol>';
-
-											$html                     .= '<div class="mo2f_gauth" id= "mo2f_google_auth_qr_code" style="background: white;" data-qrcode="' . $data . '" ></div>';
-											$html                     .= '<div class="mo2f_gauth_microsoft" id= "mo2f_microsoft_auth_qr_code" style="background:white;display:none" data-qrcode="' . esc_html( $microsoft_url ) . '" ></div>
-														</div>
-													</div>
-													<hr>
-													<div style="display: block;width: 110%;">
-														<form name="mo2f_validate_code_form" id="mo2f_validate_code_form" method="post" style="margin: 0px;">
-															<span><b>';
-															$html     .= esc_html__( 'Enter the code from authenticator app:', 'miniorange-2-factor-authentication' );
-															$html     .= '</b>
-															<input class="mo2f_table_textbox" style="width:230px;margin: 2% 0%;" id="google_auth_code" autofocus="true" required="true"
-																type="text" name="google_token" placeholder="' . esc_attr__( 'Enter OTP', 'miniorange-2-factor-authentication' ) . '"
-																style="width:95%;"/></span><br><input type="hidden" name="option" value="mo2f_inline_validation_success">
-																<input type="hidden" name="redirect_to" value="' . esc_attr( $redirect_to ) . '"/>
-																<input type="hidden" name="session_id" value="' . esc_attr( $session_id ) . '"/>
-																<input type="hidden" name="miniorange_inline_save_2factor_method_nonce" value="' . esc_attr( wp_create_nonce( 'miniorange-2-factor-inline-save-2factor-method-nonce' ) ) . '" />
-																</form>';
-																$html .= '<div style="display:flex;">';
-
-													$html .= '<button name="mo2f_validate_gauth" id="mo2f_save_otp_ga_tour" class="mo2f-save-settings-button" style="margin-left:5px;height: 10%;"/>Verify</button>';
-													$html .= '</div>';
-													$html .= '</div>';
-													$html .= '</div>';
-													$html .= '	</ol>
-										</div>';
-			if ( 'dashboard' !== $prev_screen ) {
-				$html .= '<br>' . $common_helper->mo2f_go_back_link_form( $prev_screen ) . '<br>';
+			$html .= '<div class="mo2f-auth-icons">';
+			$auth_images = array(
+				'google authenticator.png',
+				'microsoft authenticator.png',
+				'authy authenticator.png',
+				'duo authenticator.png',
+				'lastpass authenticator.png',
+				'freeotp authenticator.png',
+			);
+			foreach ( $auth_images as $img ) {
+				$html .= '<img src="' . esc_url( plugins_url( 'includes/images/' . $img, __DIR__ ) ) . '" width="34" height="34" class="mo2f-auth-icon-img" />';
 			}
-													$html .= '<br>
-									</td>';
-													$html .= '<td class="mo2f_vertical_line" ></td>
-									<td class="mo2f_google_authy_step3">';
-													$html .= '<div><a href="#mo2f_scanbarcode_a">';
-													$html .= esc_html__( 'Can\'t scan the QR code? ', 'miniorange-2-factor-authentication' );
-													$html .= '</a>';
-													$html .= '</div>';
-													$html .= '<div  id="mo2f_secret_key" style="background: white;display:none;">
-											<ol style="padding-left: 20px;">
-												<li>' .
-													esc_html__( 'Tap on Menu and select', 'miniorange-2-factor-authentication' ) . '<b>' .
-													esc_html__( ' Set up account ', 'miniorange-2-factor-authentication' ) . '</b>.
-												</li>
-												<li>' .
-													esc_html__( 'Select', 'miniorange-2-factor-authentication' ) . '<b>' .
-													esc_html__( ' Enter provided key ', 'miniorange-2-factor-authentication' ) . '</b>.
-												</li>
-												<li>' .
-													esc_html__( 'For the', 'miniorange-2-factor-authentication' ) . '<b>' .
-													esc_html__( ' Enter account name ', 'miniorange-2-factor-authentication' ) . '</b>' .
-													esc_html__( 'field, type your preferred account name.', 'miniorange-2-factor-authentication' ) . '</li>
-												<li>' .
-													esc_html__( 'For the', 'miniorange-2-factor-authentication' ) .
-													'<b>' . esc_html__( ' Enter your key ', 'miniorange-2-factor-authentication' ) . '</b>' .
-													esc_html__( 'field, type the below secret key', 'miniorange-2-factor-authentication' ) . ':
-												</li>
-						
-												<div class="mo2f_google_authy_secret_outer_div">
-													<div class="mo2f_google_authy_secret_inner_div">
-														' . esc_html( $secret ) . '
-													</div>
-													<div class="mo2f_google_authy_secret">' .
-														esc_html__( 'Spaces do not matter', 'miniorange-2-factor-authentication' ) . '.
-													</div>
-												</div>
-												<li>' .
-													esc_html__( 'Key type: make sure', 'miniorange-2-factor-authentication' ) . '<b>' .
-													esc_html__( ' Time-based ', 'miniorange-2-factor-authentication' ) . '</b>' .
-													esc_html__( ' is selected', 'miniorange-2-factor-authentication' ) . '.
-												</li>
-						
-												<li>' . esc_html__( 'Tap Add.', 'miniorange-2-factor-authentication' ) . '</li>
-											</ol>
-										</div><br>';
+			$html .= '</div>';
+
+			$html .= '<h4 class="mo2f-section-heading">' . esc_html__( '2. Scan the QR code from the Authenticator App.', 'miniorange-2-factor-authentication' ) . '</h4>';
+
+			$html .= '<div class="mo2f-qr-section"><ol>
+				<div class="mo2f_gauth" id="mo2f_google_auth_qr_code" data-qrcode="' . $data . '"></div>
+				<div class="mo2f_gauth_microsoft" id="mo2f_microsoft_auth_qr_code" data-qrcode="' . esc_html( $microsoft_url ) . '"></div>
+			</ol></div>';
+
+			$html .= '<div class="mo2f-gauth-otp-container">
+				<form name="mo2f_validate_code_form" id="mo2f_validate_code_form" method="post" class="mo2f-gauth-otp-form">
+					<span><b>' . esc_html__( '3. Enter the code from authenticator app:', 'miniorange-2-factor-authentication' ) . '</b></span><br>
+					<input class="mo2f_table_textbox mo2f-gauth-otp-input" id="google_auth_code" autofocus="true" required="true" type="text" name="google_token" placeholder="' . esc_attr__( 'Enter OTP', 'miniorange-2-factor-authentication' ) . '" />
+					<input type="hidden" name="option" value="mo2f_inline_validation_success">
+					<input type="hidden" name="redirect_to" value="' . esc_attr( $redirect_to ) . '"/>
+					<input type="hidden" name="session_id" value="' . esc_attr( $session_id ) . '"/>
+					<input type="hidden" name="miniorange_inline_save_2factor_method_nonce" value="' . esc_attr( wp_create_nonce( 'miniorange-2-factor-inline-save-2factor-method-nonce' ) ) . '" />
+				</form>
+				<div class="mo2f-gauth-otp-button-wrapper">
+					<button name="mo2f_validate_gauth" id="mo2f_save_otp_ga_tour" class="mo2f-save-settings-button mo2f-gauth-otp-button">' . esc_html__( 'Verify', 'miniorange-2-factor-authentication' ) . '</button>
+				</div>
+			</div>';
+
+			if ( 'dashboard' !== $prev_screen ) {
+				$html .= '<br>' . $common_helper->mo2f_go_back_link_form( $prev_screen );
+			}
+
+			$html .= '<br></td><td class="mo2f_vertical_line"></td><td class="mo2f_google_authy_step3">';
+
+			$html .= '<div><a href="#mo2f_scanbarcode_a" class="mo2f-gauth-link">' . esc_html__( 'Can\'t scan the QR code? ', 'miniorange-2-factor-authentication' ) . '' . MoWpnsConstants::MO2F_SVG_ARROW_ICON_DROPDOWN . '</a></div>';
+
+			$html .= '<br><div id="mo2f_secret_key" class="mo2f-secret-key-box">
+				<p class="mo2f-secret-key-text">' . esc_html__( 'Use the secret key below to set up your account in the authenticator app.', 'miniorange-2-factor-authentication' ) . '</p>
+				<div class="mo2f_google_authy_secret_outer_div mo2f-secret-outer">
+					<div class="mo2f_google_authy_secret_inner_div mo2f-secret-inner">' . esc_html( $secret ) . '</div>
+				</div>
+			</div>';
+
 			if ( 'dashboard' === $prev_screen ) {
-						$html .= '<div><a href="https://faq.miniorange.com/knowledgebase/sync-mobile-app/" target="_blank">Sync your server time with authenticator app time</a>
-						<h4 class="mo_mmp_red text-center">Current Server Time: <span id="mo2f_server_time">--</span></h4>
-						</div>';
+				$html .= '<div><a href="https://faq.miniorange.com/knowledgebase/sync-mobile-app/" target="_blank" class="mo2f-gauth-link">' . esc_html__( 'Sync your server time with authenticator app time ', 'miniorange-2-factor-authentication' ) . '' . MoWpnsConstants::MO2F_SVG_ARROW_ICON . '</a>
+					<div class="mo2f-server-time-wrapper">
+						<p class="mo2f-server-time-label">' . esc_html__( 'Current Server Time', 'miniorange-2-factor-authentication' ) . '</p>
+						<div id="mo2f_server_time" class="mo2f-server-time-box">--</div>
+					</div>
+				</div>';
 			}
-													$html .= '<div id="links_to_apps_tour" style="background-color:white;padding:5px;width:90%;">
-											<span id="links_to_apps"></span>
-										</div>';
-										$html             .= '<div class="mo2f_customize_logo">';
-			if ( 'dashboard' !== $prev_screen ) {
-				$html .= $common_helper->mo2f_customize_logo();
-			}
-										$html             .= '</div>';
-													$html .= '</td>
-								</tr>
-							</table>';
-													$html .= '</div>
-						</div>
-					</div><br>';
-			$server_time                                   = isset( $_SERVER['REQUEST_TIME'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_TIME'] ) ) * 1000 : null;
+
+			$html .= '<div id="links_to_apps_tour" class="mo2f-app-links-container"><span id="links_to_apps"></span></div>';
+			$html .= '<div class="mo2f_customize_logo">' . $common_helper->mo2f_customize_logo() . '</div>';
+
+			$html .= '</td></tr></table></div></div></div><br>';
+
+			$server_time = isset( $_SERVER['REQUEST_TIME'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_TIME'] ) ) * 1000 : null;
+
 			$html .= '<script>
-						jQuery("a[href=\"#mo2f_scanbarcode_a\"]").click(function(e){
-							jQuery("#mo2f_secret_key").slideToggle();
-						});
-						jQuery(document).ready (function () {
-							var serverTime = new Date(Number(' . esc_js( $server_time ) . '));
-							var server_time = serverTime.toLocaleTimeString();
-							var nonce = "' . esc_js( wp_create_nonce( 'mo-two-factor-ajax-nonce' ) ) . '";
-							var ajaxurl = "' . esc_url( admin_url( 'admin-ajax.php' ) ) . '";
-							var ms_url = "' . esc_js( $microsoft_url ) . '";
-							var gu_url ="' . esc_js( $data ) . '";
-							var ga_secret = "' . esc_js( $secret ) . '";
-							var session_id = "' . esc_js( $session_id ) . '";
-							var redirect_to = "' . esc_js( $redirect_to ) . '";
-							var twofaFlow = "' . esc_js( $prev_screen ) . '";
-							if ( twofaFlow == "dashboard"){
-								document.getElementById("mo2f_server_time").innerHTML = server_time;
-		                    }
-							jQuery("#google_auth_code").keypress(function(event) {
-								if (event.which === 13) {
-									event.preventDefault();
-									mo2f_validate_gauth(nonce, ga_secret);
-								}
-							});
-							jQuery("#mo2f_save_otp_ga_tour").click(function(){
-								mo2f_validate_gauth(nonce, ga_secret);
-							}); 
-							jQuery("#authenticator_type").change (function () {
-								var selectedAuthenticator = jQuery(this).children("option:selected").data("apptype");
-								var playStoreLink = jQuery(this).children("option:selected").data("playstorelink");
-								var appStoreLink = jQuery(this).children("option:selected").data("appstorelink");
-								jQuery("#links_to_apps").html("<p style=\'background-color:#e8e4e4;padding:5px;width:100%\'>" +
-									"Get the Authenticator App - <br><a href=" + playStoreLink + " target=\'_blank\'>Android Play Store</a> &emsp;" +
-									"<a href=" + appStoreLink + " target=\'_blank\'>iOS App Store&nbsp;</p>");
-								jQuery("#links_to_apps").show();
-								var data = {
-									"action"  : "mo_two_factor_ajax",
-									"mo_2f_two_factor_ajax" : "mo2f_google_auth_set_transient",
-									"auth_name"             : selectedAuthenticator,
-									"micro_soft_url"        : ms_url,
-									"g_auth_url"            : ga_url,
-									"session_id"            : session_id,
-									"nonce"                 : nonce,	
-								};
-								jQuery.post(ajaxurl, data, function(response) {
-									var prev_screen = "' . esc_js( $prev_screen ) . '";
-									if( ! response["success"] && prev_screen == "dashboard" ){
-										error_msg("Unknown error occured. Please try again!");
-									}
-								});
-								if( selectedAuthenticator == "msft_authenticator" ){
-									jQuery("#mo2f_microsoft_auth_qr_code").css("display","block");
-									jQuery("#mo2f_google_auth_qr_code").css("display","none");
-								}else{
-									jQuery("#mo2f_microsoft_auth_qr_code").css("display","none");
-									jQuery("#mo2f_google_auth_qr_code").css("display","block");
-								}
-								mo2f_show_auth_methods(selectedAuthenticator);
-							});
-							jQuery(".mo2f_gauth").qrcode({
-								"render": "image",
-								size: 175,
-								"text": jQuery(".mo2f_gauth").data("qrcode")
-							});
-							jQuery(".mo2f_gauth_microsoft").qrcode({
-								"render": "image",
-								size: 175,
-								"text": jQuery(".mo2f_gauth_microsoft").data("qrcode")
-							});
-							jQuery(this).scrollTop(0);
-							jQuery("#links_to_apps").html("<p style=\'background-color:#e8e4e4;padding:5px;\'>" +
-								"Get the Authenticator App - <br><a href=\'https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2\' target=\'_blank\'>Android Play Store</a> &emsp;" +
-								"<a href=\'http://itunes.apple.com/us/app/google-authenticator/id388497605\' target=\'_blank\'>iOS App Store&nbsp;</p>");
-							jQuery("#mo2f_change_app_name").show();
-							jQuery("#links_to_apps").show();
-							jQuery(\'#mo2f_next_step3\').css(\'display\',\'none\');	
-						}); 
-					function mo2f_show_auth_methods( selected_method ) {
-						var auth_methods = ["google_authenticator", "msft_authenticator", "authy_authenticator", "last_pass_auth", "free_otp_auth", "duo_auth" ];
-						auth_methods.forEach ( function( method ) {
-						if ( method == selected_method ) {
-								jQuery( "#mo2f_" + method + "_instructions" ) . css( "display", "block" );
-						} else {
-								jQuery( "#mo2f_" + method + "_instructions" ) . css( "display", "none" );
+				jQuery("a[href=\"#mo2f_scanbarcode_a\"]").click(function(e){
+					jQuery("#mo2f_secret_key").slideToggle();
+				});
+				jQuery(document).ready(function () {
+					var serverTime = new Date(Number(' . esc_js( $server_time ) . '));
+					var server_time = serverTime.toLocaleTimeString();
+					var nonce = "' . esc_js( wp_create_nonce( 'mo-two-factor-ajax-nonce' ) ) . '";
+					var ajaxurl = "' . esc_url( admin_url( 'admin-ajax.php' ) ) . '";
+					var ms_url = "' . esc_js( $microsoft_url ) . '";
+					var gu_url = "' . esc_js( $data ) . '";
+					var ga_secret = "' . esc_js( $secret ) . '";
+					var session_id = "' . esc_js( $session_id ) . '";
+					var redirect_to = "' . esc_js( $redirect_to ) . '";
+					var twofaFlow = "' . esc_js( $prev_screen ) . '";
+					var mo2fSvgArrowIcon = "<svg class=\'mo2f-gauth-link-icon\' xmlns=\'http://www.w3.org/2000/svg\' width=\'1em\' height=\'1em\' viewBox=\'0 0 512 512\' fill=\'currentColor\' aria-hidden=\'true\' focusable=\'false\'>" +
+					"<path d=\'M432 320h-32a16 16 0 0 0-16 16v112H80V128h112a16 16 0 0 0 16-16V80a16 16 0 0 0-16-16H64A64 64 0 0 0 0 128v320a64 64 0 0 0 64 64h320a64 64 0 0 0 64-64V336a16 16 0 0 0-16-16zm56-320H336a24 24 0 0 0-17 41l35 35L176 309a24 24 0 0 0 0 34l22 22a24 24 0 0 0 34 0l178-178 35 35a24 24 0 0 0 41-17V32a32 32 0 0 0-32-32z\'/>" +
+					"</svg>";
+		
+					if ( twofaFlow == "dashboard" ) {
+						document.getElementById("mo2f_server_time").innerHTML = server_time;
+					}
+		
+					jQuery("#google_auth_code").keypress(function(event) {
+						if (event.which === 13) {
+							event.preventDefault();
+							mo2f_validate_gauth(nonce, ga_secret);
 						}
-						} ); 
-					}
-					function mologinback(){
-						jQuery("#mo2f_backto_mo_loginform").submit();
-						jQuery("#mo2f_2fa_popup_dashboard").fadeOut();
-					}
-					</script>';
-				return $html;
+					});
+		
+					jQuery("#mo2f_save_otp_ga_tour").click(function() {
+						mo2f_validate_gauth(nonce, ga_secret);
+					});
+		
+					jQuery("#authenticator_type").change(function () {
+						var selectedAuthenticator = jQuery(this).children("option:selected").data("apptype");
+						var playStoreLink = jQuery(this).children("option:selected").data("playstorelink");
+						var appStoreLink = jQuery(this).children("option:selected").data("appstorelink");
+		
+						jQuery("#links_to_apps").html("<p class=\'mo2f-app-links-message\'>" +
+						"Get the Authenticator App - <br><a href=" + playStoreLink + " target=\'_blank\' class=\'mo2f-gauth-link\'>Android Play Store " + mo2fSvgArrowIcon + "</a> &emsp;" +
+						"<a href=" + appStoreLink + " target=\'_blank\' class=\'mo2f-gauth-link\'>iOS App Store " + mo2fSvgArrowIcon + "</a></p>");
+						jQuery("#links_to_apps").show();
+		
+						var data = {
+							"action": "mo_two_factor_ajax",
+							"mo_2f_two_factor_ajax": "mo2f_google_auth_set_transient",
+							"auth_name": selectedAuthenticator,
+							"micro_soft_url": ms_url,
+							"g_auth_url": gu_url,
+							"session_id": session_id,
+							"nonce": nonce
+						};
+		
+						jQuery.post(ajaxurl, data, function(response) {
+							if (!response["success"] && twofaFlow == "dashboard") {
+								error_msg("Unknown error occurred. Please try again!");
+							}
+						});
+		
+						if (selectedAuthenticator == "msft_authenticator") {
+							jQuery("#mo2f_microsoft_auth_qr_code").css("display", "block");
+							jQuery("#mo2f_google_auth_qr_code").css("display", "none");
+						} else {
+							jQuery("#mo2f_microsoft_auth_qr_code").css("display", "none");
+							jQuery("#mo2f_google_auth_qr_code").css("display", "block");
+						}
+						mo2f_show_auth_methods(selectedAuthenticator);
+					});
+		
+					jQuery(".mo2f_gauth").qrcode({
+						"render": "image",
+						"size": 120,
+						"text": jQuery(".mo2f_gauth").data("qrcode")
+					});
+					jQuery(".mo2f_gauth_microsoft").qrcode({
+						"render": "image",
+						"size": 120,
+						"text": jQuery(".mo2f_gauth_microsoft").data("qrcode")
+					});
+		
+					jQuery(this).scrollTop(0);
+					jQuery("#links_to_apps").html("<p class=\'mo2f-app-links-message\'>" +
+					"Get the Authenticator App - <br><a href=\'https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2\' target=\'_blank\' class=\'mo2f-gauth-link\'>Android Play Store " + mo2fSvgArrowIcon + "</a> &emsp;" +
+					"<a href=\'http://itunes.apple.com/us/app/google-authenticator/id388497605\' target=\'_blank\' class=\'mo2f-gauth-link\'>iOS App Store " + mo2fSvgArrowIcon + "</a></p>");
+					jQuery("#mo2f_change_app_name").show();
+					jQuery("#links_to_apps").show();
+					jQuery("#mo2f_next_step3").css("display", "none");
+				});
+		
+				function mo2f_show_auth_methods(selected_method) {
+					var auth_methods = ["google_authenticator", "msft_authenticator", "authy_authenticator", "last_pass_auth", "free_otp_auth", "duo_auth"];
+					auth_methods.forEach(function(method) {
+						if (method == selected_method) {
+							jQuery("#mo2f_" + method + "_instructions").css("display", "block");
+						} else {
+							jQuery("#mo2f_" + method + "_instructions").css("display", "none");
+						}
+					});
+				}
+		
+				function mologinback() {
+					jQuery("#mo2f_backto_mo_loginform").submit();
+					jQuery("#mo2f_2fa_popup_dashboard").fadeOut();
+				}
+			</script>';
+
+			return $html;
 		}
 		/**
 		 * The method is used to display notification in the plugin .
@@ -1915,13 +1965,13 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				wp_print_scripts( 'jquery' );
 				echo '<div id="twoFAtestAlertModal" class="modal" role="dialog">
 		<div class="mo2f_modal-dialog">
-			<div class="modal-content" style="width:660px !important;">
+			<div class="modal-content mo2f_dashboard_test_popup_background">
 			<div class="mo2fa_text-align-center">
 				<div class="modal-header">
 					<h2 class="mo2f_modal-title" style="color: #2271b1;">2FA Setup Successful</h2>
 					<span type="button" id="test-methods" class="modal-span-close" data-dismiss="modal">&times;</span>
 				</div>
-				<div class="mo2f_modal-body">
+				<div class="mo2f_modal-body mo2f_dashboard_test_popup_text">
 					<p style="font-size:14px;"><b>' . esc_attr( MoWpnsConstants::mo2f_convert_method_name( $mo2f_configured_2_f_a_method, 'cap_to_small' ) ) . '</b> has been set as your 2-factor authentication method.
 					<br>
 					<br>Please test the login flow once with 2nd factor in another browser or in an incognito window of the same browser to ensure you don\'t get locked out of your site.</p>
@@ -1975,10 +2025,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			wp_register_style( 'mo2f_phone', plugins_url( 'includes/css/phone.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
 			wp_print_styles( 'mo2f_phone' );
 			if ( get_site_option( 'mo2f_enable_login_popup_customization' ) ) {
-				wp_register_style( 'mo2f_custom-login-popup', plugins_url( 'includes/css/mo2f_login_popup_ui.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
-				wp_print_styles( 'mo2f_custom-login-popup' );
+				$this->mo2f_output_custom_login_popup_css();
 			}
-
 		}
 
 		/**

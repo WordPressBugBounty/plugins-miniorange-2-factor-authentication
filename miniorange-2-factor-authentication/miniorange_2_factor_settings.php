@@ -9,7 +9,7 @@
  * Plugin Name: miniOrange 2 Factor Authentication
  * Plugin URI: https://miniorange.com
  * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. We Support Google/Authy/LastPass/Microsoft Authenticator, QR Code, Push Notification, Soft Token and Security Questions(KBA) for 3 User in the free version of the plugin.
- * Version: 6.0.9
+ * Version: 6.1.0
  * Author: miniOrange
  * Author URI: https://miniorange.com
  * Text Domain: miniorange-2-factor-authentication
@@ -44,7 +44,7 @@ require dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
 require_once dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
 define( 'MO_HOST_NAME', 'https://login.xecurify.com' );
-define( 'MO2F_VERSION', '6.0.9' );
+define( 'MO2F_VERSION', '6.1.0' );
 define( 'MO2F_PLUGIN_URL', ( plugin_dir_url( __FILE__ ) ) );
 define( 'MO2F_TEST_MODE', false );
 define( 'MO2F_IS_ONPREM', get_option( 'is_onprem', 1 ) );
@@ -101,7 +101,6 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			add_action( 'admin_init', array( $this, 'mo2f_migrate_user_details' ) );
 			add_action( 'admin_init', array( $this, 'mo2f_drop_wpns_attack_logs_and_network_email_sent_audit' ) );
 		}
-
 
 		/**
 		 * Shows error messages in the user profile
@@ -230,7 +229,6 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			if ( ! get_site_option( 'mo2f_wpns_donot_show_low_sms_notice' ) && ( get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' ) <= 4 ) && ( $day_sms >= 1 ) && 0 !== $count ) {
 				echo wp_kses_post( MoWpnsMessages::show_message( 'LOW_SMS_TRANSACTIONS' ) );
 			}
-
 		}
 
 		/**
