@@ -102,7 +102,7 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 		 */
 		public function mo2f_prompt_2fa_setup_dashboard() {
 			global $mo2fdb_queries;
-			$current_user = wp_get_current_user();
+			$current_user  = wp_get_current_user();
 			$common_helper = new Mo2f_Common_Helper();
 			$gauth_name    = get_option( 'mo2f_google_appname', DEFAULT_GOOGLE_APPNAME );
 			$gauth_obj     = new Google_auth_onpremise();
@@ -309,8 +309,9 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 				if ( MoWpnsConstants::SUCCESS_RESPONSE === $google_response['status'] ) {
 					$response = $this->mo2f_update_user_details( $user, $email );
 					$this->mo2f_process_update_details_response( $response, $user, $ga_secret );
+				} else {
+					wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_OTP ) );
 				}
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_OTP ) );
 			}
 			wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::ERROR_WHILE_VALIDATING_OTP ) );
 		}
@@ -397,7 +398,7 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_login_validate( $otp_token, $redirect_to, $session_id_encrypt ) {
-			global $mo2f_onprem_cloud_obj, $mo2fdb_queries;
+			global $mo2f_onprem_cloud_obj, $mo2fdb_queries, $mo_wpns_utility;
 			$user_id = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
 			if ( ! $user_id && is_user_logged_in() ) {
 				$user_id = wp_get_current_user()->ID;
@@ -409,17 +410,12 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 			if ( 0 === strcasecmp( $content['status'], 'SUCCESS' ) ) {
 				TwoFAMoSessions::add_session_var( 'mo2f_attempts_before_redirect', 3 );
 				wp_send_json_success( 'VALIDATED_SUCCESS' );
+			} elseif ( 'ALREADY_USED' === $content['status'] ) {
+				$mo_wpns_utility->mo2f_handle_attempt_validation( $attempts, 'ALREADY_USED' );
 			} else {
-				if ( $attempts > 1 || 'disabled' === $attempts ) {
-					TwoFAMoSessions::add_session_var( 'mo2f_attempts_before_redirect', $attempts - 1 );
-					wp_send_json_error( 'INVALID_OTP' );
-				} else {
-					TwoFAMoSessions::unset_session( 'mo2f_attempts_before_redirect' );
-					wp_send_json_error( 'LIMIT_EXCEEDED' );
-				}
+				$mo_wpns_utility->mo2f_handle_attempt_validation( $attempts, 'INVALID_OTP' );
 			}
 			return $content;
 		}
-
 	}
 }

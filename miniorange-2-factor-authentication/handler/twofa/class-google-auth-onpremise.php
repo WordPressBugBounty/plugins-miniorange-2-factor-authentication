@@ -168,11 +168,15 @@ if ( ! class_exists( 'Google_Auth_Onpremise' ) ) {
 		 * @param string  $current_time_slice Current time.
 		 * @return string
 		 */
-		public function mo2f_verify_code( $secret, $code, $discrepancy = 3, $current_time_slice = null ) {
-			$response = array( 'status' => 'false' );
+		public function mo2f_verify_code( $secret, $code, $discrepancy = 1, $current_time_slice = null ) {
+			$used_codes = (array) get_transient( 'mo2f_google_auth_used_otp_' . $secret );
+			if ( ! is_user_logged_in() && in_array( $code, $used_codes, true ) ) {
+				return wp_json_encode( array( 'status' => 'ALREADY_USED' ) );
+			}
 			if ( null === $current_time_slice ) {
 				$current_time_slice = floor( time() / 30 );
 			}
+			$response = array( 'status' => 'false' );
 			if ( strlen( $code ) !== 6 ) {
 				return wp_json_encode( $response );
 			}
@@ -180,7 +184,9 @@ if ( ! class_exists( 'Google_Auth_Onpremise' ) ) {
 			for ( $i = -$discrepancy; $i <= $discrepancy; ++$i ) {
 				$calculated_code = $this->mo2f_get_code( $secret, $current_time_slice + $i );
 				if ( $this->mo2f_timing_safe_equals( $calculated_code, $code ) ) {
+					array_push( $used_codes, $code );
 					update_site_option( 'mo2f_time_slice', $i );
+					set_transient( 'mo2f_google_auth_used_otp_' . $secret, $used_codes, 60 );
 					$response['status'] = 'SUCCESS';
 					return wp_json_encode( $response );
 				}

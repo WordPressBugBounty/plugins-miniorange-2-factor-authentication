@@ -1658,7 +1658,11 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 						attemptleft = attemptleft - 1;
 						var span =   document.getElementById("mo2f_attempt_span");
 						span.textContent = attemptleft;
-						mo2f_show_message("Invalid OTP. Please enter the correct OTP.");
+						if(response.data == "ALREADY_USED"){
+							mo2f_show_message("' . __( 'The OTP has already been used. Please enter new OTP.', 'miniorange-2-factor-authentication' ) . '");
+						} else{
+							mo2f_show_message("' . __( 'Invalid OTP. Please enter the correct OTP.', 'miniorange-2-factor-authentication' ) . '");
+						}
 					}
 
 				});

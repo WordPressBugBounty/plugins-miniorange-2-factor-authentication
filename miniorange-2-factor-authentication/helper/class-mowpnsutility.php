@@ -334,7 +334,6 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		public function wp_mail_send_notification( $to_email, $subject, $content ) {
 			$headers = array( 'Content-Type: text/html; charset=UTF-8' );
 			wp_mail( $to_email, $subject, $content, $headers );
-
 		}
 
 		/**
@@ -386,6 +385,23 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 				'email_transactions' => $email_transactions,
 				'sms_transactions'   => $sms_transactions,
 			);
+		}
+
+		/**
+		 * Handle attempt validation logic.
+		 *
+		 * @param int|string $attempts Number of attempts remaining.
+		 * @param string     $error_type Error type to send.
+		 * @return void
+		 */
+		public function mo2f_handle_attempt_validation( $attempts, $error_type ) {
+			if ( is_numeric( $attempts ) && $attempts > 1 ) {
+				TwoFAMoSessions::add_session_var( 'mo2f_attempts_before_redirect', $attempts - 1 );
+				wp_send_json_error( $error_type );
+			} else {
+				TwoFAMoSessions::unset_session( 'mo2f_attempts_before_redirect' );
+				wp_send_json_error( 'LIMIT_EXCEEDED' );
+			}
 		}
 	}
 }

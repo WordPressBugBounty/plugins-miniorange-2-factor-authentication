@@ -192,7 +192,7 @@ if ( current_user_can( 'administrator' ) ) {
 				<div class="my-mo-3 mr-mo-4"><input type="checkbox" name="mo2f_enabled_backup_method" value="mo2f_back_up_codes" <?php echo in_array( 'mo2f_back_up_codes', $enabled_backup_methods, true ) ? 'checked' : ''; ?>/><?php esc_html_e( 'Backup Codes', 'miniorange-2-factor-authentication' ); ?></div>
 				<div class="my-mo-3 mr-mo-4"><input type="checkbox" name="mo2f_enabled_backup_method" value="mo2f_reconfig_link_show" <?php echo in_array( 'mo2f_reconfig_link_show', $enabled_backup_methods, true ) ? 'checked' : ''; ?>/><?php esc_html_e( 'Account Recovery Via Email Verification', 'miniorange-2-factor-authentication' ); ?></div>
 				<div class="my-mo-3 mr-mo-4 mo2f-basic-plan"><input type="checkbox" name="mo2f_enabled_backup_method" value="backup_kba" <?php echo in_array( 'backup_kba', $enabled_backup_methods, true ) ? 'checked' : ''; ?>/><?php esc_html_e( 'Security Questions (KBA)', 'miniorange-2-factor-authentication' ); ?>
-					<?php echo Mo2f_Common_Helper::mo2f_check_plan('basic',MoWpnsConstants::MO2F_PREMIUM_3PLAN_NAME);?>
+					<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'basic', MoWpnsConstants::MO2F_PREMIUM_3PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
 				</div>
 			</div>
 		</div>

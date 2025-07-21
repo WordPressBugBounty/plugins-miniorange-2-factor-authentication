@@ -7,18 +7,18 @@
  Requires at least: 3.0.1
  Tested up to: 6.8
  Requires PHP: 7.2.24
- Stable tag: 6.1.0
+ Stable tag: 6.1.1
  License: Expat
  License URI: https://plugins.miniorange.com/mit-license
 
 
- Two-Factor Authentication (2FA) secures WordPress login and registration forms with TOTP apps, OTP via SMS and Email verification for all users.
+ Secure WordPress logins with Two-Factor Authentication (2FA). Use MFA, TOTP, OTP via SMS, Email, and WhatsApp 2FA for extra protection.
 
 
  == Description ==
 
 
- [Features](https://plugins.miniorange.com/2-factor-authentication-for-wordpress-wp-2fa) | [Setup Guide](https://plugins.miniorange.com/step-by-step-guide-for-wordpress-2-factor-authentication) | [Documentation](https://plugins.miniorange.com/wordpress-two-factor-authentication-setup-guides) | [Integrations](https://plugins.miniorange.com/2-factor-authentication-for-wordpress-wp-2fa#log_in_integrations) | [Contact Us](https://www.miniorange.com/contact)
+ [Features](https://plugins.miniorange.com/2-factor-authentication-for-wordpress-wp-2fa#key-features) | [Setup Guide](https://plugins.miniorange.com/step-by-step-guide-for-wordpress-2-factor-authentication) | [Documentation](https://plugins.miniorange.com/wordpress-two-factor-authentication-setup-guides)
  
   == Secure your WordPress site with Two-Factor Authentication (2FA) plugin  ==
 
@@ -83,7 +83,7 @@ With the premium **Two Factor Authentication** plugin, you gain access to more v
 
 >+ **[2FA for All Users & Roles:](https://plugins.miniorange.com/configure-2fa-settings-quick-setup-tab-wordpress#step1)** Enforce 2FA across your entire website or apply it selectively to specific user roles or individual users.
 >+ **Unlimited Email OTP Transactions:** Send unlimited email-based one-time passcodes—ideal for large-scale user bases and frequent login environments.
->+ **Role-Based 2FA Policies:** Create different 2FA rules for each user role—require stronger authentication for admins while offering simpler methods for customers.
+>+ **[Role-Based 2FA Policies:](https://plugins.miniorange.com/configure-2fa-settings-quick-setup-tab-wordpress#step1)** Create different 2FA rules for each user role—require stronger authentication for admins while offering simpler methods for customers.
 >+ **[User-Specific 2FA Management:](https://plugins.miniorange.com/configure-2fa-settings-quick-setup-tab-wordpress#step2)** Enable or disable 2FA for individual users directly from their profile or admin settings.
 >+ **[Backup Login Options:](https://plugins.miniorange.com/configure-2fa-settings-quick-setup-tab-wordpress#step3)** Allow users to log in using alternate methods like security questions, email-based OTP, or backup codes when the default method is inaccessible.
 >+ **Custom Redirect After 2FA:** Send users to a specific page (dashboard, custom welcome, etc.) after completing 2FA authentication.
@@ -100,7 +100,7 @@ With the premium **Two Factor Authentication** plugin, you gain access to more v
 >+ **[Passwordless Login:](https://plugins.miniorange.com/how-to-set-passwordless-login-as-a-login-screen-options-wordpress-2fa)** Let users log in using a one-time passcode—no password required—while maintaining strong account security.
 >+ **[Support for Custom & Third-Party Login Forms:](https://plugins.miniorange.com/how-to-set-up-2fa-on-custom-login-form-wordpress)** Works seamlessly with plugins like UserPro, Login with Ajax, Theme My Login, and more.
 >+ **Custom SMS Gateway Support:** Integrate your own SMS gateway to send OTPs, giving you full control over delivery, cost, and sender branding.
->+ **Remember IP to Bypass 2FA:** Mark trusted IP addresses to skip 2FA prompts and streamline login for internal users or safe environments.
+>+ **[Remember IP to Bypass 2FA:](https://plugins.miniorange.com/setup-remember-whitelist-ip-2fa-wordpress)** Mark trusted IP addresses to skip 2FA prompts and streamline login for internal users or safe environments.
 >+ **Prevent Credential Sharing:** Restrict multiple logins from different IPs or devices, helping you enforce strict account access policies and stop sharing.
 >+ **Custom Form Integration:** Add 2FA to any custom login form—even those not on the supported list—through flexible integration and custom support.
 
@@ -113,10 +113,10 @@ With the premium **Two Factor Authentication** plugin, you gain access to more v
 >> Search for the miniOrange Two-Factor Authentication plugin on the WordPress marketplace, then install and activate it from your dashboard.
 
  = Step 2. Enable 2FA from Form Settings Tab =
->> Enable 2FA for the quick setup form, choose user roles or backup login methods, enable 2FA, and save your settings.
+>> Enable 2FA from the quick setup tab, choose user roles, and save your settings.
 
  = Configure 2FA Method of Your Choice =
->> Select and set up your preferred 2FA authentication method, such as Google Authenticator, OTP over SMS, or WhatsApp 2FA, from the available options.
+>> Select and set up your preferred [2FA authentication method](https://plugins.miniorange.com/step-by-step-guide-for-wordpress-2-factor-authentication#step3), such as Google Authenticator, OTP over SMS, or WhatsApp 2FA, from the available options while logging into the form for first time.
 
  == Built to Integrate Seamlessly ==
 
@@ -224,7 +224,6 @@ However, most features work even without registration, including TOTP apps like 
 
  == Screenshots ==
 
-
  1. 2FA setup for Admins
  2. Google Authenticator Setup as Two-Step Authentication
  3. miniOrange User Account Details
@@ -235,6 +234,9 @@ However, most features work even without registration, including TOTP apps like 
 
 
  == Changelog ==
+
+ = 6.1.1 =
+ * Vulnerability Fixes - Session Hijacking & Replay Attack (Google Authentication)
 
  = 6.1.0 =
  * UI/UX Improvements - 2FA popups
@@ -420,6 +422,9 @@ However, most features work even without registration, including TOTP apps like 
 
 
  == Upgrade Notice ==
+
+ = 6.1.1 =
+ * Vulnerability Fixes - Session Hijacking & Replay Attack (Google Authentication)
 
  = 6.1.0 =
  * UI/UX Improvements - 2FA popups

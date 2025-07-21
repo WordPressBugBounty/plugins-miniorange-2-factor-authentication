@@ -237,6 +237,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_login_validate( $otp_token, $redirect_to, $session_id_encrypt ) {
+			global $mo_wpns_utility;
 			$user_id = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
 			if ( ! $user_id && is_user_logged_in() ) {
 				$user    = wp_get_current_user();
@@ -250,13 +251,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 				TwoFAMoSessions::add_session_var( 'mo2f_attempts_before_redirect', 3 );
 				wp_send_json_success( 'VALIDATED_SUCCESS' );
 			} else {
-				if ( $attempts > 1 || 'disabled' === $attempts ) {
-					TwoFAMoSessions::add_session_var( 'mo2f_attempts_before_redirect', $attempts - 1 );
-					wp_send_json_error( 'INVALID_OTP' );
-				} else {
-					TwoFAMoSessions::unset_session( 'mo2f_attempts_before_redirect' );
-					wp_send_json_error( 'LIMIT_EXCEEDED' );
-				}
+				$mo_wpns_utility->mo2f_handle_attempt_validation( $attempts, 'INVALID_OTP' );
 			}
 		}
 
