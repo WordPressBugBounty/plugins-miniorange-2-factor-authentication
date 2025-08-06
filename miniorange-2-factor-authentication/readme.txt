@@ -7,7 +7,7 @@
  Requires at least: 3.0.1
  Tested up to: 6.8
  Requires PHP: 7.2.24
- Stable tag: 6.1.1
+ Stable tag: 6.1.2
  License: Expat
  License URI: https://plugins.miniorange.com/mit-license
 
@@ -235,6 +235,9 @@ However, most features work even without registration, including TOTP apps like 
 
  == Changelog ==
 
+ = 6.1.2 =
+ * Vulnerability Fixes - Broken Access Control
+
  = 6.1.1 =
  * Vulnerability Fixes - Session Hijacking & Replay Attack (Google Authentication)
 
@@ -422,6 +425,9 @@ However, most features work even without registration, including TOTP apps like 
 
 
  == Upgrade Notice ==
+
+ = 6.1.2 =
+ * Vulnerability Fixes - Broken Access Control
 
  = 6.1.1 =
  * Vulnerability Fixes - Session Hijacking & Replay Attack (Google Authentication)

@@ -45,35 +45,34 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 		 */
 		public function mo_two_factor_ajax() {
 			$GLOBALS['mo2f_is_ajax_request'] = true;
-			if ( ! check_ajax_referer( 'mo-two-factor-ajax-nonce', 'nonce', false ) ) {
-				wp_send_json_error( 'class-mo2f-ajax' );
-			}
-			$option = isset( $_POST['mo_2f_two_factor_ajax'] ) ? sanitize_text_field( wp_unslash( $_POST['mo_2f_two_factor_ajax'] ) ) : '';
-			switch ( $option ) {
-				case 'mo2f_miniorange_sign_in':
-					$this->mo2f_miniorange_sign_in( $_POST );
-					break;
-				case 'mo2f_miniorange_sign_up':
-					$this->mo2f_miniorange_sign_up( $_POST );
-					break;
-				case 'mo2f_remove_miniorange_account':
-					$this->mo2f_remove_miniorange_account();
-					break;
-				case 'mo2f_check_transactions':
-					$this->mo2f_check_transactions();
-					break;
-				case 'mo2f_handle_support_form':
-					$this->mo2f_handle_support_form( $_POST );
-					break;
-				case 'mo2f_show_confirmation_popup':
-					$this->mo2f_show_confirmation_popup( $_POST );
-					break;
-				case 'mo2f_unblock_user':
-					$this->mo2f_unblock_user( $_POST );
-					break;
-				case 'mo2f_delete_log_file':
-					$this->mo2f_delete_log_file();
-					break;
+			if ( check_ajax_referer( 'mo-two-factor-ajax-nonce', 'nonce', false ) && current_user_can( 'manage_options' ) ) {
+				$option = isset( $_POST['mo_2f_two_factor_ajax'] ) ? sanitize_text_field( wp_unslash( $_POST['mo_2f_two_factor_ajax'] ) ) : '';
+				switch ( $option ) {
+					case 'mo2f_miniorange_sign_in':
+						$this->mo2f_miniorange_sign_in( $_POST );
+						break;
+					case 'mo2f_miniorange_sign_up':
+						$this->mo2f_miniorange_sign_up( $_POST );
+						break;
+					case 'mo2f_remove_miniorange_account':
+						$this->mo2f_remove_miniorange_account();
+						break;
+					case 'mo2f_check_transactions':
+						$this->mo2f_check_transactions();
+						break;
+					case 'mo2f_handle_support_form':
+						$this->mo2f_handle_support_form( $_POST );
+						break;
+					case 'mo2f_show_confirmation_popup':
+						$this->mo2f_show_confirmation_popup( $_POST );
+						break;
+					case 'mo2f_unblock_user':
+						$this->mo2f_unblock_user( $_POST );
+						break;
+					case 'mo2f_delete_log_file':
+						$this->mo2f_delete_log_file();
+						break;
+				}
 			}
 		}
 
