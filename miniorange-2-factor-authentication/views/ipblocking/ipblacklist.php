@@ -126,7 +126,9 @@ use TwoFA\Helper\MoWpnsHandler;
 			};
 		jQuery.post(ajaxurl, data, function(response) {
 			var response = response.replace(/\s+/g,' ').trim();
-			if(response == 'empty IP')
+			if (response === 'ajax-error') {
+				error_msg("Unknown error occurred while blocking IP.");
+			} else if (response == 'empty IP')
 			{
 				error_msg("IP can not be blank.");
 			} else if (response == 'already blocked') {
@@ -136,7 +138,6 @@ use TwoFA\Helper\MoWpnsHandler;
 			} else if (response == "IP_IN_WHITELISTED") {
 				error_msg("IP is whitelisted can not be blocked.");
 			} else {
-				console.log('asdfsfsfsfsdf');
 				refreshblocktable(response);
 				success_msg("IP Blocked Sucessfully.");
 			}
@@ -158,7 +159,10 @@ use TwoFA\Helper\MoWpnsHandler;
 			};
 			jQuery.post(ajaxurl, data, function(response) {
 				var response = response.replace(/\s+/g,' ').trim();
-				if(response == 'EMPTY IP')
+				if (response === 'ajax-error') {
+					error_msg("Unknown error occurred while whitelisting IP.");
+				}
+				else if(response == 'EMPTY IP')
 				{
 					error_msg("IP can not be empty.");
 				}
@@ -189,21 +193,23 @@ use TwoFA\Helper\MoWpnsHandler;
 		jQuery("#resultsIPLookup").slideDown(400);
 		var data = {
 			'action': 'mo2f_ip_black_list_ajax',
-			'option': 'wpns_ip_lookup',
+			'option': 'mo_wpns_ip_lookup',
 			'nonce': nonce,
 			'IP': ipAddress
 		};
 		jQuery.post(ajaxurl, data, function(response) {
-			if (response === 'INVALID_IP_FORMAT') {
+			if (response === 'ajax-error') {
+				error_msg("Unknown error occurred while looking up IP.");
+			} else if (response === 'INVALID_IP_FORMAT') {
 				jQuery("#resultsIPLookup").empty();
 				error_msg("IP did not match required format.");
 			} else if (response === 'INVALID_IP') {
 				jQuery("#resultsIPLookup").empty();
 				error_msg("IP entered is invalid.");
-			} else if (response.geoplugin_status === 404) {
+			} else if (response === 'INVALID_RESPONSE') {
 				jQuery("#resultsIPLookup").empty();
 				success_msg(" IP details not found.");
-			} else if (response.geoplugin_status === 200 || response.geoplugin_status === 206) {
+			} else if (response.status === 'SUCCESS') {
 				jQuery('#resultsIPLookup').empty();
 				jQuery('#resultsIPLookup').append(response.ipDetails);
 			}
@@ -228,9 +234,9 @@ use TwoFA\Helper\MoWpnsHandler;
 			};
 			jQuery.post(ajaxurl, data, function(response) {
 				var response = response.replace(/\s+/g,' ').trim();
-				if(response=="UNKNOWN_ERROR")
+				if(response=="ajax-error")
 				{
-					error_msg(" Unknow Error occured while unblocking IP.");
+					error_msg("Unknown error occurred while unblocking IP.");
 				}
 				else
 				{
@@ -251,8 +257,8 @@ use TwoFA\Helper\MoWpnsHandler;
 			};
 			jQuery.post(ajaxurl, data, function(response) {
 				var response = response.replace(/\s+/g, ' ').trim();
-				if (response === 'UNKNOWN_ERROR') {
-					error_msg(" Unknow Error occured while removing IP from Whitelist.");
+				if (response === 'ajax-error') {
+					error_msg("Unknown error occurred while removing IP from Whitelist.");
 				} else {
 					refreshWhiteListTable(response);
 					success_msg("IP removed from Whitelist.");

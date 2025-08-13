@@ -71,8 +71,8 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 		 */
 		public function mo2f_ip_black_list_ajax() {
 
-			if ( ! check_ajax_referer( 'mo2f-ip-black-list-ajax-nonce', 'nonce', false ) ) {
-				wp_send_json_error( 'class-wpns-ajax' );
+			if ( ! check_ajax_referer( 'mo2f-ip-black-list-ajax-nonce', 'nonce', false ) || ! current_user_can( 'manage_options' ) ) {
+				wp_send_json( 'ajax-error' );
 			}
 			$GLOBALS['mo2f_is_ajax_request'] = true;
 			$option                          = isset( $_POST['option'] ) ? sanitize_text_field( wp_unslash( $_POST['option'] ) ) : '';
@@ -83,8 +83,8 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 				case 'mo_wpns_whitelist_ip':
 					$this->wpns_handle_whitelist_ip( $_POST );
 					break;
-				case 'wpns_ip_lookup':
-					$this->wpns_ip_lookup();
+				case 'mo_wpns_ip_lookup':
+					$this->mo_wpns_ip_lookup( $_POST );
 					break;
 				case 'mo_wpns_unblock_ip':
 					$this->wpns_handle_unblock_ip( $_POST );
@@ -212,62 +212,54 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 		/**
 		 * Creates ip look up template.
 		 *
+		 * @param string $post Post data.
 		 * @return void
 		 */
-		public function wpns_ip_lookup() {
-
-			if ( ! check_ajax_referer( 'mo2f-ip-black-list-ajax-nonce', 'nonce', false ) ) {
-				wp_send_json_error( 'class-wpns-ajax' );
-
-			} else {
-				$ip = isset( $_POST['IP'] ) ? sanitize_text_field( wp_unslash( $_POST['IP'] ) ) : '';
-				if ( ! preg_match( '/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\z/', $ip ) ) {
-					wp_send_json_error( 'INVALID_IP_FORMAT' );
-
-				} elseif ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
-					wp_send_json_error( 'INVALID_IP' );
-
-				}
-				$result = wp_remote_get( 'http://www.geoplugin.net/json.gp?ip=' . $ip );
-
-				if ( ! is_wp_error( $result ) ) {
-					$result = json_decode( wp_remote_retrieve_body( $result ), true );
+		public function mo_wpns_ip_lookup( $post ) {
+			$ip = isset( $post['IP'] ) ? sanitize_text_field( wp_unslash( $post['IP'] ) ) : '';
+			if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) === false ) {
+				wp_send_json( 'INVALID_IP' );
+			}
+			$result = wp_remote_get( 'https://ipinfo.io/' . $ip . '/json' );
+			if ( ! is_wp_error( $result ) ) {
+				$result = json_decode( wp_remote_retrieve_body( $result ), true );
+			}
+		
+			if ( json_last_error() === JSON_ERROR_NONE ) {
+				// Validate JSON response before processing.
+				if ( ! is_array( $result ) || ! isset( $result['ip'] ) ) {
+					wp_send_json( 'INVALID_RESPONSE' );
 				}
 
+				$hostname = gethostbyaddr( $result['ip'] );
 				try {
-					$timeoffset = timezone_offset_get( new DateTimeZone( $result['geoplugin_timezone'] ), new DateTime( 'now' ) );
+					$timeoffset = timezone_offset_get( new DateTimeZone( $result['timezone'] ), new DateTime( 'now' ) );
 					$timeoffset = $timeoffset / 3600;
-
 				} catch ( Exception $e ) {
-					$result['geoplugin_timezone'] = '';
-					$timeoffset                   = '';
+					$result['timezone'] = '';
+					$timeoffset         = '';
 				}
-				$ip_look_up_template = MoWpnsConstants::IP_LOOKUP_TEMPLATE;
-				if ( $result['geoplugin_request'] === $ip ) {
-					$ip_parameters = array(
-						'status'           => 'geoplugin_status',
-						'ip'               => 'geoplugin_request',
-						'region'           => 'geoplugin_region',
-						'country'          => 'geoplugin_countryName',
-						'city'             => 'geoplugin_city',
-						'continent'        => 'geoplugin_continentName',
-						'latitude'         => 'geoplugin_latitude',
-						'longitude'        => 'geoplugin_longitude',
-						'timezone'         => 'geoplugin_timezone',
-						'curreny_code'     => 'geoplugin_currencyCode',
-						'curreny_symbol'   => 'geoplugin_currencySymbol',
-						'per_dollar_value' => 'geoplugin_currencyConverter',
-						'offset'           => $timeoffset,
-					);
 
-					foreach ( $ip_parameters as $parameter => $value ) {
-						$ip_look_up_template = str_replace( '{{' . $parameter . '}}', $result[ $value ], $ip_look_up_template );
+				$ip_look_up_template = MoWpnsConstants::IP_LOOKUP_TEMPLATE;
+				if ( $result['ip'] === $ip ) {
+					// Sanitize all data before template replacement.
+					$sanitized_data = $this->mo2f_build_ip_lookup_sanitized_data( $result, $hostname, $timeoffset );
+
+					// Replace placeholders with sanitized data.
+					foreach ( $sanitized_data as $placeholder => $value ) {
+						$ip_look_up_template = str_replace( $placeholder, $value, $ip_look_up_template );
 					}
-					$result['ipDetails'] = $ip_look_up_template;
+
+					// Apply additional HTML sanitization to the entire template.
+					$allowed_html        = $this->mo2f_get_ip_lookup_allowed_html();
+					$result['status']    = 'SUCCESS';
+					$result['ipDetails'] = wp_kses( $ip_look_up_template, $allowed_html );
 				} else {
-					$result['ipDetails']['status'] = 'ERROR';
+					$result['ipDetails'] = array( 'status' => 'ERROR' );
 				}
 				wp_send_json( $result );
+			} else {
+				wp_send_json( 'INVALID_RESPONSE' );
 			}
 		}
 
@@ -398,6 +390,47 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 			if ( 0 === $flag ) {
 				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::IP_BLOCK_RANGE_ADDED ), 'SUCCESS' );
 			}
+		}
+
+		/**
+		 * Build sanitized placeholder data for IP lookup template replacement.
+		 *
+		 * @param array  $lookup_result Lookup result from API.
+		 * @param string $hostname      Resolved hostname.
+		 * @param string $timeoffset    Time offset hours.
+		 * @return array
+		 */
+		private function mo2f_build_ip_lookup_sanitized_data( $lookup_result, $hostname, $timeoffset ) {
+			$location_parts = explode( ',', $lookup_result['loc'] ?? '' );
+			$latitude       = isset( $location_parts[0] ) ? $location_parts[0] : '';
+			$longitude      = isset( $location_parts[1] ) ? $location_parts[1] : '';
+			return array(
+				'{{status}}'    => esc_html( 'Success' ),
+				'{{ip}}'        => esc_html( isset( $lookup_result['ip'] ) ? $lookup_result['ip'] : '' ),
+				'{{region}}'    => esc_html( isset( $lookup_result['region'] ) ? $lookup_result['region'] : '' ),
+				'{{country}}'   => esc_html( isset( $lookup_result['country'] ) ? $lookup_result['country'] : '' ),
+				'{{city}}'      => esc_html( isset( $lookup_result['city'] ) ? $lookup_result['city'] : '' ),
+				'{{latitude}}'  => esc_html( $latitude ),
+				'{{longitude}}' => esc_html( $longitude ),
+				'{{timezone}}'  => esc_html( isset( $lookup_result['timezone'] ) ? $lookup_result['timezone'] : '' ),
+				'{{hostname}}'  => esc_html( isset( $lookup_result['hostname'] ) ? $lookup_result['hostname'] : ( isset( $hostname ) ? $hostname : '' ) ),
+				'{{offset}}'    => esc_html( isset( $timeoffset ) ? $timeoffset : '' ),
+			);
+		}
+
+		/**
+		 * Allowed HTML tags and attributes for rendering the IP lookup template.
+		 *
+		 * @return array
+		 */
+		private function mo2f_get_ip_lookup_allowed_html() {
+			return array(
+				'span'  => array( 'class' => array() ),
+				'table' => array( 'class' => array() ),
+				'tr'    => array(),
+				'td'    => array( 'class' => array() ),
+				'hr'    => array(),
+			);
 		}
 
 	}

@@ -51,10 +51,6 @@ if ( ! class_exists( 'AjaxHandler' ) ) {
 				$ip     = isset( $_GET['ip'] ) ? filter_var( wp_unslash( $_GET['ip'] ), FILTER_VALIDATE_IP ) : null;
 
 				switch ( $option ) {
-					case 'iplookup':
-						$this->lookup_i_p( $ip );
-						break;
-
 					case 'whitelistself':
 						$this->whitelist_self();
 						break;
@@ -92,52 +88,6 @@ if ( ! class_exists( 'AjaxHandler' ) ) {
 						break;
 				}
 			}
-		}
-
-		/**
-		 * Updates the lookup ip template for a given ip.
-		 *
-		 * @param string $ip The ip adress for which the lookup ip template need to be updated.
-		 * @return void
-		 */
-		private function lookup_i_p( $ip ) {
-			$result = wp_remote_get( 'http://www.geoplugin.net/json.gp?ip=' . $ip );
-			if ( ! is_wp_error( $result ) ) {
-				$result = wp_remote_retrieve_body( $result );
-			}
-
-			$hostname = gethostbyaddr( $result['geoplugin_request'] );
-			try {
-				$timeoffset = timezone_offset_get( new DateTimeZone( $result['geoplugin_timezone'] ), new DateTime( 'now' ) );
-				$timeoffset = $timeoffset / 3600;
-			} catch ( Exception $e ) {
-				$result['geoplugin_timezone'] = '';
-				$timeoffset                   = '';
-			}
-
-			$ip_look_up_template = MoWpnsConstants::IP_LOOKUP_TEMPLATE;
-			if ( $result['geoplugin_request'] === $ip ) {
-				$ip_look_up_template = str_replace( '{{status}}', $result['geoplugin_status'], $ip_look_up_template );
-				$ip_look_up_template = str_replace( '{{ip}}', $result['geoplugin_request'], $ip_look_up_template );
-				$ip_look_up_template = str_replace( '{{region}}', $result['geoplugin_region'], $ip_look_up_template );
-				$ip_look_up_template = str_replace( '{{country}}', $result['geoplugin_countryName'], $ip_look_up_template );
-				$ip_look_up_template = str_replace( '{{city}}', $result['geoplugin_city'], $ip_look_up_template );
-				$ip_look_up_template = str_replace( '{{continent}}', $result['geoplugin_continentName'], $ip_look_up_template );
-				$ip_look_up_template = str_replace( '{{latitude}}', $result['geoplugin_latitude'], $ip_look_up_template );
-				$ip_look_up_template = str_replace( '{{longitude}}', $result['geoplugin_longitude'], $ip_look_up_template );
-				$ip_look_up_template = str_replace( '{{timezone}}', $result['geoplugin_timezone'], $ip_look_up_template );
-				$ip_look_up_template = str_replace( '{{curreny_code}}', $result['geoplugin_currencyCode'], $ip_look_up_template );
-				$ip_look_up_template = str_replace( '{{curreny_symbol}}', $result['geoplugin_currencySymbol'], $ip_look_up_template );
-				$ip_look_up_template = str_replace( '{{per_dollar_value}}', $result['geoplugin_currencyConverter'], $ip_look_up_template );
-				$ip_look_up_template = str_replace( '{{hostname}}', $hostname, $ip_look_up_template );
-				$ip_look_up_template = str_replace( '{{offset}}', $timeoffset, $ip_look_up_template );
-
-				$result['ipDetails'] = $ip_look_up_template;
-			} else {
-				$result['ipDetails']['status'] = 'ERROR';
-			}
-
-			wp_send_json( $result );
 		}
 
 		/**
@@ -231,5 +181,6 @@ if ( ! class_exists( 'AjaxHandler' ) ) {
 			update_user_meta( $user_id, 'donot_show_backup_code_notice', 1 );
 			wp_send_json_success();
 		}
-	}new AjaxHandler();
+	}
+	new AjaxHandler();
 }
