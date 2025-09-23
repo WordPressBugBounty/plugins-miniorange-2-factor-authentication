@@ -150,12 +150,13 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 
 		/**
 		 * Show KBA configuration prompt on dashboard.
-		 *
+		 * 
+		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
-		public function mo2f_prompt_2fa_setup_dashboard() {
+		public function mo2f_prompt_2fa_setup_dashboard( $session_id_encrypt ) {
 			global $mo2fdb_queries;
-			$current_user = wp_get_current_user();
+			$current_user  = wp_get_current_user();
 			$common_helper = new Mo2f_Common_Helper();
 			$html          = $common_helper->prompt_user_for_kba_setup( $current_user->ID, '', '', '', 'dashboard' );
 			$html         .= $common_helper->mo2f_get_dashboard_hidden_forms();
@@ -166,18 +167,19 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 		/**
 		 * Show SMS Testing prompt on dashboard.
 		 *
+		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
-		public function mo2f_prompt_2fa_test_dashboard() {
+		public function mo2f_prompt_2fa_test_dashboard( $session_id_encrypt ) {
 			global $mo2f_onprem_cloud_obj;
 			$current_user        = wp_get_current_user();
 			$mo2fa_login_message = 'Please answer the following questions:';
 			$mo2fa_login_status  = MoWpnsConstants::MO_2_FACTOR_CHALLENGE_KBA_AUTHENTICATION;
-			$kba_questions       = $mo2f_onprem_cloud_obj->mo2f_pass2login_kba_verification( $current_user, $this->mo2f_current_method, '', '' );
+			$kba_questions       = $mo2f_onprem_cloud_obj->mo2f_pass2login_kba_verification( $current_user, $this->mo2f_current_method, '', $session_id_encrypt );
 			$login_popup         = new Mo2f_Login_Popup();
 			$common_helper       = new Mo2f_Common_Helper();
-			$skeleton_values     = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, $kba_questions[0], $kba_questions[1], $current_user->ID, 'test_2fa', '' );
-			$html                = $login_popup->mo2f_get_twofa_skeleton_html( $mo2fa_login_status, $mo2fa_login_message, '', '', $skeleton_values, $this->mo2f_current_method, 'test_2fa' );
+			$skeleton_values     = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, $kba_questions[0], $kba_questions[1], $current_user->ID, 'test_2fa', '', $session_id_encrypt );
+			$html                = $login_popup->mo2f_get_twofa_skeleton_html( $mo2fa_login_status, $mo2fa_login_message, '', $session_id_encrypt, $skeleton_values, $this->mo2f_current_method, 'test_2fa' );
 			$html               .= $login_popup->mo2f_get_validation_popup_script( 'test_2fa', $this->mo2f_current_method, '', '' );
 			$html               .= $common_helper->mo2f_get_test_script();
 			wp_send_json_success( $html );
@@ -195,9 +197,10 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 			if ( empty( $session_id_encrypt ) && ! is_user_logged_in() ) {
 				wp_send_json_error( __( 'Oops! There was a problem completing the setup. Please refresh the page and try again.', 'miniorange-2-factor-authentication' ) );
 			}
-			$redirect_to  = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : null;
-			$user_id      = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
-			$current_user = empty( $user_id ) ? wp_get_current_user() : get_user_by( 'id', $user_id );
+			$redirect_to   = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : null;
+			$common_helper = new Mo2f_Common_Helper();
+			$user_id       = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
+			$current_user  = empty( $user_id ) ? wp_get_current_user() : get_user_by( 'id', $user_id );
 			if ( empty( $current_user ) ) {
 				wp_send_json_error( __( 'Something went wrong. Please try again.', 'miniorange-2-factor-authentication' ) );
 			}
@@ -206,12 +209,14 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 			$kba_answers     = $this->mo2f_validate_answers( $kba_ques_ans, $session_id_encrypt, $redirect_to, $user_id );
 			$question_answer = $this->mo2f_encode_question_answer( $kba_questions, $kba_answers );
 			update_user_meta( $current_user->ID, 'mo2f_kba_challenge', $question_answer );
-			if ( TwoFAMoSessions::get_session_var( 'mo2f_is_kba_backup_configured' . $user_id ) ) {
+			if ( get_transient( $session_id_encrypt . 'mo2f_is_kba_backup_configured' . $user_id ) ) {
 				update_user_meta( $user_id, 'mo2f_backup_method_set', 1 );
 				$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'mo2f_SecurityQuestions_config_status' => true ) );
 			} else {
 				$this->mo2f_update_user_details( $post, $current_user->ID, $current_user->user_email );
 			}
+			$common_helper = new Mo2f_Common_Helper();
+			$common_helper->mo2f_update_current_user_status( $session_id_encrypt );
 			wp_send_json_success();
 		}
 
@@ -380,7 +385,7 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 		public function mo2f_show_login_prompt( $mo2fa_login_message, $mo2fa_login_status, $current_user, $redirect_to, $session_id_encrypt, $kba_questions = null ) {
 			$login_popup = new Mo2f_Login_Popup();
 			if ( is_null( $kba_questions ) ) {
-				$kba_questions = TwoFAMoSessions::get_session_var( 'mo_2_factor_kba_questions' );
+				$kba_questions = get_transient( $session_id_encrypt . 'mo_2_factor_kba_questions' );
 			}
 			$login_popup->mo2f_show_login_prompt_for_otp_based_methods( $mo2fa_login_message, $mo2fa_login_status, $current_user, $redirect_to, $session_id_encrypt, $this->mo2f_current_method, $kba_questions );
 			exit;
@@ -408,20 +413,23 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 			if ( ! check_ajax_referer( 'mo-two-factor-ajax-nonce', 'nonce', false ) ) {
 				wp_send_json_error( 'class-mo2f-ajax' );
 			}
-			$user_id = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
+			$common_helper = new Mo2f_Common_Helper();
+			$user_id       = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 			if ( ! $user_id && is_user_logged_in() ) {
 				$user    = wp_get_current_user();
 				$user_id = $user->ID;
 			}
 			$current_user    = get_user_by( 'id', $user_id );
 			$kba_ques_ans    = array();
-			$kba_questions   = TwoFAMoSessions::get_session_var( 'mo_2_factor_kba_questions' );
+			$kba_questions   = get_transient( $session_id_encrypt . 'mo_2_factor_kba_questions' );
 			$kba_ques_ans[0] = $kba_questions[0];
 			$kba_ques_ans[1] = isset( $_POST['mo2f_answer_1'] ) ? sanitize_text_field( wp_unslash( $_POST['mo2f_answer_1'] ) ) : '';
 			$kba_ques_ans[2] = $kba_questions[1];
 			$kba_ques_ans[3] = isset( $_POST['mo2f_answer_2'] ) ? sanitize_text_field( wp_unslash( $_POST['mo2f_answer_2'] ) ) : '';
-			$content         = json_decode( $mo2f_onprem_cloud_obj->validate_otp_token( $this->mo2f_current_method, $current_user->user_email, '', $kba_ques_ans, $current_user ), true );
+			$content         = json_decode( $mo2f_onprem_cloud_obj->validate_otp_token( $this->mo2f_current_method, $current_user->user_email, '', $kba_ques_ans, $current_user, $session_id_encrypt ), true );
 			if ( 0 === strcasecmp( $content['status'], 'SUCCESS' ) ) {
+				$common_helper = new Mo2f_Common_Helper();
+				$common_helper->mo2f_update_current_user_status( $session_id_encrypt );
 				wp_send_json_success( 'VALIDATED_SUCCESS' );
 			} else {
 				wp_send_json_error( 'INVALID_ANSWERS' );

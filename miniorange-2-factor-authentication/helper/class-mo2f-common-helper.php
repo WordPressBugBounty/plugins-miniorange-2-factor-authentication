@@ -19,6 +19,7 @@ use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\MocURL;
 use TwoFA\Helper\Mo2f_Inline_Popup;
+use WP_Error;
 use TwoFA\Traits\Instance;
 
 if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
@@ -122,6 +123,21 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		}
 
 		/**
+		 * Checks for validation error.
+		 *
+		 * @param array $user_details User details.
+		 * @return mixed
+		 */
+		public function mo2f_is_validation_error( $user_details ){
+			if ( empty( $user_details ) || 'MFA_COMPLETED' !== $user_details['login_status'] ) {
+				$error = new WP_Error();
+				$error->add( 'invalid_request', '<strong>' . __( 'ERROR', 'miniorange-2-factor-authentication' ) . '</strong>: ' . __( 'Invalid Request. Please try again after some time.', 'miniorange-2-factor-authentication' ) );
+				return $error;
+			}
+			return false;
+		}
+
+		/**
 		 * Checks if the 2FA is set for this user.
 		 *
 		 * @param int $current_user_id user id.
@@ -140,11 +156,12 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @param string $session_id It will carry the session id .
 		 * @return void
 		 */
-		public function mo2f_inline_setup_success( $current_user_id, $redirect_to, $session_id ) {
+		public function mo2f_inline_setup_success( $user_details, $redirect_to, $session_id ) {
 			global $mo2fdb_queries;
-			$backup_methods = (array) get_site_option( 'mo2f_enabled_backup_methods' );
+			$backup_methods  = (array) get_site_option( 'mo2f_enabled_backup_methods' );
+			$current_user_id = isset( $user_details['user_id'] ) ? $user_details['user_id'] : null;
 			if ( get_site_option( 'mo2f_enable_backup_methods' ) ) {
-				if ( in_array( 'backup_kba', $backup_methods, true ) && MoWpnsConstants::SECURITY_QUESTIONS !== $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $current_user_id ) && ! TwoFAMoSessions::get_session_var( 'mo2f_is_kba_backup_configured' . $current_user_id ) ) {
+				if ( in_array( 'backup_kba', $backup_methods, true ) && MoWpnsConstants::SECURITY_QUESTIONS !== $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $current_user_id ) && ! get_transient( $session_id . 'mo2f_is_kba_backup_configured' . $current_user_id ) ) {
 					do_action(
 						'mo2f_basic_plan_settings_action',
 						'show_kba_registration_form',
@@ -155,7 +172,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 						)
 					);
 				}
-				TwoFAMoSessions::unset_session( 'mo2f_is_kba_backup_configured' . $current_user_id );
+				delete_transient( $session_id . 'mo2f_is_kba_backup_configured' . $current_user_id );
+
 				if ( in_array( 'mo2f_back_up_codes', $backup_methods, true ) ) {
 					$mo2f_user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $current_user_id );
 					if ( empty( $mo2f_user_email ) ) {
@@ -177,7 +195,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				}
 			}
 			$pass2fa = new Mo2f_Main_Handler();
-			$pass2fa->mo2fa_pass2login( $redirect_to, $session_id );
+			$pass2fa->mo2fa_pass2login( $redirect_to, $user_details );
 			exit;
 		}
 
@@ -194,6 +212,34 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			update_user_meta( $user_id, 'mo_backup_code_generated', 1 );
 			update_user_meta( $user_id, 'mo_backup_code_screen_shown', 1 );
 			return $codes;
+		}
+        
+		/**
+		 * Get current user id from session id
+		 *
+		 * @param string $session_id Session Id.
+		 * @return mixed
+		 */
+		public function mo2f_get_current_user_id( $session_id ) {
+			$user_details = get_transient( $session_id . 'mo2f_user_transaction_details' );
+			if ( is_array( $user_details ) && isset( $user_details['user_id'] ) ) {
+				return $user_details['user_id'];
+			}
+		    return null;	
+		}
+
+		/**
+		 * Update current user status
+		 *
+		 * @param string $session_id Session id.
+		 * @return void
+		 */
+		public function mo2f_update_current_user_status( $session_id ) {
+			$user_details = get_transient( $session_id . 'mo2f_user_transaction_details' );
+			if ( is_array( $user_details ) && isset( $user_details['login_status'] ) ) {
+				$user_details['login_status'] = 'MFA_COMPLETED';
+				set_transient( $session_id . 'mo2f_user_transaction_details', $user_details, 300 );
+			}
 		}
 
 		/**
@@ -216,9 +262,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					'mo_2factor_user_registration_status' => 'MO_2_FACTOR_INITIALIZE_TWO_FACTOR',
 				)
 			);
-			$user_id      = MO2f_Utility::mo2f_get_transient( $session_id, 'mo2f_current_user_id' );
 			$inline_popup = new Mo2f_Inline_Popup();
-			$inline_popup->prompt_user_to_select_2factor_mthod_inline( $user_id, '', $redirect_to, $session_id );
+			$inline_popup->prompt_user_to_select_2factor_mthod_inline( $current_user_id, '', $redirect_to, $session_id );
 			exit;
 		}
 
@@ -231,7 +276,6 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		public function mo2f_remove_current_activity( $session_id ) {
 			global $mo2fdb_queries;
 			$session_variables = array(
-				'mo2f_current_user_id',
 				'mo2f_1stfactor_status',
 				'mo_2factor_login_status',
 				'mo2f-login-qrCode',
@@ -241,6 +285,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				'mo2f_show_qr_code',
 				'mo2f_google_auth',
 				'mo2f_authy_keys',
+				'mo2f_user_transaction_details',
 			);
 
 			MO2f_Utility::unset_session_variables( $session_variables, $session_id );
@@ -253,8 +298,6 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$mo2fdb_queries->save_user_login_details(
 				$session_id_hash,
 				array(
-
-					'mo2f_current_user_id'      => '',
 					'mo2f_login_message'        => '',
 					'mo2f_1stfactor_status'     => '',
 					'mo2f_transactionId'        => '',
@@ -1386,7 +1429,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
                 <input type="hidden" name="session_id" value="' . esc_attr( $session_id ) . '"/>
             </form>';
 			$common_helper = new Mo2f_Common_Helper();
-			if ( 'mo2f_inline_form' === $prev_screen && ! TwoFAMoSessions::get_session_var( 'mo2f_is_kba_backup_configured' . $user_id ) ) {
+			if ( 'mo2f_inline_form' === $prev_screen && ! get_transient( $session_id . 'mo2f_is_kba_backup_configured' . $user_id ) ) {
 				$prev_screen = 'mo2f_inline_form';
 				$html       .= $common_helper->mo2f_go_back_link_form( $prev_screen );
 			}
@@ -1598,7 +1641,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 						jQuery("#mo2f_2fa_popup_dashboard").fadeOut();
 						closeVerification = true;
 						success_msg("You have successfully validated your 2FA method.");
-					} else if ( response.data == \'INVALID_OTP\'){
+					} else if ( response.data == \'INVALID_OTP\' || response.data == \'LIMIT_EXCEEDED\' ){
 						jQuery("#mo2fa_softtoken").val("");
 						mo2f_show_message("Invalid OTP. Please enter the correct OTP.");
 					} else if ( response.data == \'INVALID_ANSWERS\'){
@@ -1615,7 +1658,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		}
 
 		/**
-		 * Get the loginn script.
+		 * Get the login script.
 		 *
 		 * @param string $twofa_method Twofa method.
 		 * @return string

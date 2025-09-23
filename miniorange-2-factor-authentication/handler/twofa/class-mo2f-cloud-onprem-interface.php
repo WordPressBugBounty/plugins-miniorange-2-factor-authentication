@@ -100,11 +100,12 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		 * @param string $phone Phone.
 		 * @param string $email Email ID.
 		 * @param string $auth_type Authentication method of the user.
-		 * @param object $currentuser Contains details of current user.
+		 * @param object $current_user Contains details of current user.  
+		 * @param string $session_id Session id.
 		 * @return array
 		 */
-		public function send_otp_token( $phone, $email, $auth_type, $currentuser = null ) {
-			$content = $this->class_object->send_otp_token( $phone, $email, $auth_type, $currentuser );
+		public function send_otp_token( $phone, $email, $auth_type, $current_user = null, $session_id = null ) {
+			$content = $this->class_object->send_otp_token( $phone, $email, $auth_type, $current_user, $session_id );
 			return $content;
 		}
 
@@ -116,11 +117,11 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		 * @param string $transaction_id Transaction id which is used to validate the sent otp token.
 		 * @param string $otp_token OTP token received by user.
 		 * @param object $current_user Contains details of current user.
+		 * @param string $session_id Session id.
 		 * @return string
 		 */
-		public function validate_otp_token( $auth_type, $username, $transaction_id, $otp_token, $current_user = null ) {
-
-			$content = $this->class_object->validate_otp_token( $auth_type, $username, $transaction_id, $otp_token, $current_user );
+		public function validate_otp_token( $auth_type, $username, $transaction_id, $otp_token, $current_user = null, $session_id = null ) {
+			$content = $this->class_object->validate_otp_token( $auth_type, $username, $transaction_id, $otp_token, $current_user, $session_id );
 			return $content;
 		}
 
@@ -221,11 +222,12 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		 * @param object $current_user Current user.
 		 * @param string $mo2f_second_factor 2FA method of a user.
 		 * @param string $email User email.
+		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
-		public function mo2f_send_link( $current_user, $mo2f_second_factor, $email ) {
+		public function mo2f_send_link( $current_user, $mo2f_second_factor, $email, $session_id_encrypt ) {
 			MO2f_Utility::mo2f_debug_file( 'Email verification link has been sent successfully for ' . $mo2f_second_factor . ' User_Id-' . $current_user->ID . ' Email-' . $current_user->user_email );
-			$content = $this->class_object->mo2f_send_verification_link( $email, $mo2f_second_factor, $current_user );
+			$content = $this->class_object->mo2f_send_verification_link( $email, $mo2f_second_factor, $current_user, $session_id_encrypt );
 			return $content;
 		}
 

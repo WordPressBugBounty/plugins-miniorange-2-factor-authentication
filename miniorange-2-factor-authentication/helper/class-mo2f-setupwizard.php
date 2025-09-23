@@ -139,7 +139,7 @@ if ( ! class_exists( 'Mo2f_Setupwizard' ) ) {
 			$session_id_encrypt = isset( $_POST['mo2f_session_id'] ) ? sanitize_text_field( wp_unslash( $_POST['mo2f_session_id'] ) ) : null;
 			$secret             = $obj_google_auth->mo_a_auth_get_secret( $user_id );
 			if ( $session_id_encrypt ) {
-				$secret = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'secret_ga' );
+				$secret = get_user_meta( $user_id, 'mo2f_secret_ga', true );
 			}
 			$content = $obj_google_auth->mo2f_verify_code( $secret, $otp_token );
 			$content = json_decode( $content );

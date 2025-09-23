@@ -46,7 +46,8 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( $post['session_id'] ) : null;
 			$redirect_to        = isset( $post['redirect_to'] ) ? esc_url_raw( $post['redirect_to'] ) : null;
 			$twofa_method       = isset( $post['mo2f_login_method'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_login_method'] ) ) : null;
-			$user_id            = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
+			$common_helper      = new Mo2f_Common_Helper();
+			$user_id            = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 			$currentuser        = get_user_by( 'id', $user_id );
 			$email_delivered    = $this->mo2f_send_reconfig_link_on_email( $currentuser, $currentuser->user_email );
 			$mo2f_title         = $email_delivered ? 'Account Recovery Email Sent' : 'Account Recovery Email Counldn\'t Send';
@@ -85,7 +86,7 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 		public function mo2f_show_login_prompt( $mo2fa_login_message, $mo2fa_login_status, $current_user, $redirect_to, $session_id, $mo2f_title, $twofa_method ) {
 			$login_popup     = new Mo2f_Login_Popup();
 			$common_helper   = new Mo2f_Common_Helper();
-			$skeleton_values = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $current_user->ID, 'login_2fa', $mo2f_title );
+			$skeleton_values = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $current_user->ID, 'login_2fa', $mo2f_title, $session_id );
 			$html            = $login_popup->mo2f_twofa_authentication_login_prompt( $mo2fa_login_status, $mo2fa_login_message, $redirect_to, $session_id, $skeleton_values, $twofa_method );
 			$html           .= $common_helper->mo2f_get_hidden_forms_login( $redirect_to, $session_id, $mo2fa_login_status, $mo2fa_login_message, $twofa_method, $current_user->ID );
 			$html           .= $common_helper->mo2f_get_hidden_script_login();
@@ -228,6 +229,6 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 
 		}
 
-
-	}new Mo2f_Reconfigure_Link();
+	}
+	new Mo2f_Reconfigure_Link();
 }

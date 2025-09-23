@@ -30,27 +30,6 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 
 		use Instance;
 
-
-		/**
-		 * This is function is to create the session.
-		 */
-		public function miniorange_login_start_session() {
-			if ( ! session_id() || '' === session_id() || ! isset( $_SESSION ) ) {
-				session_start();
-			}
-		}
-		/**
-		 * This function displays the error messages.
-		 *
-		 * @param string $value carry a value.
-		 * @return void
-		 */
-		public function mo2f_auth_show_error_message( $value = null ) {
-
-			remove_filter( 'login_message', array( $this, 'mo_auth_success_message' ) );
-			add_filter( 'login_message', array( $this, 'mo_auth_error_message' ) );
-		}
-		
 		/**
 		 * This function enqueues custom login script.
 		 *
@@ -83,105 +62,7 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 			wp_enqueue_style( 'hide-login' );
 			wp_enqueue_style( 'bootstrap' );
 		}
-		/**
-		 * This function displays the success messages.
-		 *
-		 * @return string
-		 */
-		public function mo_auth_success_message() {
 
-			$message    = isset( $_SESSION['mo2f_login_message'] ) ? $_SESSION['mo2f_login_message'] : '';
-			$session_id = isset( $_POST['session_id'] ) ? sanitize_text_field( wp_unslash( $_POST['session_id'] ) ) : null; //phpcs:ignore WordPress.Security.NonceVerification.Missing -- It is on default WordPress login form.
-			$message    = MO2f_Utility::mo2f_retrieve_user_temp_values( 'mo2f_login_message', $session_id );
-
-			if ( ! empty( $message ) ) { // if the php session folder has insufficient permissions, cookies to be used.
-				$message = 'Please login into your account using password.';
-			}
-
-			return "<div> <p class='message'>" . $message . '</p></div>';
-		}
-		/**
-		 * This function displaky error message
-		 *
-		 * @return string
-		 */
-		public function mo_auth_error_message() {
-
-			$id         = 'login_error1';
-			$session_id = isset( $_POST['session_id'] ) ? sanitize_text_field( wp_unslash( $_POST['session_id'] ) ) : null; //phpcs:ignore WordPress.Security.NonceVerification.Missing -- It is on default WordPress login form.
-			// if the php session folder has insufficient permissions, cookies to be used.
-			$message = MO2f_Utility::mo2f_retrieve_user_temp_values( 'mo2f_login_message', $session_id );
-			if ( ! empty( $message ) ) {
-				$message = 'Invalid Username';
-			}
-			if ( get_option( 'mo_wpns_activate_recaptcha_for_login' ) ) { // test.
-				$message = 'Invalid Username or recaptcha';
-			}
-			return "<div id='" . $id . "'> <p>" . $message . '</p></div>';
-		}
-		/**
-		 * This function is use to show the success message.
-		 *
-		 * @return void
-		 */
-		public function mo2f_auth_show_success_message() {
-
-			remove_filter( 'login_message', array( $this, 'mo_auth_error_message' ) );
-			add_filter( 'login_message', array( $this, 'mo_auth_success_message' ) );
-		}
-		/**
-		 * This function is use to show the login form fields
-		 *
-		 * @param string $mo2fa_login_status It will caryy the login status.
-		 * @param string $mo2fa_login_message It will caryy the login message.
-		 * @return void
-		 */
-		public function miniorange_login_form_fields( $mo2fa_login_status = null, $mo2fa_login_message = null ) {
-
-			global $mo2fdb_queries;
-			$session_id_encrypt    = isset( $_POST['session_id'] ) ? sanitize_text_field( wp_unslash( $_POST['session_id'] ) ) : null;
-			$pass2fa_login_session = new Miniorange_Password_2Factor_Login();
-
-			if ( is_null( $session_id_encrypt ) ) {
-				$session_id_encrypt = $pass2fa_login_session->create_session();
-			}
-
-			if ( get_option( 'mo2f_enable_login_with_2nd_factor' ) ) { // login with phone overwrite default login form
-				// if the php session folder has insufficient permissions, cookies to be used.
-				$login_status_phone_enable = MO2f_Utility::mo2f_retrieve_user_temp_values( 'mo_2factor_login_status', $session_id_encrypt );
-
-				if ( MO2F_IS_ONPREM ) {
-					$user_name = isset( $_POST['mo2fa_username'] ) ? sanitize_user( wp_unslash( $_POST['mo2fa_username'] ) ) : '';
-
-					if ( ! empty( $user_name ) ) {
-						$user = get_user_by( 'login', $user_name );
-						if ( $user ) {
-							$current_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
-							if ( 'None' === $current_method || empty( $current_method ) ) {
-								$login_status_phone_enable = 'MO_2_FACTOR_LOGIN_WHEN_PHONELOGIN_ENABLED';
-							}
-						}
-					}
-				}
-				if ( 'MO_2_FACTOR_LOGIN_WHEN_PHONELOGIN_ENABLED' === $login_status_phone_enable && isset( $_POST['miniorange_login_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['miniorange_login_nonce'] ) ), 'miniorange-2-factor-login-nonce' ) ) {
-					$this->mo_2_factor_show_login_with_password_when_phonelogin_enabled();
-					$this->mo_2_factor_show_wp_login_form_when_phonelogin_enabled();
-					$user            = isset( $_SESSION['mo2f_current_user'] ) ? maybe_serialize( sanitize_text_field( $_SESSION['mo2f_current_user'] ) ) : null;
-					$mo2f_user_login = is_null( $user ) && ! is_object( $user ) ? null : $user->user_login;
-					?>
-				<script>
-					jQuery('#user_login').val(<?php echo "'" . esc_js( $mo2f_user_login ) . "'"; ?>);
-				</script>
-					<?php
-				} else {
-					$this->mo_2_factor_show_login();
-					$this->mo_2_factor_show_wp_login_form();
-				}
-			} else { // Login with phone is alogin with default login form.
-				$this->mo_2_factor_show_login();
-				$this->mo_2_factor_show_wp_login_form();
-			}
-		}
 		/**
 		 * This function login with password when phonelogin enabled.
 		 *

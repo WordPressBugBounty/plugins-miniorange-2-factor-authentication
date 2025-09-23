@@ -148,65 +148,6 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 			}
 		}
 
-		/**
-		 * This function will set the user value.
-		 *
-		 * @param string $user_session_id It will carry the session .
-		 * @param string $variable It will carry the variable .
-		 * @param string $value It will carry the value .
-		 * @return void
-		 */
-		public static function set_user_values( $user_session_id, $variable, $value ) {
-			global $mo2fdb_queries;
-			$key         = get_site_option( 'mo2f_encryption_key' );
-			$data_option = null;
-
-			if ( empty( $data_option ) ) {
-				// setting session.
-				$_SESSION[ $variable ] = $value;
-
-				// setting cookie values.
-				if ( is_array( $value ) ) {
-					if ( 'mo_2_factor_kba_questions' === $variable ) {
-						self::mo2f_set_cookie_values( 'kba_question1', $value[0]['question'] );
-						self::mo2f_set_cookie_values( 'kba_question2', $value[1]['question'] );
-					}
-				} else {
-					self::mo2f_set_cookie_values( $variable, $value );
-				}
-
-				// setting values in database.
-				$user_session_id = self::decrypt_data( $user_session_id, $key );
-				$session_id_hash = md5( $user_session_id );
-				if ( is_array( $value ) ) {
-					$string_value = maybe_serialize( $value );
-					$mo2fdb_queries->save_user_login_details( $session_id_hash, array( $variable => $string_value ) );
-				} else {
-					$mo2fdb_queries->save_user_login_details( $session_id_hash, array( $variable => $value ) );
-				}
-			} elseif ( ! empty( $data_option ) && 'sessions' === $data_option ) {
-				$_SESSION[ $variable ] = $value;
-			} elseif ( ! empty( $data_option ) && 'cookies' === $data_option ) {
-				if ( is_array( $value ) ) {
-					if ( 'mo_2_factor_kba_questions' === $variable ) {
-						self::mo2f_set_cookie_values( 'kba_question1', $value[0] );
-						self::mo2f_set_cookie_values( 'kba_question2', $value[1] );
-					}
-				} else {
-					self::mo2f_set_cookie_values( $variable, $value );
-				}
-			} elseif ( ! empty( $data_option ) && 'tables' === $data_option ) {
-				$user_session_id = self::decrypt_data( $user_session_id, $key );
-				$session_id_hash = md5( $user_session_id );
-				if ( is_array( $value ) ) {
-					$string_value = maybe_serialize( $value );
-					$mo2fdb_queries->save_user_login_details( $session_id_hash, array( $variable => $string_value ) );
-				} else {
-					$mo2fdb_queries->save_user_login_details( $session_id_hash, array( $variable => $value ) );
-				}
-			}
-		}
-
 		/*
 		Returns Random string with length provided in parameter.
 
@@ -254,67 +195,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 
 			return $random_string;
 		}
-		/**
-		 * It is for set transient
-		 *
-		 * @param string  $session_id It will carry the session id .
-		 * @param string  $key It will carry the key data .
-		 * @param string  $value It will carry the value data .
-		 * @param integer $expiration It will carry the expiration time .
-		 * @return void
-		 */
-		public static function mo2f_set_transient( $session_id, $key, $value, $expiration = 300 ) {
-			set_transient( $session_id . $key, $value, $expiration );
-			$transient_array = get_site_option( $session_id );
-			if ( false === $transient_array ) { // PHP Deprecated:  Automatic conversion of false to array is deprecated.
-				$transient_array = array();
-			}
-			$transient_array[ $key ] = $value;
-			update_site_option( $session_id, $transient_array );
-			self::mo2f_set_session_value( $session_id, $transient_array );
-			if ( is_array( $value ) ) {
-				$value = wp_json_encode( $value );
-			}
 
-			self::mo2f_set_cookie_values( base64_encode( $session_id ), $value ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Not using for obfuscation
-		}
-		/**
-		 * This function is called to get the transient data
-		 *
-		 * @param string $session_id It will carry the session id .
-		 * @param string $key It will carry the key key data .
-		 * @return string
-		 */
-		public static function mo2f_get_transient( $session_id, $key ) {
-			self::mo2f_start_session();
-			$enc_session_id = base64_encode( $session_id ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Not using for obfuscation
-			if ( isset( $_SESSION[ $session_id ] ) ) {
-				$transient_array = $_SESSION[ $session_id ];
-				$transient_value = isset( $transient_array[ $key ] ) ? $transient_array[ $key ] : null;
-				return $transient_value;
-			} elseif ( isset( $_COOKIE[ $enc_session_id ] ) ) {
-				$transient_value = self::mo2f_get_cookie_values( $enc_session_id );
-				return $transient_value;
-			} else {
-				$transient_value = get_transient( $session_id . $key );
-				if ( ! $transient_value ) {
-					$transient_array = get_site_option( $session_id );
-					$transient_value = isset( $transient_array[ $key ] ) ? $transient_array[ $key ] : null;
-				}
-				return $transient_value;
-			}
-		}
-		/**
-		 * This function is called to get the session value.
-		 *
-		 * @param string $session_id It will get the session id.
-		 * @param string $transient_array .
-		 * @return void
-		 */
-		public static function mo2f_set_session_value( $session_id, $transient_array ) {
-			self::mo2f_start_session();
-			$_SESSION[ $session_id ] = $transient_array;
-		}
 		/**
 		 * It is to start the session.
 		 *
@@ -331,118 +212,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 				}
 			}
 		}
-		/**
-		 * It is to retrieve the user temp value.
-		 *
-		 * @param string $variable .
-		 * @param string $session_id It will get the session id .
-		 * @return string
-		 */
-		public static function mo2f_retrieve_user_temp_values( $variable, $session_id = null ) {
-			global $mo2fdb_queries;
-			$data_option = null;
-			if ( empty( $data_option ) ) {
-				if ( isset( $_SESSION[ $variable ] ) && ! empty( $_SESSION[ $variable ] ) ) {
-					return $_SESSION[ $variable ];
-				} else {
-					$key          = get_site_option( 'mo2f_encryption_key' );
-					$cookie_value = false;
-					if ( 'mo_2_factor_kba_questions' === $variable ) {
-						if ( isset( $_COOKIE['kba_question1'] ) && ! empty( $_COOKIE['kba_question1'] ) ) {
-							$kba_question1['question'] = self::mo2f_get_cookie_values( 'kba_question1' );
-							$kba_question2['question'] = self::mo2f_get_cookie_values( 'kba_question2' );
-							$cookie_value              = array( $kba_question1, $kba_question2 );
-						}
-					} else {
-						$cookie_value = self::mo2f_get_cookie_values( $variable );
-					}
-					if ( $cookie_value ) {
-						return $cookie_value;
-					} else {
-						$session_id      = self::decrypt_data( $session_id, $key );
-						$session_id_hash = md5( $session_id );
-						$db_value        = $mo2fdb_queries->get_user_login_details( $variable, $session_id_hash );
-						if ( 'mo_2_factor_kba_questions' === $variable ) {
-							$db_value = maybe_unserialize( $db_value );
-						}
-						return $db_value;
-					}
-				}
-			} elseif ( ! empty( $data_option ) && 'sessions' === $data_option ) {
-				if ( isset( $_SESSION[ $variable ] ) && ! empty( $_SESSION[ $variable ] ) ) {
-					return $_SESSION[ $variable ];
-				}
-			} elseif ( ! empty( $data_option ) && 'cookies' === $data_option ) {
-				$key          = get_site_option( 'mo2f_encryption_key' );
-				$cookie_value = false;
 
-				if ( 'mo_2_factor_kba_questions' === $variable ) {
-					if ( isset( $_COOKIE['kba_question1'] ) && ! empty( $_COOKIE['kba_question1'] ) ) {
-						$kba_question1 = self::mo2f_get_cookie_values( 'kba_question1' );
-						$kba_question2 = self::mo2f_get_cookie_values( 'kba_question2' );
-
-						$cookie_value = array( $kba_question1, $kba_question2 );
-					}
-				} else {
-					$cookie_value = self::mo2f_get_cookie_values( $variable );
-				}
-
-				if ( $cookie_value ) {
-					return $cookie_value;
-				}
-			} elseif ( ! empty( $data_option ) && 'tables' === $data_option ) {
-				$key             = get_site_option( 'mo2f_encryption_key' );
-				$session_id      = self::decrypt_data( $session_id, $key );
-				$session_id_hash = md5( $session_id );
-				$db_value        = $mo2fdb_queries->get_user_login_details( $variable, $session_id_hash );
-				if ( 'mo_2_factor_kba_questions' === $variable ) {
-					$db_value = maybe_unserialize( $db_value );
-				}
-				return $db_value;
-			}
-		}
-
-		/**
-		 * The function gets the cookie value after decoding and decryption.
-		 *
-		 * @param string $cookiename - It will carry the cookie name .
-		 *
-		 * @return string
-		 */
-		public static function mo2f_get_cookie_values( $cookiename ) {
-			$key = get_site_option( 'mo2f_encryption_key' );
-			if ( isset( $_COOKIE[ $cookiename ] ) ) {
-				$decrypted_data = self::decrypt_data( base64_decode( sanitize_key( wp_unslash( $_COOKIE[ $cookiename ] ) ) ), $key ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Not using for obfuscation
-
-				if ( self::is_json( $decrypted_data ) ) {
-					$decrypted_data = json_decode( $decrypted_data );
-				}
-
-				if ( $decrypted_data ) {
-					$decrypted_data_array = explode( '&', $decrypted_data );
-
-					$cookie_value = $decrypted_data_array[0];
-					if ( count( $decrypted_data_array ) === 2 ) {
-						$cookie_creation_time = new DateTime( $decrypted_data_array[1] );
-					} else {
-						$cookie_creation_time = new DateTime( array_pop( $decrypted_data_array ) );
-						$cookie_value         = implode( '&', $decrypted_data_array );
-					}
-					$current_time = new DateTime( 'now' );
-
-					$interval = $cookie_creation_time->diff( $current_time );
-					$minutes  = $interval->format( '%i' );
-
-					$is_cookie_valid = $minutes <= 5 ? true : false;
-
-					return $is_cookie_valid ? $cookie_value : false;
-				} else {
-					return false;
-				}
-			} else {
-				return false;
-			}
-		}
 		/**
 		 * This function is to check wheather it is json.
 		 *
@@ -452,24 +222,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		public static function is_json( $string ) {
 			return is_string( $string ) && is_array( json_decode( $string, true ) ) ? true : false;
 		}
-		/**
-		 * The function sets the cookie value after encryption and encoding.
-		 *
-		 * @param string $cookiename - It will store the cookie name .
-		 * @param string $cookievalue - the cookie value to be set .
-		 *
-		 * @return void
-		 */
-		public static function mo2f_set_cookie_values( $cookiename, $cookievalue ) {
-			$key = get_site_option( 'mo2f_encryption_key' );
 
-			$current_time = new DateTime( 'now' );
-			$current_time = $current_time->format( 'Y-m-d H:i:sP' );
-			$cookievalue  = $cookievalue . '&' . $current_time;
-
-			$cookievalue_encrypted  = self::encrypt_data( $cookievalue, $key );
-			$_COOKIE[ $cookiename ] = base64_encode( $cookievalue_encrypted ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Not using for obfuscation
-		}
 		/**
 		 * It will help to encrypt the data in aes
 		 *

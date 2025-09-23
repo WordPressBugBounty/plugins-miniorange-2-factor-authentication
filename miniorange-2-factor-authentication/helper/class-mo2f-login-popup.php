@@ -36,12 +36,12 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 		 * @param string $login_title Login title.
 		 * @return array
 		 */
-		public function mo2f_twofa_login_prompt_skeleton_values( $login_message, $login_status, $kba_question1, $kba_question2, $user_id, $validation_flow, $login_title = '' ) {
+		public function mo2f_twofa_login_prompt_skeleton_values( $login_message, $login_status, $kba_question1, $kba_question2, $user_id, $validation_flow, $login_title = '', $session_id_encrypt = '' ) {
 			$prompt_title = $this->mo2f_login_prompt_title( $login_title, $login_status );
-			if ( ! TwoFAMoSessions::get_session_var( 'mo2f_attempts_before_redirect' ) ) {
-				TwoFAMoSessions::add_session_var( 'mo2f_attempts_before_redirect', 3 );
+			if ( ! get_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect' ) ) {
+				set_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect', 3 );
 			}
-			$attempts            = TwoFAMoSessions::get_session_var( 'mo2f_attempts_before_redirect' );
+			$attempts            = get_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect' );
 			$backup_methods      = (array) get_site_option( 'mo2f_enabled_backup_methods' );
 			$custom_logo_enabled = get_site_option( 'mo2f_custom_logo', 'miniOrange2.png' );
 			$skeleton_blocks     = $this->mo2f_skeleton_block( $prompt_title, $login_message, $login_status, $kba_question1, $kba_question2, $user_id, $validation_flow, $attempts, $custom_logo_enabled, $backup_methods );
@@ -939,7 +939,7 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 		 */
 		public function mo2f_show_login_prompt_for_otp_based_methods( $mo2fa_login_message, $mo2fa_login_status, $current_user, $redirect_to, $session_id_encrypt, $twofa_method, $kba_questions = null ) {
 			$common_helper   = new Mo2f_Common_Helper();
-			$skeleton_values = $this->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, isset( $kba_questions[0] ) ? $kba_questions[0] : null, isset( $kba_questions[1] ) ? $kba_questions[1] : null, $current_user->ID, 'login_2fa', '' );
+			$skeleton_values = $this->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, isset( $kba_questions[0] ) ? $kba_questions[0] : null, isset( $kba_questions[1] ) ? $kba_questions[1] : null, $current_user->ID, 'login_2fa', '', $session_id_encrypt );
 			$html            = $this->mo2f_twofa_authentication_login_prompt( $mo2fa_login_status, $mo2fa_login_message, $redirect_to, $session_id_encrypt, $skeleton_values, $twofa_method );
 			$html           .= $common_helper->mo2f_get_hidden_forms_login( $redirect_to, $session_id_encrypt, $mo2fa_login_status, $mo2fa_login_message, $twofa_method, $current_user->ID );
 			$html           .= $common_helper->mo2f_get_login_script( $twofa_method );
@@ -947,6 +947,5 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 			echo $html;// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped the necessary in the definition.
 			exit;
 		}
-
 	}
 }

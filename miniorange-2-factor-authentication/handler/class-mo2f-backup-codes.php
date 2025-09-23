@@ -55,7 +55,8 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 			$session_id           = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : '';
 			$mo2fa_login_status   = isset( $post['login_status'] ) ? sanitize_text_field( wp_unslash( $post['login_status'] ) ) : '';
 			$mo2fa_login_method   = isset( $post['login_method'] ) ? sanitize_text_field( wp_unslash( $post['login_method'] ) ) : '';
-			$user_id              = MO2f_Utility::mo2f_get_transient( $session_id, 'mo2f_current_user_id' );
+			$common_helper        = new Mo2f_Common_Helper();
+			$user_id              = $common_helper->mo2f_get_current_user_id( $session_id );
 			$currentuser          = get_user_by( 'id', $user_id );
 			$mo2f_user_email      = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user_id ) ?? $currentuser->user_email;
 			$generate_backup_code = new MocURL();
@@ -82,8 +83,12 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 			$redirect_to        = isset( $post['redirect_to'] ) ? esc_url_raw( $post['redirect_to'] ) : null;
 			$mo2f_backup_code   = isset( $post['mo2f_backup_code'] ) ? sanitize_text_field( $post['mo2f_backup_code'] ) : null;
 			$twofa_method       = isset( $post['twofa_method'] ) ? sanitize_text_field( $post['twofa_method'] ) : '';
-			$currentuser_id     = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
-			$mo2f_user_email    = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $currentuser_id );
+			$common_helper      = new Mo2f_Common_Helper();
+			$currentuser_id     = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
+			if ( is_null( $currentuser_id ) ) {
+				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_SESSION ) );
+			}
+			$mo2f_user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $currentuser_id );
 			$this->mo2f_handle_backupcode_validation( $mo2f_backup_code, $currentuser_id, $redirect_to, $session_id_encrypt, $mo2f_user_email, $twofa_method );
 		}
 
@@ -117,11 +122,11 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 		public function mo2f_show_error_prompt( $mo2fa_login_message, $current_user, $redirect_to, $session_id, $twofa_method ) {
 			$login_popup        = new Mo2f_Login_Popup();
 			$mo2fa_login_status = MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT;
-			$skeleton_values    = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $current_user->ID, '' );
-			$html               = $login_popup->mo2f_get_twofa_skeleton_html( $mo2fa_login_status, $mo2fa_login_message, '', '', $skeleton_values, $twofa_method, '' );
+			$skeleton_values    = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $current_user->ID, '', '', $session_id );
+			$html               = $login_popup->mo2f_get_twofa_skeleton_html( $mo2fa_login_status, $mo2fa_login_message, '', $session_id, $skeleton_values, $twofa_method, '' );
 			$html              .= $login_popup->mo2f_get_validation_popup_script( '', $twofa_method, '', '' );
+			echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			exit;
-
 		}
 
 		/**
@@ -136,10 +141,10 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 		public function mo2f_call_backup_code_validation_form( $mo2fa_login_message, $redirect_to, $session_id_encrypt, $login_method ) {
 			$login_popup   = new Mo2f_Login_Popup();
 			$common_helper = new Mo2f_Common_Helper();
-			$user_id       = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
+			$user_id       = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 			$common_helper->mo2f_echo_js_css_files();
 			$mo2fa_login_status = MoWpnsConstants::MO_2_FACTOR_USE_BACKUP_CODES;
-			$skeleton_values    = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $user_id, '' );
+			$skeleton_values    = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $user_id, '', '', $session_id_encrypt );
 			$html               = $login_popup->mo2f_twofa_authentication_login_prompt( $mo2fa_login_status, $mo2fa_login_message, $redirect_to, $session_id_encrypt, $skeleton_values, $login_method );
 			$html              .= $common_helper->mo2f_get_hidden_forms_login( $redirect_to, $session_id_encrypt, $mo2fa_login_status, $mo2fa_login_message, $login_method, $user_id );
 			$html              .= $common_helper->mo2f_get_hidden_script_login();
@@ -229,6 +234,8 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 				$data                 = $generate_backup_code->mo2f_validate_backup_codes( $mo2f_backup_code, $mo2f_user_email );
 				if ( 'success' === $data ) {
 					$mo2fdb_queries->mo2f_delete_user_details( $currentuser_id );
+					$common_helper = new Mo2f_Common_Helper();
+					$common_helper->mo2f_update_current_user_status( $session_id_encrypt );
 					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::BACKUPCODE_VALIDATED ) );
 				} else {
 					wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_BACKUPCODE ) );
@@ -249,7 +256,8 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 			global $mo2fdb_queries;
 			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : '';
 			$redirect_to        = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : '';
-			$user_id            = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
+			$user_details       = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
+			$user_id            = isset( $user_details['user_id'] ) ? $user_details['user_id'] : null;
 			if ( ! get_site_option( 'mo2f_disable_inline_registration' ) ) {
 					$mo2fa_login_message = 'Please configure your 2FA again so that you can avoid being locked out.';
 					$inline_popup        = new Mo2f_Inline_Popup();
@@ -258,11 +266,10 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 					exit;
 			} else {
 				$pass2fa = new Mo2f_Main_Handler();
-				$pass2fa->mo2fa_pass2login( $redirect_to, $session_id_encrypt );
+				$pass2fa->mo2fa_pass2login( $redirect_to, $user_details );
 			}
 			exit;
 		}
-
 	}
 	new Mo2f_Backup_Codes();
 }

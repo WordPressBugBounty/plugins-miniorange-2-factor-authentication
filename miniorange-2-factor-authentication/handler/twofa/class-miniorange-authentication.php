@@ -72,7 +72,6 @@ if ( ! class_exists( 'Miniorange_Authentication' ) ) {
 			$is_lv_needed = apply_filters( 'mo2f_is_lv_needed', false );
 			if ( ( ! $is_lv_needed || get_site_option( 'mo2fa_lk' ) ) && (int) ( MoWpnsUtility::get_mo2f_db_option( 'mo2f_activate_plugin', 'site_option' ) ) === 1 ) {
 				$pass2fa_login = new Miniorange_Password_2Factor_Login();
-				add_action( 'init', array( $pass2fa_login, 'miniorange_pass2login_redirect' ) );
 				// for shortcode addon.
 				add_action( 'login_form', array( $pass2fa_login, 'mo_2_factor_pass2login_show_wp_login_form' ), 10 );
 				add_filter( 'mo2f_shortcode_rba_gauth', array( $this->mo2f_onprem_cloud_obj, 'mo2f_validate_google_auth' ), 10, 3 );
@@ -96,7 +95,6 @@ if ( ! class_exists( 'Miniorange_Authentication' ) ) {
 					remove_filter( 'authenticate', 'wp_authenticate_username_password', 20 );
 					$main_handler_login = new Mo2f_Main_Handler();
 					add_filter( 'authenticate', array( $main_handler_login, 'mo2f_check_username_password' ), 99999, 4 );
-					add_action( 'init', array( $pass2fa_login, 'miniorange_pass2login_redirect' ) );
 					add_action(
 						'login_form',
 						array(

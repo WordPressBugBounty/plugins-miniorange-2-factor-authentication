@@ -73,6 +73,7 @@ if ( $date_timestamp2 <= $date_timestamp1 && ( $user_id === $onprem_admin ) && !
 				echo ' <div class="mo2f-admin-options"> <div class="mx-mo-3"> <img width="30" height="30" src="' . esc_url( $logo_url ) . '"></div>';
 
 	echo '<span class="mo2f-plugin-name">Two-Factor Authentication</span>';
+	if ( current_user_can( 'manage_options' ) ) {
 	echo '
 		<div class="flex mo2f-text-xs-white">
     		<div id="mo2f_check_transactions" class="mo2f-transaction-show">
@@ -93,6 +94,7 @@ if ( $date_timestamp2 <= $date_timestamp1 && ( $user_id === $onprem_admin ) && !
         		<a href=' . esc_url( MoWpnsConstants::RECHARGELINK ) . ' target="_blank" class="mo2f-button">' . esc_html__( 'Recharge', 'miniorange-2-factor-authentication' ) . '</a>
     		</div>
 		</div>';
+	}
 	echo '</div>';
 if ( current_user_can( 'administrator' ) && get_site_option( 'mo_wpns_2fa_with_network_security' ) || get_site_option( 'mo2f_is_old_customer' ) ) {
 			update_site_option( 'mo2f_is_old_customer', 1 );

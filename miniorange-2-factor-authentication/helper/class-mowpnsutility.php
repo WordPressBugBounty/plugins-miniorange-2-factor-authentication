@@ -390,16 +390,17 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		/**
 		 * Handle attempt validation logic.
 		 *
-		 * @param int|string $attempts Number of attempts remaining.
-		 * @param string     $error_type Error type to send.
+		 * @param string $error_type Error type to send.
+		 * @param string $session_id_encrypt Session id.
 		 * @return void
 		 */
-		public function mo2f_handle_attempt_validation( $attempts, $error_type ) {
+		public function mo2f_handle_attempt_validation( $error_type, $session_id_encrypt ) {
+			$attempts = get_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect' );
 			if ( is_numeric( $attempts ) && $attempts > 1 ) {
-				TwoFAMoSessions::add_session_var( 'mo2f_attempts_before_redirect', $attempts - 1 );
+				set_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect', $attempts-1, 300 );
 				wp_send_json_error( $error_type );
 			} else {
-				TwoFAMoSessions::unset_session( 'mo2f_attempts_before_redirect' );
+                delete_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect' );
 				wp_send_json_error( 'LIMIT_EXCEEDED' );
 			}
 		}

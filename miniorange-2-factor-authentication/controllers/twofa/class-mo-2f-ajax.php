@@ -103,8 +103,8 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 				} else {
 					$url = isset( $_POST['g_auth_url'] ) ? sanitize_text_field( wp_unslash( $_POST['g_auth_url'] ) ) : null;
 				}
-
-				MO2f_Utility::mo2f_set_transient( $session_id, 'ga_qrCode', $url );
+				$current_user = wp_get_current_user();
+				update_user_meta( $current_user->ID, 'mo2f_ga_qrCode', $url );
 				wp_send_json_success();
 
 			}
@@ -121,21 +121,28 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 			} else {
 				$otp_token          = isset( $_POST['otp_token'] ) ? sanitize_text_field( wp_unslash( $_POST['otp_token'] ) ) : null;
 				$session_id_encrypt = isset( $_POST['session_id'] ) ? sanitize_text_field( wp_unslash( $_POST['session_id'] ) ) : null;
-				$ga_secret          = isset( $_POST['ga_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['ga_secret'] ) ) : ( isset( $_POST['session_id'] ) ? MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'secret_ga' ) : null );
+				$ga_secret          = isset( $_POST['ga_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['ga_secret'] ) ) : null;
 
 				global $mo2fdb_queries, $user;
 				if ( MO2f_Utility::mo2f_check_number_length( $otp_token ) ) {
 					$email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
 					$user  = wp_get_current_user();
 					if ( ! $user->ID ) {
-						$user_id = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
-						$user    = get_user_by( 'id', $user_id );
+						$common_helper = new Mo2f_Common_Helper();
+						$user_id       = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
+						if ( is_null( $user_id ) ) {
+							wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_SESSION ) );
+						}
+						$user          = get_user_by( 'id', $user_id );
 					}
 					$email                  = ( empty( $email ) ) ? $user->user_email : $email;
 					$twofactor_transactions = new Mo2fDB();
 					$exceeded               = $twofactor_transactions->check_alluser_limit_exceeded( $user->ID );
 					if ( $exceeded ) {
 						wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::USER_LIMIT_EXCEEDED ) );
+					}
+					if ( ! $ga_secret ) {
+						$ga_secret = get_user_meta( $user->ID, 'mo2f_secret_ga', true );
 					}
 					$google_response = json_decode( $this->mo2f_onprem_cloud_obj->mo2f_validate_google_auth( $email, $otp_token, $ga_secret ), true );
 					if ( json_last_error() === JSON_ERROR_NONE ) {
@@ -196,7 +203,7 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 			}
 			global $mo2fdb_queries;
 			$transient_id = isset( $_POST['transient_id'] ) ? sanitize_text_field( wp_unslash( $_POST['transient_id'] ) ) : null;
-			$user_id      = MO2f_Utility::mo2f_get_transient( $transient_id, 'mo2f_user_id' );
+			$user_id      = get_transient( $transient_id . 'mo2f_user_id' );
 			if ( empty( $user_id ) ) {
 				wp_send_json_error( 'UserIdNotFound' );
 			}
@@ -224,7 +231,7 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 			}
 			global $mo2fdb_queries;
 			$transient_id = isset( $_POST['transient_id'] ) ? sanitize_text_field( wp_unslash( $_POST['transient_id'] ) ) : null;
-			$user_id      = MO2f_Utility::mo2f_get_transient( $transient_id, 'mo2f_user_id' );
+			$user_id      = get_transient( $transient_id . 'mo2f_user_id' );
 			if ( empty( $user_id ) ) {
 				wp_send_json_error( 'UserIdNotFound' );
 			}
@@ -251,7 +258,7 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 			include_once dirname( dirname( dirname( __FILE__ ) ) ) . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'twofa' . DIRECTORY_SEPARATOR . 'class-google-auth-onpremise.php';
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
 			$transient_id = isset( $_POST['transient_id'] ) ? sanitize_text_field( wp_unslash( $_POST['transient_id'] ) ) : null;
-			$user_id      = MO2f_Utility::mo2f_get_transient( $transient_id, 'mo2f_user_id' );
+			$user_id      = get_transient( $transient_id . 'mo2f_user_id' );
 			if ( empty( $user_id ) ) {
 				wp_send_json_error( 'UserIdNotFound' );
 			}

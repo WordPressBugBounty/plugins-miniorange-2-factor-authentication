@@ -37,8 +37,7 @@ if ( ! $available_methods ) {
 	return;
 }
 $transient_id = MO2f_Utility::random_str( 20 );
-
-MO2f_Utility::mo2f_set_transient( $transient_id, 'mo2f_user_id', $user->ID );
+set_transient( $transient_id . 'mo2f_user_id', $user->ID, 300 );
 $same_user = $user->ID === $userid;
 global $mo2fdb_queries;
 $current_method         = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );

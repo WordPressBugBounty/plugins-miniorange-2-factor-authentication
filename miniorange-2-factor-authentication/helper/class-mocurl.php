@@ -681,16 +681,17 @@ if ( ! class_exists( 'MocURL' ) ) {
 		 * Sends the OTP over Telegram.
 		 *
 		 * @param string $u_key Email.
+		 * @param string $session_id_encrypt Session id.
 		 * @return array
 		 */
-		public function mo2f_send_telegram_otp( $u_key ) {
+		public function mo2f_send_telegram_otp( $u_key, $session_id_encrypt ) {
 			$otp_token = '';
 			for ( $i = 1; $i < 7; $i++ ) {
 				$otp_token .= wp_rand( 0, 9 );
 			}
 			$transaction_id = MoWpnsUtility::rand();
-			TwoFAMoSessions::add_session_var( 'mo2f_otp_token', $transaction_id . $otp_token );
-			TwoFAMoSessions::add_session_var( 'mo2f_telegram_time', time() );
+			set_transient( $session_id_encrypt . 'mo2f_otp_token', $transaction_id . $otp_token, 300 );
+			set_transient( $session_id_encrypt . 'mo2f_telegram_time', time(), 300 );
 			$url      = esc_url( MoWpnsConstants::TELEGRAM_OTP_LINK );
 			$postdata = array(
 				'mo2f_otp_token' => $otp_token,
@@ -720,11 +721,12 @@ if ( ! class_exists( 'MocURL' ) ) {
 		 *
 		 * @param string $otp_token Otp token.
 		 * @param string $mo2f_transaction_id Transaction id.
+		 * @param string $session_id_encrypt Session id.
 		 * @return array
 		 */
-		public function mo2f_validate_telegram_code( $otp_token, $mo2f_transaction_id ) {
-			$valid_token   = TwoFAMoSessions::get_session_var( 'mo2f_otp_token' );
-			$time          = TwoFAMoSessions::get_session_var( 'mo2f_telegram_time' );
+		public function mo2f_validate_telegram_code( $otp_token, $mo2f_transaction_id, $session_id_encrypt ) {
+			$valid_token   = get_transient( $session_id_encrypt . 'mo2f_otp_token' );
+			$time          = get_transient( $session_id_encrypt . 'mo2f_telegram_time' );
 			$accepted_time = time() - 300;
 			$time          = (int) $time;
 			if ( (string) ( $mo2f_transaction_id . $otp_token ) === (string) $valid_token ) {

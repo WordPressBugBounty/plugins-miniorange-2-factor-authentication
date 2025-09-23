@@ -61,21 +61,22 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 			$gauth_name = preg_replace( '#^https?://#i', '', $gauth_name );
 			$user       = get_user_by( 'ID', $current_user_id );
 			$mo2f_onprem_cloud_obj->mo2f_set_google_authenticator( $user, $this->mo2f_current_method, $gauth_name, $session_id );
-			$ga_secret = MO2f_Utility::mo2f_get_transient( $session_id, 'secret_ga' );
-			$data      = MO2f_Utility::mo2f_get_transient( $session_id, 'ga_qrCode' );
+			$ga_secret = get_user_meta( $user->ID, 'mo2f_secret_ga', true );
+			$data      = get_user_meta( $user->ID, 'mo2f_ga_qrCode', true );
 			if ( ! $ga_secret ) {
 				$ga_secret = $this->mo2f_create_secret();
-				MO2f_Utility::mo2f_set_transient( $session_id, 'secret_ga', $ga_secret );
+				update_user_meta( $user->ID, 'mo2f_secret_ga', $ga_secret );
 			}
 			global $mo2fdb_queries;
 			if ( empty( $data ) || ! MO2F_IS_ONPREM ) {
 				$email     = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
 				$ga_secret = $this->mo2f_create_secret();
 				$data      = $this->mo2f_geturl( $ga_secret, $gauth_name, $email );
-				MO2f_Utility::mo2f_set_transient( $session_id, 'ga_qrCode', $data );
+				update_user_meta( $user->ID, 'mo2f_ga_qrCode', $data );
+
 			}
 			$microsoft_url = $this->mo2f_geturl( $ga_secret, $gauth_name, '' );
-			MO2f_Utility::mo2f_set_transient( $session_id, 'secret_ga', $ga_secret );
+			update_user_meta( $user->ID, 'mo2f_secret_ga', $ga_secret );
 			wp_register_script( 'mo2f_qr_code_minjs', plugins_url( '/includes/jquery-qrcode/jquery-qrcode.min.js', dirname( dirname( __FILE__ ) ) ), array(), MO2F_VERSION, false );
 			$common_helper = new Mo2f_Common_Helper();
 			$inline_helper = new Mo2f_Inline_Popup();
@@ -97,10 +98,11 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 
 		/**
 		 * Show Google Authenticator configuration prompt on dashboard.
-		 *
+		 * 
+		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
-		public function mo2f_prompt_2fa_setup_dashboard() {
+		public function mo2f_prompt_2fa_setup_dashboard( $session_id_encrypt ) {
 			global $mo2fdb_queries;
 			$current_user  = wp_get_current_user();
 			$common_helper = new Mo2f_Common_Helper();
@@ -119,17 +121,18 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 
 		/**
 		 * Show E Testing prompt on dashboard.
-		 *
+		 * 
+		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
-		public function mo2f_prompt_2fa_test_dashboard() {
+		public function mo2f_prompt_2fa_test_dashboard( $session_id_encrypt ) {
 			$current_user        = wp_get_current_user();
 			$mo2fa_login_message = MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::lang_translate( MoWpnsMessages::VERIFY_YOURSELF );
 			$mo2fa_login_status  = 'MO_2_FACTOR_CHALLENGE_GOOGLE_AUTHENTICATION';
 			$login_popup         = new Mo2f_Login_Popup();
 			$common_helper       = new Mo2f_Common_Helper();
-			$skeleton_values     = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $current_user->ID, 'test_2fa', '' );
-			$html                = $login_popup->mo2f_get_twofa_skeleton_html( $mo2fa_login_status, $mo2fa_login_message, '', '', $skeleton_values, $this->mo2f_current_method, 'test_2fa' );
+			$skeleton_values     = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $current_user->ID, 'test_2fa', '', $session_id_encrypt );
+			$html                = $login_popup->mo2f_get_twofa_skeleton_html( $mo2fa_login_status, $mo2fa_login_message, '', $session_id_encrypt, $skeleton_values, $this->mo2f_current_method, 'test_2fa' );
 			$html               .= $login_popup->mo2f_get_validation_popup_script( 'test_2fa', $this->mo2f_current_method, '', '' );
 			$html               .= $common_helper->mo2f_get_test_script();
 			wp_send_json_success( $html );
@@ -277,19 +280,21 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 		 *
 		 * @param string $otp_token OTP token.
 		 * @param string $session_id_encrypt Session id.
-		 * @param object $user User.
+		 * @param array  $user_details User details.
 		 * @param string $prev_input Prev input.
 		 * @param array  $post Post data.
 		 * @return void
 		 */
-		public function mo2f_validate_otp( $otp_token, $session_id_encrypt, $user, $prev_input, $post ) {
+		public function mo2f_validate_otp( $otp_token, $session_id_encrypt, $user_details, $prev_input, $post ) {
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
-			$ga_secret = isset( $post['ga_secret'] ) ? sanitize_text_field( wp_unslash( $post['ga_secret'] ) ) : ( isset( $post['session_id'] ) ? MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'secret_ga' ) : null );
+			$user_id   = isset( $user_details['user_id'] ) ? $user_details['user_id'] : null;
+			$user      = get_user_by( 'id', $user_id );
+			$ga_secret = isset( $post['ga_secret'] ) ? sanitize_text_field( wp_unslash( $post['ga_secret'] ) ) : ( isset( $post['session_id'] ) ? get_user_meta( $user->ID, 'mo2f_secret_ga', true ) : null );
 			if ( MO2f_Utility::mo2f_check_number_length( $otp_token ) ) {
 				$email           = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
 				$email           = ( empty( $email ) ) ? $user->user_email : $email;
 				$google_response = json_decode( $mo2f_onprem_cloud_obj->mo2f_validate_google_auth( $email, $otp_token, $ga_secret ), true );
-				$this->mo2f_process_inline_ga_validate( $google_response, $user, $email, $ga_secret );
+				$this->mo2f_process_inline_ga_validate( $google_response, $user_details, $email, $ga_secret, $session_id_encrypt );
 			} else {
 				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::ONLY_DIGITS_ALLOWED ) );
 			}
@@ -299,16 +304,19 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 		 * Processes GA validation at inline.
 		 *
 		 * @param array  $google_response Response.
-		 * @param object $user User.
+		 * @param array  $user_details User details.
 		 * @param string $email Email id.
 		 * @param string $ga_secret GA secrets.
+		 * @param string $session_id Session id.
 		 * @return void
 		 */
-		public function mo2f_process_inline_ga_validate( $google_response, $user, $email, $ga_secret ) {
+		public function mo2f_process_inline_ga_validate( $google_response, $user_details, $email, $ga_secret, $session_id ) {
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( MoWpnsConstants::SUCCESS_RESPONSE === $google_response['status'] ) {
+					$user_id  = isset( $user_details['user_id'] ) ? $user_details['user_id'] : null;
+					$user     = get_user_by( 'id', $user_id );
 					$response = $this->mo2f_update_user_details( $user, $email );
-					$this->mo2f_process_update_details_response( $response, $user, $ga_secret );
+					$this->mo2f_process_update_details_response( $response, $user_details, $ga_secret, $session_id );
 				} else {
 					wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_OTP ) );
 				}
@@ -320,13 +328,16 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 		 * Processes update details.
 		 *
 		 * @param array  $response Response.
-		 * @param object $user User.
+		 * @param array  $user_details User details.
 		 * @param string $ga_secret GA secrets.
+		 * @param string $session_id Session id.
 		 * @return void
 		 */
-		public function mo2f_process_update_details_response( $response, $user, $ga_secret ) {
+		public function mo2f_process_update_details_response( $response, $user_details, $ga_secret, $session_id ) {
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( MoWpnsConstants::SUCCESS_RESPONSE === $response['status'] ) {
+					$user_id = isset( $user_details['user_id'] ) ? $user_details['user_id'] : null;
+					$user    = get_user_by( 'id', $user_id );
 					delete_user_meta( $user->ID, 'mo2f_2FA_method_to_configure' );
 					delete_user_meta( $user->ID, 'mo2f_configure_2FA' );
 					delete_user_meta( $user->ID, 'mo2f_google_auth' );
@@ -337,6 +348,8 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 						$gauth_obj->mo_g_auth_set_secret( $user->ID, $ga_secret );
 					}
 					update_user_meta( $user->ID, 'mo2f_external_app_type', $configured_2fa_method );
+					$common_helper = new Mo2f_Common_Helper();
+					$common_helper->mo2f_update_current_user_status( $session_id );
 					wp_send_json_success( $configured_2fa_method . ' has been configured successfully.' );
 				}
 			}
@@ -399,21 +412,23 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 		 */
 		public function mo2f_login_validate( $otp_token, $redirect_to, $session_id_encrypt ) {
 			global $mo2f_onprem_cloud_obj, $mo2fdb_queries, $mo_wpns_utility;
-			$user_id = MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'mo2f_current_user_id' );
+			$common_helper = new Mo2f_Common_Helper();
+			$user_id       = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 			if ( ! $user_id && is_user_logged_in() ) {
 				$user_id = wp_get_current_user()->ID;
 			}
-			$attempts = TwoFAMoSessions::get_session_var( 'mo2f_attempts_before_redirect' );
-			$user     = get_user_by( 'id', $user_id );
-			$email    = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user_id );
-			$content  = json_decode( $mo2f_onprem_cloud_obj->validate_otp_token( $this->mo2f_current_method, $email, null, $otp_token, $user ), true );
+			$mo2f_transaction_id = get_transient( $session_id_encrypt . 'mo2f_transactionId' );
+			$user                = get_user_by( 'id', $user_id );
+			$email               = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user_id );
+			$content             = json_decode( $mo2f_onprem_cloud_obj->validate_otp_token( $this->mo2f_current_method, $email, $mo2f_transaction_id, $otp_token, $user, $session_id_encrypt ), true );
 			if ( 0 === strcasecmp( $content['status'], 'SUCCESS' ) ) {
-				TwoFAMoSessions::add_session_var( 'mo2f_attempts_before_redirect', 3 );
+				$common_helper = new Mo2f_Common_Helper();
+				$common_helper->mo2f_update_current_user_status( $session_id_encrypt );
 				wp_send_json_success( 'VALIDATED_SUCCESS' );
 			} elseif ( 'ALREADY_USED' === $content['status'] ) {
-				$mo_wpns_utility->mo2f_handle_attempt_validation( $attempts, 'ALREADY_USED' );
+				$mo_wpns_utility->mo2f_handle_attempt_validation( 'ALREADY_USED', $session_id_encrypt );
 			} else {
-				$mo_wpns_utility->mo2f_handle_attempt_validation( $attempts, 'INVALID_OTP' );
+				$mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $session_id_encrypt );
 			}
 			return $content;
 		}

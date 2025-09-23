@@ -119,12 +119,13 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		 * @param string $phone Phone number.
 		 * @param string $email Email ID.
 		 * @param string $auth_type authentication type.
-		 * @param mixed  $currentuser current user object.
+		 * @param mixed  $current_user current user object.
+		 * @param string $session_id session id.
 		 * @return mixed
 		 */
-		public function send_otp_token( $phone, $email, $auth_type, $currentuser = null ) {
-			if ( is_null( $currentuser ) || ! isset( $currentuser ) ) {
-				$currentuser = wp_get_current_user();
+		public function send_otp_token( $phone, $email, $auth_type, $current_user = null, $session_id = null ) {
+			if ( is_null( $current_user ) || ! isset( $current_user ) ) {
+				$current_user = wp_get_current_user();
 			}
 			if ( MoWpnsConstants::OTP_OVER_SMS === $auth_type ) {
 				$mo2f_sms_mo2f_curl_redirect = new MocURL();
@@ -134,7 +135,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 				$content                             = $mo2f_wa_mo2f_all_inclusive_redirect->mo2f_send_whatsapp_otp_token( $auth_type, $phone, $email );
 			} else {
 				$mo2f_email_on_prem_redirect = new Mo2f_OnPremRedirect();
-				$content                     = $mo2f_email_on_prem_redirect->on_prem_send_redirect( $email, $auth_type, $currentuser );
+				$content                     = $mo2f_email_on_prem_redirect->on_prem_send_redirect( $email, $auth_type, $current_user, $session_id );
 			}
 			return $content;
 		}
@@ -147,9 +148,10 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		 * @param string $transaction_id transaction ID.
 		 * @param string $otp_token OTP token.
 		 * @param object $current_user current user object.
+		 * @param string $session_id session id.
 		 * @return mixed
 		 */
-		public function validate_otp_token( $auth_type, $username, $transaction_id, $otp_token, $current_user = null ) {
+		public function validate_otp_token( $auth_type, $username, $transaction_id, $otp_token, $current_user = null, $session_id = null ) {
 			if ( ! isset( $current_user ) || is_null( $current_user ) ) {
 				$current_user = wp_get_current_user();
 			}
@@ -161,7 +163,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 				$content                             = $mo2f_wa_mo2f_all_inclusive_redirect->mo_wa_validate_otp_token( $transaction_id, $otp_token );
 			} else {
 				$mo2f_email_on_prem_redirect = new Mo2f_OnPremRedirect();
-				$content                     = $mo2f_email_on_prem_redirect->on_prem_validate_redirect( $auth_type, $otp_token, $transaction_id, $current_user );
+				$content                     = $mo2f_email_on_prem_redirect->on_prem_validate_redirect( $auth_type, $otp_token, $transaction_id, $current_user, $session_id );
 
 			}
 			return $content;
@@ -172,19 +174,17 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		 *
 		 * @param string $useremail user email.
 		 * @param string $otptoken google authenticator secret key.
-		 * @param string $secret otp token.
+		 * @param string $secret_ga GA secret.
 		 * @return string
 		 */
-		public function mo2f_google_auth_validate( $useremail, $otptoken, $secret ) {
+		public function mo2f_google_auth_validate( $useremail, $otptoken, $secret_ga ) {
 
 			include_once dirname( dirname( __FILE__ ) ) . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'twofa' . DIRECTORY_SEPARATOR . 'class-google-auth-onpremise.php';
-			$gauth_obj          = new Google_auth_onpremise();
-			$session_id_encrypt = isset( $_POST['mo2f_session_id'] ) ? sanitize_text_field( wp_unslash( $_POST['mo2f_session_id'] ) ) : null; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification has been performed.
-			$secret_ga          = ! empty( $session_id_encrypt ) ? MO2f_Utility::mo2f_get_transient( $session_id_encrypt, 'secret_ga' ) : $secret;
-			$content            = $gauth_obj->mo2f_verify_code( $secret_ga, $otptoken );
-			$value              = json_decode( $content, true );
+			$gauth_obj = new Google_auth_onpremise();
+			$user      = get_user_by( 'email', $useremail );
+			$content   = $gauth_obj->mo2f_verify_code( $secret_ga, $otptoken );
+			$value     = json_decode( $content, true );
 			if ( 'SUCCESS' === $value['status'] ) {
-				$user    = wp_get_current_user();
 				$user_id = $user->ID;
 				$gauth_obj->mo_g_auth_set_secret( $user_id, $secret_ga );
 				update_user_meta( $user_id, 'mo2f_2FA_method_to_configure', MoWpnsConstants::GOOGLE_AUTHENTICATOR );
@@ -258,7 +258,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 			$challenge_ques1     = $challenge_questions[ $random_keys[0] ];
 			$challenge_ques2     = $challenge_questions[ $random_keys[1] ];
 			$questions           = array( $challenge_ques1, $challenge_ques2 );
-			TwoFAMoSessions::add_session_var( 'mo_2_factor_kba_questions', $questions );
+			set_transient( $session_id . 'mo_2_factor_kba_questions', $questions, 300 );
 			return $questions;
 		}
 
@@ -277,8 +277,8 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 			$onpremise_secret = $gauth_obj->mo2f_create_secret();
 			$issuer           = get_site_option( 'mo2f_google_appname', DEFAULT_GOOGLE_APPNAME );
 			$url              = $gauth_obj->mo2f_geturl( $onpremise_secret, $issuer, $email );
-			MO2f_Utility::mo2f_set_transient( $session_id, 'secret_ga', $onpremise_secret );
-			MO2f_Utility::mo2f_set_transient( $session_id, 'ga_qrCode', $url );
+			update_user_meta( $user->ID, 'mo2f_secret_ga', $onpremise_secret );
+			update_user_meta( $user->ID, 'mo2f_ga_qrCode', $url );
 		}
 		/**
 		 * Sends email verification link to the users email.
@@ -286,9 +286,10 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		 * @param string $user_email user email.
 		 * @param string $mo2f_second_factor 2FA method of user.
 		 * @param string $current_user Current user.
+		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
-		public function mo2f_send_verification_link( $user_email, $mo2f_second_factor, $current_user ) {
+		public function mo2f_send_verification_link( $user_email, $mo2f_second_factor, $current_user, $session_id_encrypt ) {
 			MO2f_Utility::mo2f_debug_file( 'Email verification link has been sent successfully for ' . $mo2f_second_factor . ' Email-' . $user_email );
 			$mo2f_on_prem_redirect = new Mo2f_OnPremRedirect();
 			if ( ! $mo2f_on_prem_redirect->mo2f_check_if_email_transactions_exists() ) {
@@ -297,7 +298,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 					'message' => MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL,
 				);
 			} else {
-				$content = $mo2f_on_prem_redirect->mo2f_pass2login_push_email_onpremise( $current_user, $user_email );
+				$content = $mo2f_on_prem_redirect->mo2f_pass2login_push_email_onpremise( $current_user, $user_email, false, $session_id_encrypt );
 			}
 			$content = is_array( $content ) ? wp_json_encode( $content ) : $content;
 			return $content;
@@ -311,6 +312,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_oobe_get_dashboard_script( $request_type, $transaction_id ) {
+			$nonce  = wp_create_nonce( 'mo2f-out-of-band-ajax-nonce' );
 			$script = '<script>
 			jQuery("#mo2f_validateotp_form").css("display","none");
 			var calls = 0;
@@ -319,7 +321,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 			function emailVerificationPoll()
 			{
 				calls = calls + 1;
-				var data = {\'mo2f_out_of_band_email\':\'test_polling\'};
+				var data = {\'mo2f_out_of_band_email\':\'test_polling\', \'session_id\':\'' . esc_js( $transaction_id ) . '\', \'nonce\':\'' . esc_js( $nonce ) . '\'};
 				jQuery.ajax({
 					url: ajax_url ,
 					type: "POST",
@@ -391,6 +393,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_oobe_get_login_script( $request_type, $transaction_id ) {
+			$nonce  = wp_create_nonce( 'mo2f-out-of-band-ajax-nonce' );
 			$script = '<script>
 			var calls = 0;
 			var flow = "' . esc_js( $request_type ) . '";
@@ -401,7 +404,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 			function emailVerificationPoll()
 			{
 				calls = calls + 1;
-				var data = {\'mo2f_out_of_band_email\':\'login_polling\'};
+				var data = {\'mo2f_out_of_band_email\':\'login_polling\', \'session_id\':\'' . esc_js( $transaction_id ) . '\',  \'nonce\':\'' . esc_js( $nonce ) . '\'};
 				jQuery.ajax({
 					url: ajax_url,
 					type: "POST",
@@ -448,7 +451,7 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		 */
 		public function mo2f_email_verification_call( $current_user ) {
 			$mo2f_on_prem_redirect = new Mo2f_OnPremRedirect();
-			$mo2f_on_prem_redirect->mo2f_pass2login_push_email_onpremise( $current_user, true );
+			$mo2f_on_prem_redirect->mo2f_pass2login_push_email_onpremise( $current_user, $current_user->user_email, true, $session_id );
 		}
 		/**
 		 * Set email verification for user.
@@ -514,8 +517,8 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 			$mo2f_google_auth              = array();
 			$mo2f_google_auth['ga_qrCode'] = $url;
 			$mo2f_google_auth['ga_secret'] = $onpremise_secret;
-			MO2f_Utility::mo2f_set_transient( $session_id_encrypt, 'secret_ga', $onpremise_secret );
-			MO2f_Utility::mo2f_set_transient( $session_id_encrypt, 'ga_qrCode', $url );
+			update_user_meta( $current_user->ID, 'mo2f_secret_ga', $onpremise_secret );
+			update_user_meta( $current_user->ID, 'mo2f_ga_qrCode', $url );
 		}
 
 		/**

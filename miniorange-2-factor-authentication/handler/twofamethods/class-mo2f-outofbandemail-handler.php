@@ -90,17 +90,18 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		/**
 		 * Preprocessing before prompting email verification on dashboard.
 		 *
+		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
-		public function mo2f_prompt_2fa_setup_dashboard() {
+		public function mo2f_prompt_2fa_setup_dashboard( $session_id_encrypt ) {
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
 			$current_user = wp_get_current_user();
 			$email        = $current_user->user_email;
-			$json_string = stripslashes( $mo2f_onprem_cloud_obj->mo2f_send_link( $current_user, $this->mo2f_current_method, $email ) );
+			$json_string = stripslashes( $mo2f_onprem_cloud_obj->mo2f_send_link( $current_user, $this->mo2f_current_method, $email, $session_id_encrypt ) );
 			$content     = json_decode( $json_string, true );
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'SUCCESS' === $content['status'] ) {
-					$this->mo2f_handle_success_dashboard( $email, $current_user->ID, $content, 'configure_2fa' );
+					$this->mo2f_handle_success_dashboard( $email, $current_user->ID, $content, 'configure_2fa', $session_id_encrypt );
 				}
 			}
 			$this->mo2f_handle_error_dashboard( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL );
@@ -109,16 +110,17 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		/**
 		 * Show OOB Testing prompt on dashboard.
 		 *
+		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
-		public function mo2f_prompt_2fa_test_dashboard() {
+		public function mo2f_prompt_2fa_test_dashboard( $session_id_encrypt ) {
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
 			$current_user    = wp_get_current_user();
 			$mo2f_user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $current_user->ID );
-			$response        = json_decode( $mo2f_onprem_cloud_obj->mo2f_send_link( $current_user, $this->mo2f_current_method, $mo2f_user_email ), true );
+			$response        = json_decode( $mo2f_onprem_cloud_obj->mo2f_send_link( $current_user, $this->mo2f_current_method, $mo2f_user_email, $session_id_encrypt ), true );
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'SUCCESS' === $response['status'] ) {
-					$this->mo2f_handle_success_dashboard( $mo2f_user_email, $current_user->ID, $response, 'test_2fa' );
+					$this->mo2f_handle_success_dashboard( $mo2f_user_email, $current_user->ID, $response, 'test_2fa', $session_id_encrypt );
 				}
 			} else {
 				$this->mo2f_handle_error_dashboard( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL );
@@ -135,12 +137,12 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_prompt_2fa_login( $currentuser, $session_id_encrypt, $redirect_to ) {
-			global $mo2fdb_queries,$mo2f_onprem_cloud_obj;
+			global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
 			$mo2f_user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $currentuser->ID );
-			$response        = json_decode( $mo2f_onprem_cloud_obj->mo2f_send_link( $currentuser, $this->mo2f_current_method, $mo2f_user_email ), true );
+			$response        = json_decode( $mo2f_onprem_cloud_obj->mo2f_send_link( $currentuser, $this->mo2f_current_method, $mo2f_user_email, $session_id_encrypt ), true );
 			$transaction_id  = isset( $response['txId'] ) ? $response['txId'] : '';
 			if ( json_last_error() === JSON_ERROR_NONE && MoWpnsConstants::SUCCESS_RESPONSE === $response['status'] ) {
-					$content             = $this->mo2f_handle_success_login( $mo2f_user_email, $currentuser, $response );
+					$content             = $this->mo2f_handle_success_login( $mo2f_user_email, $currentuser, $response, $session_id_encrypt );
 					$mo2fa_login_message = $content['login_message'];
 					$mo2fa_login_status  = $content['login_status'];
 			} else {
@@ -161,17 +163,18 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 */
 		public function mo2f_prompt_2fa_inline( $currentuser, $session_id_encrypt, $redirect_to ) {
 			global $mo2f_onprem_cloud_obj;
-			$mo2f_user_email = $currentuser->user_email;
-			$response        = json_decode( $mo2f_onprem_cloud_obj->mo2f_send_link( $currentuser, $this->mo2f_current_method, $mo2f_user_email ), true );
+			$mo2f_user_email     = $currentuser->user_email;
+			$response            = json_decode( $mo2f_onprem_cloud_obj->mo2f_send_link( $currentuser, $this->mo2f_current_method, $mo2f_user_email, $session_id_encrypt ), true );
+			$mo2f_transaction_id = isset( $response['txId'] ) ? $response['txId'] : '';
 			if ( json_last_error() === JSON_ERROR_NONE && MoWpnsConstants::SUCCESS_RESPONSE === $response['status'] ) {
-				$content             = $this->mo2f_handle_success_login( $mo2f_user_email, $currentuser, $response );
+				$content             = $this->mo2f_handle_success_login( $mo2f_user_email, $currentuser, $response, $session_id_encrypt );
 				$mo2fa_login_message = $content['login_message'];
 				$mo2fa_login_status  = $content['login_status'];
 			} else {
 				$mo2fa_login_message = MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL;
 				$mo2fa_login_status  = MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT;
 			}
-			$this->mo2f_show_login_prompt( $mo2fa_login_message, $mo2fa_login_status, $currentuser, $redirect_to, $session_id_encrypt );
+			$this->mo2f_show_login_prompt( $mo2fa_login_message, $mo2fa_login_status, $currentuser, $redirect_to, $session_id_encrypt, $mo2f_transaction_id );
 			exit;
 		}
 
@@ -186,7 +189,7 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 */
 		public function mo2f_send_otp( $email, $session_id, $current_user ) {
 			global $mo2f_onprem_cloud_obj, $mo_wpns_utility;
-			$content = json_decode( $mo2f_onprem_cloud_obj->mo2f_send_link( $current_user, $this->mo2f_current_method, $email ), true );
+			$content = json_decode( $mo2f_onprem_cloud_obj->mo2f_send_link( $current_user, $this->mo2f_current_method, $email, $session_id_encrypt ), true );
 			if ( json_last_error() === JSON_ERROR_NONE ) { /* Generate otp token */
 				if ( 'ERROR' === $content['status'] ) {
 					wp_send_json_error( $content['message'] );
@@ -207,13 +210,14 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 * @param string $mo2f_user_email User email.
 		 * @param object $current_user User.
 		 * @param array  $content Content.
+		 * @param string $session_id_encrypt Session id.
 		 * @return array
 		 */
-		public function mo2f_handle_success_login( $mo2f_user_email, $current_user, $content ) {
+		public function mo2f_handle_success_login( $mo2f_user_email, $current_user, $content, $session_id_encrypt ) {
 			global $mo_wpns_utility;
 			$mo2f_hidden_email   = MO2f_Utility::mo2f_get_hidden_email( $mo2f_user_email );
 			$mo2fa_login_message = 'An email verification link has been sent to ' . $mo2f_hidden_email . '.';
-			TwoFAMoSessions::add_session_var( 'mo2f_transactionId', $content['txId'] );
+			set_transient( $session_id_encrypt . 'mo2f_transactionId', $content['txId'], 300 );
 			$mo2fa_login_status = MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OOB_EMAIL;
 			MO2f_Utility::mo2f_debug_file( 'Email verification link has been sent successfully for ' . $this->mo2f_current_method . ' User_IP-' . $mo_wpns_utility->get_client_ip() . ' User_Id-' . $current_user->ID . ' Email-' . $current_user->user_email );
 			return array(
@@ -256,18 +260,20 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 * @param int    $user_id User id.
 		 * @param mixed  $response Response.
 		 * @param string $request_type Request type.
+		 * @param string $session_id_encrypt Session id.
 		 * @return void
 		 */
-		public function mo2f_handle_success_dashboard( $mo2f_user_email, $user_id, $response, $request_type ) {
+		public function mo2f_handle_success_dashboard( $mo2f_user_email, $user_id, $response, $request_type, $session_id_encrypt ) {
 			global $mo_wpns_utility, $mo2f_onprem_cloud_obj;
 			MO2f_Utility::mo2f_debug_file( 'Email verification link has been sent successfully for ' . $this->mo2f_current_method . ' User_IP - ' . $mo_wpns_utility->get_client_ip() . ' User_Id - ' . $user_id . ' Email - ' . $mo2f_user_email );
 			$mo2f_hidden_email   = MO2f_Utility::mo2f_get_hidden_email( $mo2f_user_email );
 			$mo2fa_login_message = 'An email verification link has been sent to ' . $mo2f_hidden_email . ' . ';
-			TwoFAMoSessions::add_session_var( 'mo2f_transactionId', $response['txId'] );
+			set_transient( $session_id_encrypt . 'mo2f_transactionId', $response['txId'], 300 );
+
 			$mo2fa_login_status = MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OOB_EMAIL;
 			$login_popup        = new Mo2f_Login_Popup();
 			$common_helper      = new Mo2f_Common_Helper();
-			$skeleton_values    = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $user_id, 'test_2fa', '' );
+			$skeleton_values    = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $user_id, 'test_2fa', '', $session_id_encrypt  );
 			$html               = $login_popup->mo2f_get_twofa_skeleton_html( $mo2fa_login_status, $mo2fa_login_message, '', '', $skeleton_values, $this->mo2f_current_method, 'test_2fa' );
 			$html              .= $login_popup->mo2f_get_validation_popup_script( 'test_2fa', $this->mo2f_current_method, '', '' );
 			$html              .= $mo2f_onprem_cloud_obj->mo2f_oobe_get_dashboard_script( $request_type, $response['txId'] );
@@ -287,11 +293,11 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 * @param string $transaction_id Transaction ID.
 		 * @return void
 		 */
-		public function mo2f_show_login_prompt( $mo2fa_login_message, $mo2fa_login_status, $current_user, $redirect_to, $session_id_encrypt, $transaction_id = '' ) {
+		public function mo2f_show_login_prompt( $mo2fa_login_message, $mo2fa_login_status, $current_user, $redirect_to, $session_id_encrypt, $transaction_id ) {
 			global $mo2f_onprem_cloud_obj;
 			$login_popup     = new Mo2f_Login_Popup();
 			$common_helper   = new Mo2f_Common_Helper();
-			$skeleton_values = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $current_user->ID, 'login_2fa', '' );
+			$skeleton_values = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $current_user->ID, 'login_2fa', '', $session_id_encrypt );
 			$html            = $login_popup->mo2f_twofa_authentication_login_prompt( $mo2fa_login_status, $mo2fa_login_message, $redirect_to, $session_id_encrypt, $skeleton_values, $this->mo2f_current_method );
 			$html           .= $common_helper->mo2f_get_hidden_forms_login( $redirect_to, $session_id_encrypt, $mo2fa_login_status, $mo2fa_login_message, $this->mo2f_current_method, $current_user->ID );
 			if ( MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT !== $mo2fa_login_status ) {
@@ -359,6 +365,8 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 				$difference             = ( $current_time_in_millis - $generatedtimeinmillis ) / 1000;
 				if ( $difference <= 300 ) {
 					if ( $accesstokenget === $otp_token ) {
+						$common_helper = new Mo2f_Common_Helper();
+						$common_helper->mo2f_update_current_user_status( $txidget );
 						update_site_option( $txidget, 1 );
 						$body  = __( 'Transaction has been successfully validated . Please continue with the transaction.', 'miniorange-2-factor-authentication' );
 						$head  = __( 'TRANSACTION SUCCESSFUL', 'miniorange-2-factor-authentication' );
@@ -381,7 +389,6 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 				'color' => $color,
 			);
 			return $content;
-
 		}
 
 		/**
@@ -409,7 +416,7 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 			global $mo2fdb_queries;
 			$status = (int) get_site_option( $txidpost );
 			if ( 1 === $status || 0 === $status ) {
-				$user_details = TwoFAMoSessions::get_session_var( $txidpost );
+				$user_details = get_transient( $txidpost );
 				if ( 1 === $status && ! $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_EmailVerification_config_status', $user_details['user_id'] ) ) {
 					$this->mo2f_update_user_details( get_user_by( 'id', $user_details['user_id'] ), $user_details['user_email'] );
 				}

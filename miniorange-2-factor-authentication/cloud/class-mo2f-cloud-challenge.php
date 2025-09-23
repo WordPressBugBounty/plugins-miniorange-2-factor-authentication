@@ -50,9 +50,8 @@ if ( ! class_exists( 'Mo2f_Cloud_Challenge' ) ) {
 			$mo2f_google_auth = get_user_meta( $user->ID, 'mo2f_google_auth', true );
 			$data             = isset( $mo2f_google_auth['ga_qrCode'] ) ? $mo2f_google_auth['ga_qrCode'] : null;
 			$ga_secret        = isset( $mo2f_google_auth['ga_secret'] ) ? $mo2f_google_auth['ga_secret'] : null;
-			MO2f_Utility::mo2f_set_transient( $session_id, 'secret_ga', $ga_secret );
-			MO2f_Utility::mo2f_set_transient( $session_id, 'ga_qrCode', $data );
+			update_user_meta( $user->ID, 'mo2f_secret_ga', $ga_secret );
+			update_user_meta( $user->ID, 'mo2f_ga_qrCode', $data );
 		}
-
 	}
 }

@@ -278,7 +278,7 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 			$mo2fa_login_message = MoWpnsMessages::UNBLOCK_CONFIRMATION;
 			$login_popup         = new Mo2f_Login_Popup();
 			ob_start();
-			$skeleton_values = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, get_user_by( 'id', $user_id ), 'test_2fa', '' );
+			$skeleton_values = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, get_user_by( 'id', $user_id ), 'test_2fa', '', '' );
 			$html            = $login_popup->mo2f_twofa_authentication_login_prompt( $mo2fa_login_status, $mo2fa_login_message, null, null, $skeleton_values, '', 'test_2fa' );
 			echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped the necessary in the definition.
 			$popup_html = ob_get_clean();

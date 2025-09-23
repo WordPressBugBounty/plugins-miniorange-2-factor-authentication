@@ -9,7 +9,7 @@
  * Plugin Name: miniOrange 2 Factor Authentication
  * Plugin URI: https://miniorange.com
  * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. We Support Google/Authy/LastPass/Microsoft Authenticator, QR Code, Push Notification, Soft Token and Security Questions(KBA) for 3 User in the free version of the plugin.
- * Version: 6.1.3
+ * Version: 6.1.4
  * Author: miniOrange
  * Author URI: https://miniorange.com
  * Text Domain: miniorange-2-factor-authentication
@@ -26,7 +26,6 @@ use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Handler\Twofa\Miniorange_Authentication;
 use TwoFA\Views\Mo2f_Setup_Wizard;
 use TwoFA\Helper\Mo2f_MenuItems;
-use TwoFA\Handler\Twofa\Mo2fCustomRegFormShortcode;
 use TwoFA\Handler\Mo2f_2fa_Settings_Handler;
 use TwoFA\Traits\Instance;
 use TwoFA\Handler\RegistrationHandler;
@@ -44,7 +43,7 @@ require dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
 require_once dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
 define( 'MO_HOST_NAME', 'https://login.xecurify.com' );
-define( 'MO2F_VERSION', '6.1.3' );
+define( 'MO2F_VERSION', '6.1.4' );
 define( 'MO2F_PLUGIN_URL', ( plugin_dir_url( __FILE__ ) ) );
 define( 'MO2F_TEST_MODE', false );
 define( 'MO2F_IS_ONPREM', get_option( 'is_onprem', 1 ) );
@@ -89,10 +88,8 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			if ( ! apply_filters( 'mo2f_is_lv_needed', false ) ) {
 				add_action( 'plugins_loaded', array( $this, 'mo2f_add_wizard_actions' ), 1 );
 			}
-			$custom_short    = new Mo2fCustomRegFormShortcode();
 			$reg_handler_obj = new RegistrationHandler();
 			add_action( 'admin_init', array( $reg_handler_obj, 'mo2f_wp_verification' ) );
-			add_action( 'admin_init', array( $custom_short, 'mo_enqueue_shortcode' ) );
 			add_action( 'elementor/init', array( $this, 'mo2fa_login_elementor_note' ) );
 			add_shortcode( 'mo2f_enable_register', array( $reg_handler_obj, 'mo2f_wp_verification' ) );
 			add_action( 'user_profile_update_errors', array( $this, 'mo2f_user_profile_errors' ), 10, 3 );
@@ -252,8 +249,6 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			$mo2fdb_queries->mo_plugin_activate();
 			add_option( 'mo2f_is_NC', 1 );
 			add_option( 'mo2f_is_NNC', 1 );
-			add_action( 'mo2f_auth_show_success_message', array( $this, 'mo2f_auth_show_success_message' ), 10, 1 );
-			add_action( 'mo2f_auth_show_error_message', array( $this, 'mo2f_auth_show_error_message' ), 10, 1 );
 			add_option( 'mo2f_onprem_admin', $userid );
 			add_option( 'mo2f_handle_migration_status', 1 );
 			add_option( 'mo2f_enable_backup_methods', true );
@@ -524,6 +519,9 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 						delete_user_meta( $user_id, 'mo2f_grace_period_start_time' );
 						delete_user_meta( $user_id, 'mo_backup_code_generated' );
 						delete_user_meta( $user_id, 'mo2f_rba_device_details' );
+						delete_user_meta( $user_id, 'mo2f_secret_ga' );
+						delete_user_meta( $user_id, 'mo2f_gauth_key' );
+						delete_user_meta( $user_id, 'mo2f_ga_qrCode' );
 					}
 				}
 			}

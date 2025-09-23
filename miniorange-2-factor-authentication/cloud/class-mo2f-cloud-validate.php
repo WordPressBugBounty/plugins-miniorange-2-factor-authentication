@@ -82,9 +82,9 @@ if ( ! class_exists( 'Mo2f_Cloud_Validate' ) ) {
 			$response      = json_decode( $content, true );
 			if ( JSON_ERROR_NONE === json_last_error() ) { /* Generate Qr code */
 				if ( 'SUCCESS' === $response['status'] ) {
-					MO2f_Utility::mo2f_set_transient( $session_id, 'mo2f_transactionId', $response['txId'] );
+					set_transient( $session_id . 'mo2f_transactionId', $response['txId'], 300 );
 					$questions = array( $response['questions'][0]['question'], $response['questions'][1]['question'] );
-					TwoFAMoSessions::add_session_var( 'mo_2_factor_kba_questions', $questions );
+					set_transient( $session_id . 'mo_2_factor_kba_questions', $questions, 300 );
 					return $questions;
 				} elseif ( 'ERROR' === $response['status'] ) {
 					$pass2fa_login->remove_current_activity( $session_id );

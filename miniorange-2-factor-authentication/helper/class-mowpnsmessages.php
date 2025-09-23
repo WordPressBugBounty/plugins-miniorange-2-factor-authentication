@@ -54,7 +54,7 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 		const DELETE_FILE           = 'Someone has deleted the backup by going to directory please refreash the page';
 		const NOT_ADMIN             = 'You are not a admin. Only admin can download';
 		const UNBLOCK_CONFIRMATION  = 'Are you sure you want to unblock this user?';
-		const PHONE_NUMBER_MISMATCH = 'The current phone number is different from the phone number on which OTP is sent. Please enter the phone number and click on \'Verify\' button again.';
+		const PHONE_NUMBER_MISMATCH = 'The current phone number is different from the phone number on which OTP is sent. Please enter the phone number and click on \'Validate OTP\' button again.';
 		const CHAT_ID_MISMATCH      = 'The current Chat ID is different from the Chat ID on which OTP is sent. Please enter the Chat ID and click on \'Verify\' button again.';
 
 		const WHITELIST_SELF       = "<div class='mo2f-custom-notice notice notice-warning whitelistself-notice MOWrn'><p><p class='notice-message'>It looks like you have not whitelisted your IP. Whitelist your IP as you can get blocked from your site.</p><button class='whitelist_self notice-button'><i>WhiteList</i></button></p></div>";
@@ -207,7 +207,7 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 		const PASSWORDLESS_LOGIN_CANNOT_BE_ENABLED_ERROR = 'Please disable the Remember Device and Remember IP features first in order to enable this feature.';
 		const GET_YOUR_PLAN_UPGRADED                     = 'Please upgrade you plan in order to use this feature.';
 		const REMEMBER_IP_CONSENT_MESSAGE                = 'Do you want to remember this IP? Remembering this IP enables you to avoid the Two-Factor Authentication (2FA) the next time you login using this IP.';
-
+        const INVALID_SESSION                            = 'Invalid session. Please try again.';
 		/**
 		 * Return actual messages according to the key.
 		 *

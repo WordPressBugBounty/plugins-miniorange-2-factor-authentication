@@ -532,9 +532,8 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 						$mo2f_google_auth              = array();
 						$mo2f_google_auth['ga_qrCode'] = $google_response['qrCodeData'];
 						$mo2f_google_auth['ga_secret'] = $google_response['secret'];
-
-						MO2f_Utility::mo2f_set_transient( $session_id_encrypt, 'secret_ga', $mo2f_google_auth['ga_secret'] );
-						MO2f_Utility::mo2f_set_transient( $session_id_encrypt, 'ga_qrCode', $mo2f_google_auth['ga_qrCode'] );
+						update_user_meta( $current_user->ID, 'mo2f_secret_ga', $mo2f_google_auth['ga_secret'] );
+						update_user_meta( $current_user->ID, 'mo2f_ga_qrCode', $mo2f_google_auth['ga_qrCode'] );
 					} else {
 						$mo2fa_login_message = __( 'Invalid request. Please register with miniOrange to configure 2 Factor plugin.', 'miniorange-2-factor-authentication' );
 					}
