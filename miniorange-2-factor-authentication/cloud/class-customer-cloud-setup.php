@@ -227,8 +227,8 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 		public function submit_contact_us( $q_email, $q_phone, $query ) {
 
 			$url = MO_HOST_NAME . '/moas/rest/customer/contact-us';
-			global $user;
-			$user              = wp_get_current_user();
+			global $mo2f_user;
+			$mo2f_user              = wp_get_current_user();
 			$is_nc_with_1_user = MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'site_option' ) && MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NNC', 'site_option' );
 			$is_ec_with_1_user = ! MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'site_option' );
 
@@ -239,11 +239,11 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 			} elseif ( $is_nc_with_1_user ) {
 				$customer_feature = 'V3';
 			}
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$query        = '[WordPress 2 Factor Authentication Plugin: ' . $customer_feature . ' - V ' . MO2F_VERSION . ' ]: ' . $query;
 			$fields       = array(
-				'firstName' => $user->user_firstname,
-				'lastName'  => $user->user_lastname,
+				'firstName' => $mo2f_user->user_firstname,
+				'lastName'  => $mo2f_user->user_lastname,
 				'company'   => isset( $_SERVER['SERVER_NAME'] ) ? esc_url_raw( wp_unslash( $_SERVER['SERVER_NAME'] ) ) : null,
 				'email'     => $q_email,
 				'ccEmail'   => 'mfasupport@xecurify.com',
@@ -414,18 +414,23 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 			$show_message = new MoWpnsMessages();
 			if ( json_last_error() === JSON_ERROR_NONE ) { /* Generate out of band email */
 				if ( isset( $response['status'] ) && 'ERROR' === $response['status'] ) {
-					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( $response['message'] ), 'ERROR' );
-				} else {
-					if ( 'SUCCESS' === $response['status'] ) {
+					$show_message->mo2f_show_message(
+						sprintf(
+							/* translators: %s: error message */
+							__( 'Error: %s', 'miniorange-2-factor-authentication' ),
+							$response['message']
+						),
+						'ERROR'
+					);
+				} elseif ( 'SUCCESS' === $response['status'] ) {
 						update_user_meta( $current_user->ID, 'mo2f_transactionId', $response['txId'] );
 						update_site_option( 'mo2f_transactionId', $response['txId'] );
-						$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::VERIFICATION_EMAIL_SENT ) . '<b> ' . $email . '</b>. ' . MoWpnsMessages::lang_translate( MoWpnsMessages::ACCEPT_LINK_TO_VERIFY_EMAIL ), 'SUCCESS' );
-					} else {
-						$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::ERROR_DURING_PROCESS ), 'ERROR' );
-					}
+						$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::VERIFICATION_EMAIL_SENT ) . '<b> ' . $email . '</b>. ' . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ACCEPT_LINK_TO_VERIFY_EMAIL ), 'SUCCESS' );
+				} else {
+					$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS ), 'ERROR' );
 				}
 			} else {
-				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_REQ ), 'ERROR' );
+				$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_REQ ), 'ERROR' );
 
 			}
 		}
@@ -685,7 +690,14 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 			$check_user   = json_decode( $mocurl->mo_check_user_already_exist( $email ), true );
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'ERROR' === $check_user['status'] ) {
-					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( $check_user['message'] ), 'ERROR' );
+					$show_message->mo2f_show_message(
+						sprintf(
+						/* translators: %s: error message */
+							__( 'Error: %s', 'miniorange-2-factor-authentication' ),
+							esc_html( $check_user['message'] )
+						),
+						'ERROR'
+					);
 					return;
 				} elseif ( strcasecmp( $check_user['status'], 'USER_FOUND' ) === 0 ) {
 					$mo2fdb_queries->mo2f_update_user_details(
@@ -716,7 +728,6 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 					return;
 				}
 			}
-
 		}
 	}
 }

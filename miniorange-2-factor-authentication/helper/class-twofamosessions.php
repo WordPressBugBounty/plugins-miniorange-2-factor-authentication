@@ -21,6 +21,31 @@ if ( ! class_exists( 'TwoFAMoSessions' ) ) {
 	class TwoFAMoSessions {
 
 		use Instance;
+
+		/**
+		 * Set a secure cookie with proper security attributes.
+		 *
+		 * @param string $name Cookie name.
+		 * @param string $value Cookie value.
+		 * @param int    $expires Cookie expiration time.
+		 * @param string $path Cookie path.
+		 * @param string $domain Cookie domain.
+		 * @return bool True on success, false on failure.
+		 */
+		private static function set_secure_cookie( $name, $value, $expires, $path = COOKIEPATH, $domain = COOKIE_DOMAIN ) {
+			return setcookie(
+				$name,
+				$value,
+				array(
+					'expires'  => $expires,
+					'path'     => $path,
+					'domain'   => $domain,
+					'secure'   => is_ssl(),
+					'httponly' => true,
+					'samesite' => 'Lax',
+				)
+			);
+		}
 		/**
 		 * Set cookie and transient variable.
 		 *
@@ -35,7 +60,7 @@ if ( ! class_exists( 'TwoFAMoSessions' ) ) {
 					if ( ob_get_contents() ) {
 						ob_clean();
 					}
-					setcookie( 'transient_key', $transient_key, time() + 12 * HOUR_IN_SECONDS, COOKIEPATH, COOKIE_DOMAIN );
+					self::set_secure_cookie( 'transient_key', $transient_key, time() + 12 * HOUR_IN_SECONDS );
 					wp_cache_add( 'transient_key', $transient_key );
 				} else {
 					$transient_key = wp_cache_get( 'transient_key' );

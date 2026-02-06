@@ -29,5 +29,4 @@ trait Instance {
 		}
 		return self::$instance;
 	}
-
 }

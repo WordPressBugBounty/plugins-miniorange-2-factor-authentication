@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * This library is miniOrange Authentication Service.
  * Contains Request Calls to Customer service.
  */
-require_once dirname( dirname( __FILE__ ) ) . DIRECTORY_SEPARATOR . 'helper' . DIRECTORY_SEPARATOR . 'class-mo2f-api.php';
+require_once dirname( __DIR__ ) . DIRECTORY_SEPARATOR . 'helper' . DIRECTORY_SEPARATOR . 'class-mo2f-api.php';
 if ( ! class_exists( 'Mo2f_Cloud_Validate' ) ) {
 
 	/**
@@ -72,10 +72,10 @@ if ( ! class_exists( 'Mo2f_Cloud_Validate' ) ) {
 					$mo2f_google_auth['ga_secret'] = $google_response['secret'];
 					update_user_meta( $user->ID, 'mo2f_google_auth', $mo2f_google_auth );
 				} else {
-					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::ERROR_DURING_USER_REGISTRATION ), 'ERROR' );
+					$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_USER_REGISTRATION ), 'ERROR' );
 				}
 			} else {
-				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::ERROR_DURING_USER_REGISTRATION ), 'ERROR' );
+				$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_USER_REGISTRATION ), 'ERROR' );
 			}
 		}
 		/**

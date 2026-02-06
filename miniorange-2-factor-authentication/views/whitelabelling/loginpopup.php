@@ -48,7 +48,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div ><div class="ml-mo-16">
 		<div>	<span><b>Preview</b></span>	</div>
 		<div class="mo2f-settings-div">
-		<img class="mo2f-miniorange-logo" src="<?php echo esc_url( plugin_dir_url( dirname( dirname( __FILE__ ) ) ) . 'includes/images/' . get_site_option( 'mo2f_custom_logo', 'miniOrange2.png' ) ); ?>" alt="<?php esc_attr_e( 'miniOrange 2-factor Logo', 'miniorange-2-factor-authentication' ); ?>" >
+		<img class="mo2f-miniorange-logo" src="<?php echo esc_url( plugin_dir_url( dirname( __DIR__ ) ) . 'includes/images/' . get_site_option( 'mo2f_custom_logo', 'miniOrange2.png' ) ); ?>" alt="<?php esc_attr_e( 'miniOrange 2-factor Logo', 'miniorange-2-factor-authentication' ); ?>" >
 		</div>
 		</div>
 	</div>
@@ -73,12 +73,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<input type="hidden" name="mo2f_whitelabelling_nonce" value="<?php echo esc_attr( wp_create_nonce( 'mo2f-whitelabelling-nonce' ) ); ?>"/>
 				<table class="my-mo-3 w-3/4">
 					<?php
-					foreach ( $mo2f_login_popup as $color => $value ) {
+					foreach ( $mo2f_login_popup as $mo2f_color => $mo2f_value ) {
 						?>
 					<tr>
-					<td><b><?php esc_html_e( $color, 'miniorange-2-factor-authentication' );  //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?> </b></td>
-					<td><input type="text" id="<?php echo esc_attr( $value ); ?>" name="<?php echo esc_attr( $value ); ?>"
-					value="<?php echo esc_attr( isset( $custom_popup_css[ $value ] ) ? $custom_popup_css[ $value ] : '' ); ?>" class="my-color-field" /> </td>
+					<td><b><?php esc_html_e( $mo2f_color, 'miniorange-2-factor-authentication' );  //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?> </b></td>
+					<td><input type="text" id="<?php echo esc_attr( $mo2f_value ); ?>" name="<?php echo esc_attr( $mo2f_value ); ?>"
+					value="<?php echo esc_attr( isset( $mo2f_custom_popup_css[ $mo2f_value ] ) ? $mo2f_custom_popup_css[ $mo2f_value ] : '' ); ?>" class="my-color-field" /> </td>
 					</tr>
 						<?php
 
@@ -87,7 +87,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<tr>
 					<td><b><?php esc_html_e( 'Popup Background Image URL:', 'miniorange-2-factor-authentication' ); ?></b></td> &nbsp;
 					<td> <input type="text" class="mo2f_table_textbox" style="width:93% !important;float:left;" name="mo2f_background_image" placeholder="<?php esc_html_e( 'Enter the url of the background image', 'miniorange-2-factor-authentication' ); ?>" 
-					id="mo2f_background_image"  value="<?php echo esc_attr( isset( $custom_popup_css['mo2f_background_image'] ) ? $custom_popup_css['mo2f_background_image'] : '' ); ?>"  /></td>
+					id="mo2f_background_image"  value="<?php echo esc_attr( isset( $mo2f_custom_popup_css['mo2f_background_image'] ) ? $mo2f_custom_popup_css['mo2f_background_image'] : '' ); ?>"  /></td>
 				</tr>
 				</table>
 				<br>
@@ -118,25 +118,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<input type="hidden" name="option" value="mo2f_custom_email_verification_response_settings" />
 			<input type="hidden" id="mo2f_white_labelling_nonce" name="mo2f_whitelabelling_nonce" value="<?php echo esc_attr( wp_create_nonce( 'mo2f-whitelabelling-nonce' ) ); ?>"/>
 			<?php
-			$emails_popup_setting = array(
-				'Accept Message Text Color' => array( 'mo2f_accept_text_color', $accept_text_color ),
-				'Deny Message Text Color'   => array( 'mo2f_deny_text_color', $deny_text_color ),
-				'Background Color'          => array( 'mo2f_accept_deny_bg_color', $bg_color ),
+			$mo2f_emails_popup_setting = array(
+				__( 'Accept Message Text Color', 'miniorange-2-factor-authentication' ) => array( 'mo2f_accept_text_color', $mo2f_accept_text_color ),
+				__( 'Deny Message Text Color', 'miniorange-2-factor-authentication' )   => array( 'mo2f_deny_text_color', $mo2f_deny_text_color ),
+				__( 'Background Color', 'miniorange-2-factor-authentication' )          => array( 'mo2f_accept_deny_bg_color', $mo2f_bg_color ),
 			);
 			?>
 			<table class="my-mo-3 w-3/4">
-			<?php foreach ( $emails_popup_setting as $label => $field ) : ?>
+			<?php foreach ( $mo2f_emails_popup_setting as $mo2f_label => $mo2f_field ) : ?>
 				<tr>
-					<td><b><?php esc_html_e( $label . ':', 'miniorange-2-factor-authentication' ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal ?></b></td>
+					<td><b><?php echo esc_html( $mo2f_label . ':' ); ?></b></td>
 					<td>
-					<input type="text" id="<?php echo esc_attr( $field[0] ); ?>" name="<?php echo esc_attr( $field[0] ); ?>" value="<?php echo esc_attr( $field[1] ); ?>" class="my-color-field" />
+					<input type="text" id="<?php echo esc_attr( $mo2f_field[0] ); ?>" name="<?php echo esc_attr( $mo2f_field[0] ); ?>" value="<?php echo esc_attr( $mo2f_field[1] ); ?>" class="my-color-field" />
 					</td>
 				</tr>
 			<?php endforeach; ?>
 				<tr>
 					<td><b><?php esc_html_e( 'Popup Background Image URL:', 'miniorange-2-factor-authentication' ); ?></b></td>
 					<td>
-						<input type="text" class="mo2f_table_textbox" style="width:93% !important;float:left;" name="mo2f_custom_accept_deny_img" placeholder="<?php esc_html_e( 'Enter the url of the background image', 'miniorange-2-factor-authentication' ); ?>" id="mo2f_custom_accept_deny_img" value="<?php echo esc_attr( $custom_img_url ); ?>" />
+						<input type="text" class="mo2f_table_textbox" style="width:93% !important;float:left;" name="mo2f_custom_accept_deny_img" placeholder="<?php esc_html_e( 'Enter the url of the background image', 'miniorange-2-factor-authentication' ); ?>" id="mo2f_custom_accept_deny_img" value="<?php echo esc_attr( $mo2f_custom_img_url ); ?>" />
 					</td>
 				</tr>
 			</table>

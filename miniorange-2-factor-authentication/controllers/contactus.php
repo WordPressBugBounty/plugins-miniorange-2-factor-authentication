@@ -14,13 +14,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 global $mo2f_dir_name;
 
-$current_user_info = wp_get_current_user();
-$email             = get_site_option( 'mo2f_email' );
-$phone             = get_site_option( 'mo_wpns_admin_phone' );
+$mo2f_current_user_info = wp_get_current_user();
+$mo2f_email             = get_site_option( 'mo2f_email' );
+$mo2f_phone             = get_site_option( 'mo_wpns_admin_phone' );
 
-if ( empty( $email ) ) {
-	$email = $current_user_info->user_email;
+if ( empty( $mo2f_email ) ) {
+	$mo2f_email = $mo2f_current_user_info->user_email;
 }
-$support_form_nonce = wp_create_nonce( 'mo2f-support-form-nonce' );
-$query_submitted    = get_transient( 'mo2f_query_sent' ) ? 'true' : 'false';
-require dirname( dirname( __FILE__ ) ) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'contactus.php';
+$mo2f_support_form_nonce = wp_create_nonce( 'mo2f-support-form-nonce' );
+$mo2f_query_submitted    = get_transient( 'mo2f_query_sent' ) ? 'true' : 'false';
+require dirname( __DIR__ ) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'contactus.php';

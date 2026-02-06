@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-$two_factor_premium_doc = array(
+$mo2f_two_factor_premium_doc = array(
 	'Enble 2fa'                              => MoWpnsConstants::MO2F_PLUGINS_PAGE_URL . '/how-to-disable-two-factor-for-all-users-on-wordpress',
 
 	'Custom url'                             => MoWpnsConstants::MO2F_PLUGINS_PAGE_URL . '/how-to-enable-role-based-2fa-for-wordpress-two-factor-authentication#stepd',

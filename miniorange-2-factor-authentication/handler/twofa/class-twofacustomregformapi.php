@@ -68,11 +68,15 @@ if ( ! class_exists( 'TwoFACustomRegFormAPI' ) ) {
 				$response['message'] = 'Please enable curl extension.';
 			}
 			if ( isset( $response['phoneDelivery'] ) && isset( $response['phoneDelivery']['contact'] ) && isset( $response['status'] ) && 'FAILED' !== $response['status'] ) {
-				$response['message'] = MoWpnsMessages::lang_translate( MoWpnsMessages::SENT_OTP ) . ' ' . MO2f_Utility::get_hidden_phone( $response['phoneDelivery']['contact'] ) . MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_SENT_OTP );
+				$response['message'] = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SENT_OTP ) . ' ' . MO2f_Utility::get_hidden_phone( $response['phoneDelivery']['contact'] ) . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_SENT_OTP );
 			} elseif ( isset( $response['emailDelivery'] ) && isset( $response['emailDelivery']['contact'] ) && isset( $response['status'] ) && 'FAILED' !== $response['status'] ) {
-				$response['message'] = MoWpnsMessages::lang_translate( MoWpnsMessages::SENT_OTP ) . ' ' . MO2f_Utility::get_hidden_phone( $response['emailDelivery']['contact'] ) . MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_SENT_OTP );
+				$response['message'] = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SENT_OTP ) . ' ' . MO2f_Utility::get_hidden_phone( $response['emailDelivery']['contact'] ) . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_SENT_OTP );
 			} elseif ( isset( $response['message'] ) ) {
-				$response['message'] = MoWpnsMessages::lang_translate( $response['message'] );
+				$response['message'] = sprintf(
+					/* translators: %s: error message */
+					__( 'Error: %s', 'miniorange-2-factor-authentication' ),
+					esc_html( $response['message'] )
+				);
 			}
 
 			wp_send_json( $response );
@@ -88,7 +92,7 @@ if ( ! class_exists( 'TwoFACustomRegFormAPI' ) ) {
 		public static function validate( $auth_type, $txid, $otp ) {
 			$response = TwoFAMOGateway::mo_validate_otp_token( $auth_type, $txid, $otp );
 			if ( isset( $response['message'] ) ) {
-				$response['message'] = MoWpnsMessages::lang_translate( $response['message'] );
+				$response['message'] = $response['message'];
 			}
 			wp_send_json( $response );
 		}

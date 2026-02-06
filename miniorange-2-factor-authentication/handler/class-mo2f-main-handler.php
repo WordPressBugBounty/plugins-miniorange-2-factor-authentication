@@ -229,7 +229,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		 */
 		public function mo2f_show_error_on_wp_login_form( $error ) {
 			if ( isset( $_SESSION['email_transaction_denied_error'] ) ) {
-				$error = $_SESSION['email_transaction_denied_error'];
+				$error = sanitize_text_field( wp_unslash( $_SESSION['email_transaction_denied_error'] ) );
 				unset( $_SESSION['email_transaction_denied_error'] );
 			}
 			if ( TwoFAMoSessions::get_session_var( 'mo2f_change_error_message' ) ) {
@@ -262,7 +262,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		public function mo2f_backup_code_validation_success( $post ) {
 			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : '';
 			$common_helper      = new Mo2f_Common_Helper();
-			$user_details       = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' ); 
+			$user_details       = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
 			$error              = $common_helper->mo2f_is_validation_error( $user_details );
 			if ( ! empty( $error ) ) {
 				return $error;
@@ -316,7 +316,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$method_name        = isset( $post['auth_method'] ) ? sanitize_text_field( wp_unslash( $post['auth_method'] ) ) : null;
 			$inline_popup       = new Mo2f_Common_Helper();
 			$process_login      = $inline_popup->mo2f_get_object( $method_name );
-			$message            = MoWpnsMessages::lang_translate( MoWpnsMessages::NEW_OTP_SENT );
+			$message            = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::NEW_OTP_SENT );
 			$process_login->mo2f_send_otp( null, $session_id_encrypt, $user_details, $message );
 		}
 
@@ -371,7 +371,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : null;
 			$redirect_to        = esc_url_raw( $post['redirect_to'] );
 			$common_helper      = new Mo2f_Common_Helper();
-		    $user_id            = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
+			$user_id            = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 			$inline_popup       = new Mo2f_Inline_Popup();
 			$inline_popup->prompt_user_to_select_2factor_mthod_inline( $user_id, '', $redirect_to, $session_id_encrypt );
 			exit;
@@ -404,18 +404,21 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$otp_input          = isset( $post['mo2f_phone_email_telegram'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_phone_email_telegram'] ) ) : null;
 			$session_id_encrypt = isset( $post['mo2f_session_id'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_session_id'] ) ) : null;
 			if ( MO2f_Utility::mo2f_check_empty_or_null( $otp_input ) ) {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_ENTRY ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_ENTRY ) );
 			}
 			$otp_input = str_replace( ' ', '', $otp_input );
 			$user      = wp_get_current_user();
 			if ( ! $user->ID ) {
 				$user_details = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
 			} else {
-				$user_details = array( 'user_id' => $user->ID, 'login_status' => 'LOGGED_IN' );
+				$user_details = array(
+					'user_id'      => $user->ID,
+					'login_status' => 'LOGGED_IN',
+				);
 			}
 			$inline_popup = new Mo2f_Common_Helper();
 			$send_otp     = $inline_popup->mo2f_get_object( $twofa_method );
-			$message      = MoWpnsMessages::lang_translate( MoWpnsMessages::OTP_SENT );
+			$message      = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::OTP_SENT );
 			$send_otp->mo2f_send_otp( $otp_input, $session_id_encrypt, $user_details, $message );
 		}
 
@@ -448,10 +451,13 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			if ( ! $user->ID ) {
 				$user_details = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
 			} else {
-				$user_details = array( 'user_id' => $user->ID, 'login_status' => 'LOGGED_IN' );
+				$user_details = array(
+					'user_id'      => $user->ID,
+					'login_status' => 'LOGGED_IN',
+				);
 			}
 			if ( MO2f_Utility::mo2f_check_empty_or_null( $otp_token ) ) {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_ENTRY ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_ENTRY ) );
 			}
 			$twofa_method = isset( $post['mo2f_otp_based_method'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_otp_based_method'] ) ) : '';
 			$prev_input   = isset( $post['mo2f_phone_email_telegram'] ) ? str_replace( ' ', '', sanitize_text_field( wp_unslash( $post['mo2f_phone_email_telegram'] ) ) ) : '';
@@ -486,7 +492,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			global $mo2fdb_queries;
 			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : '';
 			$common_helper      = new Mo2f_Common_Helper();
-			$user_details       = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' ); 
+			$user_details       = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
 			$error              = $common_helper->mo2f_is_validation_error( $user_details );
 			if ( ! empty( $error ) ) {
 				return $error;
@@ -534,15 +540,15 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2fa_pass2login( $redirect_to = null, $user_details = null ) {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$common_helper           = new Mo2f_Common_Helper();
 			$user_id                 = $user_details['user_id'];
 			$mo2f_1stfactor_status   = $user_details['login_status'];
 			$session_id_encrypted    = $user_details['session_id'];
 			$is_page_protection_flow = get_site_transient( 'mo2f_page_protection_flow_' . $user_id );
 			if ( ! empty( $is_page_protection_flow ) ) {
-				$page_protection_addon = apply_filters( 'mo2f_page_protection_addon_filter', false, 'mo2f_page_protection_update_details', array( 'user_id'=> $user_id ) );
-				$redirect_url          = $mo_wpns_utility->get_current_url();
+				$page_protection_addon = apply_filters( 'mo2f_page_protection_addon_filter', false, 'mo2f_page_protection_update_details', array( 'user_id' => $user_id ) );
+				$redirect_url          = $mo2f_mo_wpns_utility->get_current_url();
 				wp_safe_redirect( $redirect_url );
 				exit;
 			}
@@ -553,7 +559,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 				delete_expired_transients( true );
 				delete_site_option( $session_id_encrypted );
 				wp_set_auth_cookie( $user_id, true );
-				do_action( 'wp_login', $currentuser->user_login, $currentuser );
+				do_action( 'wp_login', $currentuser->user_login, $currentuser ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 				$common_helper->mo2f_redirect_user_to( $currentuser, $redirect_to );
 				exit;
 			} else {
@@ -583,11 +589,11 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		 * @return string
 		 */
 		public function mo2f_check_username_password( $user, $username, $password, $redirect_to = null ) {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$is_ajax_request = MO2f_Utility::get_index_value( 'GLOBALS', 'mo2f_is_ajax_request' );
 			if ( is_a( $user, 'WP_Error' ) && ! empty( $user ) ) {
 				if ( $is_ajax_request ) {
-					$data = MO2f_Utility::mo2f_show_error_on_login( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_CREDS ) );
+					$data = MO2f_Utility::mo2f_show_error_on_login( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_CREDS ) );
 					wp_send_json_success( $data );
 				} else {
 					return $user;
@@ -596,20 +602,20 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$currentuser = wp_authenticate_username_password( $user, $username, $password );
 			if ( is_wp_error( $currentuser ) ) {
 				if ( $is_ajax_request ) {
-					$data = MO2f_Utility::mo2f_show_error_on_login( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_CREDS ) );
+					$data = MO2f_Utility::mo2f_show_error_on_login( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_CREDS ) );
 					wp_send_json_success( $data );
 				} else {
-					MO2f_Utility::mo2f_debug_file( 'Invalid username and password. User_IP-' . $mo_wpns_utility->get_client_ip() );
-					$currentuser->add( 'invalid_username_password', '<strong>' . esc_html( 'ERROR' ) . '</strong>: ' . esc_html( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_CREDS ) ) );
+					MO2f_Utility::mo2f_debug_file( 'Invalid username and password. User_IP-' . $mo2f_mo_wpns_utility->get_client_ip() );
+					$currentuser->add( 'invalid_username_password', '<strong>' . esc_html( 'ERROR' ) . '</strong>: ' . esc_html( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_CREDS ) ) );
 					return $currentuser;
 				}
 			} else {
 				$session_limit_reached = apply_filters( 'mo2f_enterprise_plan_settings_filter', false, 'mo2f_check_session_details', array( 'user_id' => $currentuser->ID ) );
 				if ( $session_limit_reached ) {
-					return new WP_Error( 'session_limit_exceeded', MoWpnsMessages::lang_translate( MoWpnsMessages::SESSION_LIMIT_REACHED ) );
+					return new WP_Error( 'session_limit_exceeded', MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SESSION_LIMIT_REACHED ) );
 				}
 				$pass2login = new Miniorange_Password_2Factor_Login();
-				MO2f_Utility::mo2f_debug_file( 'Username and password  validate successfully User_IP-' . $mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );
+				MO2f_Utility::mo2f_debug_file( 'Username and password  validate successfully User_IP-' . $mo2f_mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );
 				$session_id  = isset( $_POST['session_id'] ) ? sanitize_text_field( wp_unslash( $_POST['session_id'] ) ) : $pass2login->create_session();//phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is coming from Wordpres login form.
 				$redirect_to = $pass2login->mo2f_get_redirect_url();
 				$error       = $this->miniorange_initiate_2nd_factor( $currentuser, $redirect_to, $session_id );
@@ -626,15 +632,23 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		 * @return string
 		 */
 		public function miniorange_initiate_2nd_factor( $currentuser, $redirect_to = '', $session_id_encrypt = null ) {
-			global $mo2fdb_queries, $mo_wpns_utility, $mo2f_onprem_cloud_obj;
+			global $mo2fdb_queries, $mo2f_mo_wpns_utility, $mo2f_onprem_cloud_obj;
 			$pass2login = new Miniorange_Password_2Factor_Login();
-			MO2f_Utility::mo2f_debug_file( 'MO initiate 2nd factor User_IP-' . $mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );
+			MO2f_Utility::mo2f_debug_file( 'MO initiate 2nd factor User_IP-' . $mo2f_mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );
 			MO2f_Utility::mo2f_start_session();
 			if ( is_null( $session_id_encrypt ) ) {
 				$session_id_encrypt = $pass2login->create_session();
 			}
 			$redirect_to = class_exists( 'UM_Functions' ) ? $pass2login->mo2f_redirect_url_for_um( $currentuser ) : $redirect_to;
-			set_transient( $session_id_encrypt . 'mo2f_user_transaction_details', array( 'session_id' => $session_id_encrypt, 'user_id' => $currentuser->ID, 'login_status' => 'PASSWORD_VALIDATED' ), 600 );
+			set_transient(
+				$session_id_encrypt . 'mo2f_user_transaction_details',
+				array(
+					'session_id'   => $session_id_encrypt,
+					'user_id'      => $currentuser->ID,
+					'login_status' => 'PASSWORD_VALIDATED',
+				),
+				600
+			);
 			if ( $this->mo2f_check_if_twofa_is_enabled( $currentuser ) ) {
 				$common_helper = new Mo2f_Common_Helper();
 				if ( apply_filters( 'mo2f_basic_plan_settings_filter', $mo2fdb_queries->check_alluser_limit_exceeded( $currentuser->ID ), 'is_user_limit_exceeded', array() ) ) {
@@ -872,7 +886,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			if ( $user_id && get_site_option( 'mo2f_grace_period' ) && ! $common_helper->mo2f_is_grace_period_expired( $currentuser ) ) {
 				$user_details['login_status'] = 'MFA_SKIPPED';
 				set_transient( $session_id_encrypt . 'mo2f_user_transaction_details', $user_details, 300 );
-				$this->mo2fa_pass2login( $redirect_to, $user_details );  
+				$this->mo2fa_pass2login( $redirect_to, $user_details );
 			}
 		}
 

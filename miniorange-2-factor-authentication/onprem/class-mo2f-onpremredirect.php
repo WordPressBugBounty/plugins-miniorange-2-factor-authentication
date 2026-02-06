@@ -7,6 +7,10 @@
 
 namespace TwoFA\Onprem;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\TwoFAMoSessions;
 use TwoFA\Helper\MoWpnsUtility;
@@ -43,7 +47,6 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 					return $this->mo2f_otp_email_verify( $otp_token, $transaction_id, $current_user, $session_id );
 
 			}
-
 		}
 
 		/**
@@ -61,11 +64,11 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 			$kba_ans_1            = isset( $_POST['mo2f_answer_1'] ) ? sanitize_text_field( wp_unslash( $_POST['mo2f_answer_1'] ) ) : '';
 			$kba_ans_2            = isset( $_POST['mo2f_answer_2'] ) ? sanitize_text_field( wp_unslash( $_POST['mo2f_answer_2'] ) ) : '';
 			$questions_challenged = get_transient( $session_id . 'mo_2_factor_kba_questions' );
-			$all_ques_ans         = get_user_meta( $user_id, 'mo2f_kba_challenge' );
+			$all_ques_ans         = get_user_meta( $user_id, 'mo2f_kba_challenge', false );
 			$all_ques_ans         = $all_ques_ans[0];
 			$ans_1                = $all_ques_ans[ $questions_challenged[0] ];
 			$ans_2                = $all_ques_ans[ $questions_challenged[1] ];
-			if ( ! strcmp( md5( strtolower( $kba_ans_1 ) ), $ans_1 ) && ! strcmp( md5( strtolower( $kba_ans_2 ) ), $ans_2 ) ) {
+			if ( wp_check_password( strtolower( $kba_ans_1 ), $ans_1 ) && wp_check_password( strtolower( $kba_ans_2 ), $ans_2 ) ) {
 				$arr     = array(
 					'status'  => 'SUCCESS',
 					'message' => 'Successfully validated.',
@@ -100,7 +103,6 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 					return $content;
 
 			}
-
 		}
 
 		/**
@@ -111,7 +113,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 		 */
 		private function on_prem_security_questions( $current_user ) {
 			$user_id             = $current_user->ID;
-			$question_answers    = get_user_meta( $user_id, 'mo2f_kba_challenge' );
+			$question_answers    = get_user_meta( $user_id, 'mo2f_kba_challenge', false );
 			$challenge_questions = array_keys( $question_answers[0] );
 			$random_keys         = array_rand( $challenge_questions, 2 );
 			$challenge_ques1     = array( 'question' => $challenge_questions[ $random_keys[0] ] );
@@ -120,14 +122,13 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 			update_user_meta( $user_id, 'kba_questions_user', $questions );
 			$response = wp_json_encode(
 				array(
-					'txId'      => wp_rand( 100, 10000000 ),
+					'txId'      => random_int( 100000, 99999999 ),
 					'status'    => 'SUCCESS',
 					'message'   => 'Please answer the following security questions.',
 					'questions' => $questions,
 				)
 			);
 			return $response;
-
 		}
 		/**
 		 * Function to redirect login flow to verify code.
@@ -137,7 +138,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 		 * @return array
 		 */
 		private function mo2f_google_authenticator_onpremise( $otp_token, $current_user = null ) {
-			include_once dirname( dirname( __FILE__ ) ) . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'twofa' . DIRECTORY_SEPARATOR . 'class-google-auth-onpremise.php';
+			include_once dirname( __DIR__ ) . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'twofa' . DIRECTORY_SEPARATOR . 'class-google-auth-onpremise.php';
 			$gauth_obj          = new Google_auth_onpremise();
 			$session_id_encrypt = isset( $_POST['session_id'] ) ? sanitize_text_field( wp_unslash( $_POST['session_id'] ) ) : null; //phpcs:ignore WordPress.Security.NonceVerification.Missing -- Ignoring nonce verification warning as the flow is coming from multiple files.
 			$user_id            = $current_user->ID;
@@ -158,10 +159,10 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 				return wp_json_encode(
 					array(
 						'status'  => 'ERROR',
-						'message' => MoWpnsMessages::ERROR_IN_SENDING_OTP,
+						'message' => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_IN_SENDING_OTP ),
 					)
 				);
-			};
+			}
 			return $this->on_prem_send_otp_email( $current_user, $useremail, $session_id );
 		}
 
@@ -176,7 +177,6 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 			} else {
 				return true;
 			}
-
 		}
 		/**
 		 * Function to send email to users.
@@ -187,19 +187,19 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 		 * @return array
 		 */
 		private function on_prem_send_otp_email( $current_user, $email, $transaction_id ) {
-			global $image_path;
+			global $mo2f_image_path;
 			$subject   = MoWpnsUtility::get_mo2f_db_option( 'mo2f_email_subject', 'site_option' );
 			$headers   = array( 'Content-Type: text/html; charset=UTF-8' );
 			$otp_token = '';
-			for ( $i = 1;$i < 7;$i++ ) {
-				$otp_token .= wp_rand( 0, 9 );
+			for ( $i = 1; $i < 7; $i++ ) {
+				$otp_token .= random_int( 0, 9 );
 			}
 			$otp_transaction_details                        = array();
 			$otp_transaction_details['mo2f_otp_email_code'] = $transaction_id . $otp_token;
 			$otp_transaction_details['mo2f_otp_email_time'] = time();
 			set_transient( $transaction_id . 'mo2f_otp_transaction_details', $otp_transaction_details, 300 );
 			$message = MoWpnsUtility::get_mo2f_db_option( 'mo2f_otp_over_email_template', 'site_option' );
-			$message = str_replace( '##image_path##', $image_path, $message );
+			$message = str_replace( '##image_path##', $mo2f_image_path, $message );
 			$message = str_replace( '##otp_token##', $otp_token, $message );
 			$result  = wp_mail( $email, $subject, $message, $headers );
 			if ( $result ) {
@@ -254,7 +254,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 				} else {
 					$arr = array(
 						'status'  => 'ERROR',
-						'message' => MoWpnsMessages::INVALID_OTP,
+						'message' => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_OTP ),
 					);
 				}
 				$content = wp_json_encode( $arr );
@@ -269,7 +269,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 		 * @param object  $current_user Details of current user.
 		 * @param string  $email Email.
 		 * @param boolean $in_dashboard_flow Details of current user.
-		 * @param string $session_id Session id.
+		 * @param string  $session_id Session id.
 		 * @return array
 		 */
 		public function mo2f_pass2login_push_email_onpremise( $current_user, $email, $in_dashboard_flow, $session_id ) {
@@ -282,9 +282,10 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 			$txid        = $session_id;
 			$otp_token   = '';
 			$otp_token_d = '';
-			for ( $i = 1;$i < 7;$i++ ) {
-				$otp_token   .= wp_rand( 0, 9 );
-				$otp_token_d .= wp_rand( 0, 9 );
+
+			for ( $i = 1; $i < 7; $i++ ) {
+				$otp_token   .= random_int( 0, 9 );
+				$otp_token_d .= random_int( 0, 9 );
 			}
 			$otp_token_h   = hash( 'sha512', $otp_token );
 			$otp_token_d_h = hash( 'sha512', $otp_token_d );
@@ -294,14 +295,16 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 				array(
 					'user_id'    => $current_user->ID,
 					'user_email' => $email,
-				), 300 
+				),
+				300
 			);
 			$user_id = hash( 'sha512', $current_user->ID . $txid );
 			update_site_option( $user_id, $otp_token_h );
 			update_site_option( $txid, 3 );
 			$user_idd = $user_id . 'D';
 			update_site_option( $user_idd, $otp_token_d_h );
-			$message                 = $this->getemailtemplate( $user_id, $otp_token_h, $otp_token_d_h, $txid, $email );
+			$encrypted_email         = base64_encode( $email );
+			$message                 = $this->getemailtemplate( $user_id, $otp_token_h, $otp_token_d_h, $txid, $encrypted_email );
 			$cm_vt_y_wlua_w5n_t1_r_q = MoWpnsUtility::get_mo2f_db_option( 'cmVtYWluaW5nT1RQ', 'site_option' );
 			$result                  = wp_mail( $email, $subject, $message, $headers );
 			$response                = array( 'txId' => $txid );
@@ -316,7 +319,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 				update_site_option( $time, $current_time_in_millis );
 			} else {
 				$response['status']  = 'ERROR';
-				$response['message'] = MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL;
+				$response['message'] = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL );
 			}
 			return wp_json_encode( $response );
 		}
@@ -331,10 +334,10 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 		 * @return string
 		 */
 		public function getemailtemplate( $user_id, $otp_token_h, $otp_token_d_h, $txid, $email ) {
-			global $image_path;
+			global $mo2f_image_path;
 			$url     = get_site_option( 'siteurl' ) . '/wp-login.php?';
 			$message = MoWpnsUtility::get_mo2f_db_option( 'mo2f_out_of_band_email_template', 'site_option' );
-			$message = str_replace( '##image_path##', $image_path, $message );
+			$message = str_replace( '##image_path##', $mo2f_image_path, $message );
 			$message = str_replace( '##user_id##', $user_id, $message );
 			$message = str_replace( '##url##', $url, $message );
 			$message = str_replace( '##accept_token##', $otp_token_h, $message );

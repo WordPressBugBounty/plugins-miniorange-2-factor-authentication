@@ -10,4 +10,4 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 echo '<div class="mo2f-settings-div">';
-echo '<div class="" id="mo2f_login_registration_div">' . $html . '</div></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped the necessary in the definition.
+echo '<div class="" id="mo2f_login_registration_div">' . $mo2f_html . '</div></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped the necessary in the definition.

@@ -61,9 +61,8 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 		 */
 		public function mo_two_factor_ajax() {
 			$GLOBALS['mo2f_is_ajax_request'] = true;
-			if ( ! check_ajax_referer( 'mo-two-factor-ajax-nonce', 'nonce', false ) ) {
+			if ( ! check_ajax_referer( 'mo-two-factor-ajax-nonce', 'nonce', false ) || ! current_user_can( 'manage_options' ) ) {
 				wp_send_json_error( 'class-mo2f-ajax' );
-
 			}
 			switch ( isset( $_POST['mo_2f_two_factor_ajax'] ) ? sanitize_text_field( wp_unslash( $_POST['mo_2f_two_factor_ajax'] ) ) : '' ) {
 				case 'mo2f_ajax_login_redirect':
@@ -117,59 +116,59 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 		 */
 		public function mo2f_validate_google_authenticator() {
 			if ( ! check_ajax_referer( 'mo-two-factor-ajax-nonce', 'nonce', false ) ) {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::ERROR_WHILE_VALIDATING_OTP ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_WHILE_VALIDATING_OTP ) );
 			} else {
 				$otp_token          = isset( $_POST['otp_token'] ) ? sanitize_text_field( wp_unslash( $_POST['otp_token'] ) ) : null;
 				$session_id_encrypt = isset( $_POST['session_id'] ) ? sanitize_text_field( wp_unslash( $_POST['session_id'] ) ) : null;
 				$ga_secret          = isset( $_POST['ga_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['ga_secret'] ) ) : null;
 
-				global $mo2fdb_queries, $user;
+				global $mo2fdb_queries, $mo2f_user;
 				if ( MO2f_Utility::mo2f_check_number_length( $otp_token ) ) {
-					$email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
-					$user  = wp_get_current_user();
-					if ( ! $user->ID ) {
+					$email     = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $mo2f_user->ID );
+					$mo2f_user = wp_get_current_user();
+					if ( ! $mo2f_user->ID ) {
 						$common_helper = new Mo2f_Common_Helper();
 						$user_id       = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 						if ( is_null( $user_id ) ) {
-							wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_SESSION ) );
+							wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_SESSION ) );
 						}
-						$user          = get_user_by( 'id', $user_id );
+						$mo2f_user = get_user_by( 'id', $user_id );
 					}
-					$email                  = ( empty( $email ) ) ? $user->user_email : $email;
+					$email                  = ( empty( $email ) ) ? $mo2f_user->user_email : $email;
 					$twofactor_transactions = new Mo2fDB();
-					$exceeded               = $twofactor_transactions->check_alluser_limit_exceeded( $user->ID );
+					$exceeded               = $twofactor_transactions->check_alluser_limit_exceeded( $mo2f_user->ID );
 					if ( $exceeded ) {
-						wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::USER_LIMIT_EXCEEDED ) );
+						wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_LIMIT_EXCEEDED ) );
 					}
 					if ( ! $ga_secret ) {
-						$ga_secret = get_user_meta( $user->ID, 'mo2f_secret_ga', true );
+						$ga_secret = get_user_meta( $mo2f_user->ID, 'mo2f_secret_ga', true );
 					}
 					$google_response = json_decode( $this->mo2f_onprem_cloud_obj->mo2f_validate_google_auth( $email, $otp_token, $ga_secret ), true );
 					if ( json_last_error() === JSON_ERROR_NONE ) {
 						if ( MoWpnsConstants::SUCCESS_RESPONSE === $google_response['status'] ) {
-							$response = json_decode( $this->mo2f_onprem_cloud_obj->mo2f_update_user_info( $user->ID, true, MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SUCCESS_RESPONSE, MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS, true, $email, null ), true );
+							$response = json_decode( $this->mo2f_onprem_cloud_obj->mo2f_update_user_info( $mo2f_user->ID, true, MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SUCCESS_RESPONSE, MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS, true, $email, null ), true );
 							if ( json_last_error() === JSON_ERROR_NONE ) {
 								if ( MoWpnsConstants::SUCCESS_RESPONSE === $response['status'] ) {
-									delete_user_meta( $user->ID, 'mo2f_2FA_method_to_configure' );
-									delete_user_meta( $user->ID, 'mo2f_configure_2FA' );
-									delete_user_meta( $user->ID, 'mo2f_google_auth' );
+									delete_user_meta( $mo2f_user->ID, 'mo2f_2FA_method_to_configure' );
+									delete_user_meta( $mo2f_user->ID, 'mo2f_configure_2FA' );
+									delete_user_meta( $mo2f_user->ID, 'mo2f_google_auth' );
 									$configured_2fa_method = MoWpnsConstants::GOOGLE_AUTHENTICATOR;
 									if ( MO2F_IS_ONPREM ) {
-										update_user_meta( $user->ID, 'mo2f_2FA_method_to_configure', $configured_2fa_method );
+										update_user_meta( $mo2f_user->ID, 'mo2f_2FA_method_to_configure', $configured_2fa_method );
 										$gauth_obj = new Google_Auth_Onpremise();
-										$gauth_obj->mo_g_auth_set_secret( $user->ID, $ga_secret );
+										$gauth_obj->mo_g_auth_set_secret( $mo2f_user->ID, $ga_secret );
 									}
-									update_user_meta( $user->ID, 'mo2f_external_app_type', $configured_2fa_method );
-									delete_user_meta( $user->ID, 'mo2f_user_profile_set' );
+									update_user_meta( $mo2f_user->ID, 'mo2f_external_app_type', $configured_2fa_method );
+									delete_user_meta( $mo2f_user->ID, 'mo2f_user_profile_set' );
 									wp_send_json_success( $configured_2fa_method . ' has been configured successfully.' );
 								}
 							}
 						}
-						wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_OTP ) );
+						wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_OTP ) );
 					}
-					wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::ERROR_WHILE_VALIDATING_OTP ) );
+					wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_WHILE_VALIDATING_OTP ) );
 				} else {
-					wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::ONLY_DIGITS_ALLOWED ) );
+					wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ONLY_DIGITS_ALLOWED ) );
 				}
 			}
 		}
@@ -255,7 +254,7 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 			if ( 'true' !== $is_2fa_enabled ) {
 				wp_send_json( '2fadisabled' );
 			}
-			include_once dirname( dirname( dirname( __FILE__ ) ) ) . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'twofa' . DIRECTORY_SEPARATOR . 'class-google-auth-onpremise.php';
+			include_once dirname( dirname( __DIR__ ) ) . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'twofa' . DIRECTORY_SEPARATOR . 'class-google-auth-onpremise.php';
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
 			$transient_id = isset( $_POST['transient_id'] ) ? sanitize_text_field( wp_unslash( $_POST['transient_id'] ) ) : null;
 			$user_id      = get_transient( $transient_id . 'mo2f_user_id' );
@@ -284,8 +283,7 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 			}
 			$username = isset( $_POST['username'] ) ? sanitize_user( wp_unslash( $_POST['username'] ) ) : null;
 			$password = isset( $_POST['password'] ) ? $_POST['password'] : null; //phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,  WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Password should not be sanitized.
-			apply_filters( 'authenticate', null, $username, $password );
+			apply_filters( 'authenticate', null, $username, $password ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 		}
 	}
 }
-

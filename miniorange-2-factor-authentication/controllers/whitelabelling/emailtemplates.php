@@ -11,5 +11,4 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Including the file for frontend.
  */
-require dirname( dirname( dirname( __FILE__ ) ) ) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'whitelabelling' . DIRECTORY_SEPARATOR . 'emailtemplates.php';
-
+require dirname( dirname( __DIR__ ) ) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'whitelabelling' . DIRECTORY_SEPARATOR . 'emailtemplates.php';

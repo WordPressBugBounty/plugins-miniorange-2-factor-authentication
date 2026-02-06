@@ -97,14 +97,14 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 			global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
 			$current_user = wp_get_current_user();
 			$email        = $current_user->user_email;
-			$json_string = stripslashes( $mo2f_onprem_cloud_obj->mo2f_send_link( $current_user, $this->mo2f_current_method, $email, $session_id_encrypt ) );
-			$content     = json_decode( $json_string, true );
+			$json_string  = stripslashes( $mo2f_onprem_cloud_obj->mo2f_send_link( $current_user, $this->mo2f_current_method, $email, $session_id_encrypt ) );
+			$content      = json_decode( $json_string, true );
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'SUCCESS' === $content['status'] ) {
 					$this->mo2f_handle_success_dashboard( $email, $current_user->ID, $content, 'configure_2fa', $session_id_encrypt );
 				}
 			}
-			$this->mo2f_handle_error_dashboard( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL );
+			$this->mo2f_handle_error_dashboard( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ) );
 		}
 
 		/**
@@ -123,7 +123,7 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 					$this->mo2f_handle_success_dashboard( $mo2f_user_email, $current_user->ID, $response, 'test_2fa', $session_id_encrypt );
 				}
 			} else {
-				$this->mo2f_handle_error_dashboard( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL );
+				$this->mo2f_handle_error_dashboard( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ) );
 			}
 		}
 
@@ -171,7 +171,7 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 				$mo2fa_login_message = $content['login_message'];
 				$mo2fa_login_status  = $content['login_status'];
 			} else {
-				$mo2fa_login_message = MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL;
+				$mo2fa_login_message = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL );
 				$mo2fa_login_status  = MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT;
 			}
 			$this->mo2f_show_login_prompt( $mo2fa_login_message, $mo2fa_login_status, $currentuser, $redirect_to, $session_id_encrypt, $mo2f_transaction_id );
@@ -188,13 +188,13 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_send_otp( $email, $session_id, $current_user ) {
-			global $mo2f_onprem_cloud_obj, $mo_wpns_utility;
+			global $mo2f_onprem_cloud_obj, $mo2f_mo_wpns_utility;
 			$content = json_decode( $mo2f_onprem_cloud_obj->mo2f_send_link( $current_user, $this->mo2f_current_method, $email, $session_id_encrypt ), true );
 			if ( json_last_error() === JSON_ERROR_NONE ) { /* Generate otp token */
 				if ( 'ERROR' === $content['status'] ) {
 					wp_send_json_error( $content['message'] );
 				} elseif ( MoWpnsConstants::SUCCESS_RESPONSE === $content['status'] ) {
-					MO2f_Utility::mo2f_debug_file( 'Email verification link has been sent successfully for ' . $this->mo2f_current_method . ' User_IP-' . $mo_wpns_utility->get_client_ip() . ' User_Id-' . $current_user->ID . ' Email-' . $current_user->user_email );
+					MO2f_Utility::mo2f_debug_file( 'Email verification link has been sent successfully for ' . $this->mo2f_current_method . ' User_IP-' . $mo2f_mo_wpns_utility->get_client_ip() . ' User_Id-' . $current_user->ID . ' Email-' . $current_user->user_email );
 					$mo2fa_login_message = 'An email verification link has been sent to ' . $email . '.';
 					wp_send_json_success( $mo2fa_login_message );
 				}
@@ -214,12 +214,12 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 * @return array
 		 */
 		public function mo2f_handle_success_login( $mo2f_user_email, $current_user, $content, $session_id_encrypt ) {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$mo2f_hidden_email   = MO2f_Utility::mo2f_get_hidden_email( $mo2f_user_email );
 			$mo2fa_login_message = 'An email verification link has been sent to ' . $mo2f_hidden_email . '.';
 			set_transient( $session_id_encrypt . 'mo2f_transactionId', $content['txId'], 300 );
 			$mo2fa_login_status = MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OOB_EMAIL;
-			MO2f_Utility::mo2f_debug_file( 'Email verification link has been sent successfully for ' . $this->mo2f_current_method . ' User_IP-' . $mo_wpns_utility->get_client_ip() . ' User_Id-' . $current_user->ID . ' Email-' . $current_user->user_email );
+			MO2f_Utility::mo2f_debug_file( 'Email verification link has been sent successfully for ' . $this->mo2f_current_method . ' User_IP-' . $mo2f_mo_wpns_utility->get_client_ip() . ' User_Id-' . $current_user->ID . ' Email-' . $current_user->user_email );
 			return array(
 				'login_status'  => $mo2fa_login_status,
 				'login_message' => $mo2fa_login_message,
@@ -248,9 +248,8 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		public function mo2f_handle_error_login( $id, $mo2f_user_email, $session_id, $redirect_to ) {
 			$inline_popup = new Mo2f_Inline_Popup();
 			MO2f_Utility::mo2f_debug_file( 'An error occured while sending the link - Email - ' . $mo2f_user_email );
-			$mo2fa_login_message = user_can( $id, 'administrator' ) ? MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL : MoWpnsMessages::ERROR_DURING_PROCESS;
+			$mo2fa_login_message = user_can( $id, 'manage_options' ) ? MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL : MoWpnsMessages::ERROR_DURING_PROCESS;
 			$inline_popup->prompt_user_to_select_2factor_mthod_inline( $id, $mo2fa_login_message, $redirect_to, $session_id );
-
 		}
 
 		/**
@@ -264,8 +263,8 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_handle_success_dashboard( $mo2f_user_email, $user_id, $response, $request_type, $session_id_encrypt ) {
-			global $mo_wpns_utility, $mo2f_onprem_cloud_obj;
-			MO2f_Utility::mo2f_debug_file( 'Email verification link has been sent successfully for ' . $this->mo2f_current_method . ' User_IP - ' . $mo_wpns_utility->get_client_ip() . ' User_Id - ' . $user_id . ' Email - ' . $mo2f_user_email );
+			global $mo2f_mo_wpns_utility, $mo2f_onprem_cloud_obj;
+			MO2f_Utility::mo2f_debug_file( 'Email verification link has been sent successfully for ' . $this->mo2f_current_method . ' User_IP - ' . $mo2f_mo_wpns_utility->get_client_ip() . ' User_Id - ' . $user_id . ' Email - ' . $mo2f_user_email );
 			$mo2f_hidden_email   = MO2f_Utility::mo2f_get_hidden_email( $mo2f_user_email );
 			$mo2fa_login_message = 'An email verification link has been sent to ' . $mo2f_hidden_email . ' . ';
 			set_transient( $session_id_encrypt . 'mo2f_transactionId', $response['txId'], 300 );
@@ -273,7 +272,7 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 			$mo2fa_login_status = MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OOB_EMAIL;
 			$login_popup        = new Mo2f_Login_Popup();
 			$common_helper      = new Mo2f_Common_Helper();
-			$skeleton_values    = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $user_id, 'test_2fa', '', $session_id_encrypt  );
+			$skeleton_values    = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $user_id, 'test_2fa', '', $session_id_encrypt );
 			$html               = $login_popup->mo2f_get_twofa_skeleton_html( $mo2fa_login_status, $mo2fa_login_message, '', '', $skeleton_values, $this->mo2f_current_method, 'test_2fa' );
 			$html              .= $login_popup->mo2f_get_validation_popup_script( 'test_2fa', $this->mo2f_current_method, '', '' );
 			$html              .= $mo2f_onprem_cloud_obj->mo2f_oobe_get_dashboard_script( $request_type, $response['txId'] );
@@ -318,12 +317,12 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_process_link_validation( $useridget, $txidget, $accesstokenget ) {
-			global $main_dir;
+			global $mo2f_main_dir;
 			$otp_token     = get_site_option( $useridget );
 			$txidstatus    = get_site_option( $txidget );
 			$useridd       = $useridget . 'D';
 			$otp_tokend    = get_site_option( $useridd );
-			$mo2f_dir_name = dirname( __FILE__ );
+			$mo2f_dir_name = __DIR__;
 			$mo2f_dir_name = explode( 'wp-content', $mo2f_dir_name );
 			$mo2f_dir_name = explode( 'handler', $mo2f_dir_name[1] );
 			$response      = $this->mo2f_validate_link( $txidstatus, $txidget, $otp_token, $otp_tokend, $accesstokenget, $useridget, $useridd );
@@ -334,7 +333,7 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 				'color'        => $response['color'],
 				'bg_color'     => '#FFFFFF',
 				'branding_img' => 'background-color: #d5e3d9;',
-				'logo_url'     => esc_url( $main_dir . 'includes/images/' . $custom_logo ),
+				'logo_url'     => esc_url( $mo2f_main_dir . 'includes/images/' . $custom_logo ),
 			);
 			$popup_args    = apply_filters( 'mo2f_enterprise_plan_settings_filter', $popup_args, 'mo2f_custom_email_verification_popup_args', $popup_args );
 			$display_popup = new Mo2f_Login_Popup();
@@ -432,7 +431,7 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 * @return string
 		 */
 		public function mo2f_get_error_message( $currentuser ) {
-			$mo2fa_login_message = user_can( $currentuser->ID, 'administrator' ) ? MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL : MoWpnsMessages::ERROR_DURING_PROCESS;
+			$mo2fa_login_message = user_can( $currentuser->ID, 'manage_options' ) ? MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL : MoWpnsMessages::ERROR_DURING_PROCESS;
 			return $mo2fa_login_message;
 		}
 	}

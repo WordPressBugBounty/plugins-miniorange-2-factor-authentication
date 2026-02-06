@@ -37,16 +37,16 @@ if ( ! class_exists( 'Mo2f_Logger' ) ) {
 		 * @return void
 		 */
 		public function log_403() {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$mo_wpns_config = new MoWpnsHandler();
-			$user_ip        = $mo_wpns_utility->get_client_ip();
+			$user_ip        = $mo2f_mo_wpns_utility->get_client_ip();
 			$user_ip        = sanitize_text_field( $user_ip );
-			$url            = $mo_wpns_utility->get_current_url();
+			$url            = $mo2f_mo_wpns_utility->get_current_url();
 			$user           = wp_get_current_user();
 			$username       = is_user_logged_in() ? $user->user_login : 'GUEST';
 			if ( 'true' === get_site_option( 'mo2f_enable_login_report' ) ) {
-				global $wpns_db_queries;
-				$wpns_db_queries->mo2f_insert_transaction_audit( $user_ip, $username, MoWpnsConstants::ERR_403, MoWpnsConstants::ACCESS_DENIED, $url );
+				global $mo2f_wpns_db_queries;
+				$mo2f_wpns_db_queries->mo2f_insert_transaction_audit( $user_ip, $username, MoWpnsConstants::ERR_403, MoWpnsConstants::ACCESS_DENIED, $url );
 			}
 		}
 
@@ -56,20 +56,20 @@ if ( ! class_exists( 'Mo2f_Logger' ) ) {
 		 * @return void
 		 */
 		public function log_404() {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 
 			if ( ! is_404() ) {
 				return;
 			}
 			$mo_wpns_config = new MoWpnsHandler();
-			$user_ip        = $mo_wpns_utility->get_client_ip();
+			$user_ip        = $mo2f_mo_wpns_utility->get_client_ip();
 			$user_ip        = sanitize_text_field( $user_ip );
-			$url            = $mo_wpns_utility->get_current_url();
+			$url            = $mo2f_mo_wpns_utility->get_current_url();
 			$user           = wp_get_current_user();
 			$username       = is_user_logged_in() ? $user->user_login : 'GUEST';
 			if ( 'true' === get_site_option( 'mo2f_enable_login_report' ) ) {
-				global $wpns_db_queries;
-				$wpns_db_queries->mo2f_insert_transaction_audit( $user_ip, $username, MoWpnsConstants::ERR_403, MoWpnsConstants::ACCESS_DENIED, $url );
+				global $mo2f_wpns_db_queries;
+				$mo2f_wpns_db_queries->mo2f_insert_transaction_audit( $user_ip, $username, MoWpnsConstants::ERR_403, MoWpnsConstants::ACCESS_DENIED, $url );
 			}
 		}
 	}

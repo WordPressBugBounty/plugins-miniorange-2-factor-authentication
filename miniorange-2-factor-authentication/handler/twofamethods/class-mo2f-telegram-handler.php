@@ -81,7 +81,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 		 *
 		 * @param string $telegram_id Phone number.
 		 * @param string $session_id_encrypt Sessiond Id.
-		 * @param array $user_details user_details.
+		 * @param array  $user_details user_details.
 		 * @param object $message message.
 		 * @return void
 		 */
@@ -89,7 +89,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 			$mocurl      = new MocURL();
 			$user_id     = isset( $user_details['user_id'] ) ? sanitize_text_field( wp_unslash( $user_details['user_id'] ) ) : null;
 			$telegram_id = $telegram_id ?? get_user_meta( $user_id, 'mo2f_chat_id', true );
-			$content = $mocurl->mo2f_send_telegram_otp( $telegram_id, $session_id_encrypt );
+			$content     = $mocurl->mo2f_send_telegram_otp( $telegram_id, $session_id_encrypt );
 			$this->mo2f_process_inline_send_otp( $content, $user_details, $session_id_encrypt, $message );
 		}
 
@@ -97,7 +97,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 		 * Processes send otp at inline.
 		 *
 		 * @param array  $content Content.
-		 * @param array $user_details user_details.
+		 * @param array  $user_details user_details.
 		 * @param string $session_id_encrypt Sessiond Id.
 		 * @param string $message Message.
 		 * @return void
@@ -110,12 +110,12 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 				} elseif ( MoWpnsConstants::SUCCESS_RESPONSE === $content['status'] ) {
 					set_transient( $session_id_encrypt . 'mo2f_transactionId', $content['txId'], 300 );
 					set_transient( $session_id_encrypt . 'mo2f_otp_send_true', true, 300 );
-					wp_send_json_success( $message . 'your telegram number. ' . MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::lang_translate( MoWpnsMessages::VERIFY_YOURSELF ) );
+					wp_send_json_success( $message . 'your telegram number. ' . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::VERIFY_YOURSELF ) );
 				} else {
-					wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_REQ ) );
+					wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_REQ ) );
 				}
 			} else {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_REQ ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_REQ ) );
 			}
 		}
 
@@ -124,7 +124,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 		 *
 		 * @param string $otp_token OTP token.
 		 * @param string $session_id_encrypt Transaction id.
-		 * @param object $user Current user.
+		 * @param array  $user_details User details.
 		 * @param object $prev_chat_id Previous input.
 		 * @param array  $post Post data.
 		 * @return void
@@ -148,7 +148,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 		 */
 		public function mo2f_mismatch_input_check( $current_chat_id, $prev_chat_id ) {
 			if ( $current_chat_id !== $prev_chat_id ) {
-				wp_send_json_error( MoWpnsMessages::lang_translate( 'The current chat ID doesn\'t match the one used to send the OTP.' ) );
+				wp_send_json_error( __( 'The current chat ID doesn\'t match the one used to send the OTP.', 'miniorange-2-factor-authentication' ) );
 			}
 		}
 
@@ -162,7 +162,13 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 		 */
 		public function mo2f_process_inline_validate_otp( $content, $user_details, $session_id_encrypt ) {
 			if ( 'ERROR' === $content['status'] ) {
-				wp_send_json_error( MoWpnsMessages::lang_translate( $content['message'] ) );
+				wp_send_json_error(
+					sprintf(
+					/* translators: %s: error message */
+						__( 'Error: %s', 'miniorange-2-factor-authentication' ),
+						esc_html( $content['message'] )
+					)
+				);
 			} elseif ( strcasecmp( $content['status'], 'SUCCESS' ) === 0 ) {
 				if ( isset( $user->ID ) ) {
 					$update_details = new Miniorange_Password_2Factor_Login();
@@ -177,7 +183,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 				$common_helper->mo2f_update_current_user_status( $session_id_encrypt );
 				wp_send_json_success( 'Your 2FA method has been set successfully.' );
 			} else {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_OTP ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_OTP ) );
 			}
 		}
 		/**
@@ -189,15 +195,15 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_prompt_2fa_login( $currentuser, $session_id_encrypt, $redirect_to ) {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$telegram_id = get_user_meta( $currentuser->ID, 'mo2f_chat_id', true );
 			$mocurl      = new MocURL();
 			$content     = $mocurl->mo2f_send_telegram_otp( $telegram_id, $session_id_encrypt );
 			if ( json_last_error() === JSON_ERROR_NONE && MoWpnsConstants::SUCCESS_RESPONSE === $content['status'] ) {
-					$mo2fa_login_message = MoWpnsMessages::lang_translate( MoWpnsMessages::OTP_SENT ) . 'your telegram number. ' . MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::lang_translate( MoWpnsMessages::VERIFY_YOURSELF );
+					$mo2fa_login_message = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::OTP_SENT ) . 'your telegram number. ' . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::VERIFY_YOURSELF );
 					$mo2fa_login_status  = MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OTP_OVER_TELEGRAM;
 					set_transient( $session_id_encrypt . 'mo2f_transactionId', $content['txId'], 300 );
-					MO2f_Utility::mo2f_debug_file( $mo2fa_login_status . ' User_IP-' . $mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );
+					MO2f_Utility::mo2f_debug_file( $mo2fa_login_status . ' User_IP-' . $mo2f_mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );
 			} else {
 				$mo2fa_login_status  = MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT;
 				$mo2fa_login_message = $this->mo2f_get_error_message();
@@ -228,7 +234,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 		 * @return string
 		 */
 		public function mo2f_get_error_message() {
-			return MoWpnsMessages::ERROR_DURING_PROCESS;
+			return MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
 		}
 
 		/**
@@ -240,7 +246,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_login_validate( $otp_token, $redirect_to, $session_id_encrypt ) {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$common_helper = new Mo2f_Common_Helper();
 			$user_id       = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 			if ( ! $user_id && is_user_logged_in() ) {
@@ -254,7 +260,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 				$common_helper->mo2f_update_current_user_status( $session_id_encrypt );
 				wp_send_json_success( 'VALIDATED_SUCCESS' );
 			} else {
-				$mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $session_id_encrypt );
+				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $session_id_encrypt );
 			}
 		}
 
@@ -266,7 +272,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 		 */
 		public function mo2f_prompt_2fa_setup_dashboard( $session_id_encrypt ) {
 			global $mo2fdb_queries;
-			$current_user = wp_get_current_user();
+			$current_user  = wp_get_current_user();
 			$common_helper = new Mo2f_Common_Helper();
 			$skeleton      = $common_helper->mo2f_telegram_common_skeleton( $current_user->ID );
 			$html          = $common_helper->mo2f_otp_based_methods_configuration_screen( $skeleton, $this->mo2f_current_method, '', $current_user->ID, '', '', 'dashboard' );
@@ -282,7 +288,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_prompt_2fa_test_dashboard( $session_id_encrypt ) {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$currentuser = wp_get_current_user();
 			$telegram_id = get_user_meta( $currentuser->ID, 'mo2f_chat_id', true );
 			$mocurl      = new MocURL();
@@ -292,7 +298,7 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 					$mo2fa_login_message = 'Please enter the one time passcode sent on your<b> Telegram</b> app.';
 					$mo2fa_login_status  = MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OTP_OVER_TELEGRAM;
 					set_transient( $session_id_encrypt . 'mo2f_transactionId', $content['txId'], 300 );
-					MO2f_Utility::mo2f_debug_file( $mo2fa_login_status . ' User_IP-' . $mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );
+					MO2f_Utility::mo2f_debug_file( $mo2fa_login_status . ' User_IP-' . $mo2f_mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );
 					$login_popup     = new Mo2f_Login_Popup();
 					$common_helper   = new Mo2f_Common_Helper();
 					$skeleton_values = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $currentuser->ID, 'test_2fa', '', $session_id_encrypt );
@@ -315,6 +321,5 @@ if ( ! class_exists( 'Mo2f_TELEGRAM_Handler' ) ) {
 		public function mo2f_get_hidden_forms_dashboard( $common_helper ) {
 			return $common_helper->mo2f_get_dashboard_hidden_forms();
 		}
-
 	}
 }

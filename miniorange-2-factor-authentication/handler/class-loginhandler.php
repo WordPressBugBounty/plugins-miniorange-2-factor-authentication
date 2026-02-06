@@ -65,7 +65,7 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 			add_action( 'edit_user_profile', array( $this, 'twofa_on_user_profile' ), 10, 3 );
 			add_action( 'personal_options_update', array( $this, 'user_two_factor_options_update' ), 10, 3 );
 			add_action( 'edit_user_profile_update', array( $this, 'user_two_factor_options_update' ), 10, 3 );
-			global $mo_wpns_utility,$mo2f_dir_name;
+			global $mo2f_mo_wpns_utility, $mo2f_dir_name;
 			$w_a_f_enabled = get_site_option( 'WAFEnabled' );
 			$waflevel      = get_site_option( 'WAF' );
 			if ( 1 === $w_a_f_enabled ) {
@@ -76,7 +76,7 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 				}
 			}
 
-			$user_ip        = $mo_wpns_utility->get_client_ip();
+			$user_ip        = $mo2f_mo_wpns_utility->get_client_ip();
 			$user_ip        = sanitize_text_field( $user_ip );
 			$mo_wpns_config = new MoWpnsHandler();
 			$is_whitelisted = $mo_wpns_config->mo2f_is_whitelisted( $user_ip );
@@ -125,9 +125,9 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 		 * @return mixed
 		 */
 		public function mo_wpns_login_success( $username ) {
-			global $mo_wpns_utility, $mo2fdb_queries;
+			global $mo2f_mo_wpns_utility, $mo2fdb_queries;
 			$mo_wpns_config = new MoWpnsHandler();
-			$user_ip        = $mo_wpns_utility->get_client_ip();
+			$user_ip        = $mo2f_mo_wpns_utility->get_client_ip();
 			$mo_wpns_config->move_failed_transactions_to_past_failed( $user_ip );
 			$user              = get_user_by( 'login', $username );
 			$user_roles        = get_userdata( $user->ID )->roles;
@@ -140,13 +140,12 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 			}
 			$is_customer_registered = 'SUCCESS' === $mo2fdb_queries->mo2f_get_user_detail( 'user_registration_with_miniorange', $user->ID );
 			if ( $user_role_enabled && $is_customer_registered && get_site_option( 'mo_wpns_enable_unusual_activity_email_to_user' ) ) {
-				$mo_wpns_utility->send_notification_to_user_for_unusual_activities( $username, $user_ip, MoWpnsConstants::LOGGED_IN_FROM_NEW_IP );
+				$mo2f_mo_wpns_utility->send_notification_to_user_for_unusual_activities( $username, $user_ip, MoWpnsConstants::LOGGED_IN_FROM_NEW_IP );
 			}
 			if ( 'true' === get_site_option( 'mo2f_enable_login_report' ) ) {
-				global $wpns_db_queries;
-				$wpns_db_queries->mo2f_insert_transaction_audit( $user_ip, $username, MoWpnsConstants::LOGIN_TRANSACTION, MoWpnsConstants::SUCCESS );
+				global $mo2f_wpns_db_queries;
+				$mo2f_wpns_db_queries->mo2f_insert_transaction_audit( $user_ip, $username, MoWpnsConstants::LOGIN_TRANSACTION, MoWpnsConstants::SUCCESS );
 			}
-
 		}
 
 		/**
@@ -156,16 +155,16 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 		 * @return void
 		 */
 		public function mo_wpns_login_failed( $username ) {
-			global $mo_wpns_utility, $mo2fdb_queries;
-			$user_ip = $mo_wpns_utility->get_client_ip();
+			global $mo2f_mo_wpns_utility, $mo2fdb_queries;
+			$user_ip = $mo2f_mo_wpns_utility->get_client_ip();
 			if ( empty( $user_ip ) || empty( $username ) || ! MoWpnsUtility::get_mo2f_db_option( 'mo2f_enable_brute_force', 'site_option' ) ) {
 				return;
 			}
 			$mo_wpns_config = new MoWpnsHandler();
 			$is_whitelisted = $mo_wpns_config->mo2f_is_whitelisted( $user_ip );
 			if ( 'true' === get_site_option( 'mo2f_enable_login_report' ) ) {
-				global $wpns_db_queries;
-				$wpns_db_queries->mo2f_insert_transaction_audit( $user_ip, $username, MoWpnsConstants::LOGIN_TRANSACTION, MoWpnsConstants::FAILED );
+				global $mo2f_wpns_db_queries;
+				$mo2f_wpns_db_queries->mo2f_insert_transaction_audit( $user_ip, $username, MoWpnsConstants::LOGIN_TRANSACTION, MoWpnsConstants::FAILED );
 			}
 			if ( ! $is_whitelisted ) {
 				$user              = get_user_by( 'login', $username );
@@ -179,10 +178,9 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 				}
 				$is_customer_registered = 'SUCCESS' === $mo2fdb_queries->mo2f_get_user_detail( 'user_registration_with_miniorange', $user->ID );
 				if ( get_site_option( 'mo_wpns_enable_unusual_activity_email_to_user' ) && $user_role_enabled && $is_customer_registered ) {
-					$mo_wpns_utility->send_notification_to_user_for_unusual_activities( $username, $user_ip, MoWpnsConstants::FAILED_LOGIN_ATTEMPTS_FROM_NEW_IP );
+					$mo2f_mo_wpns_utility->send_notification_to_user_for_unusual_activities( $username, $user_ip, MoWpnsConstants::FAILED_LOGIN_ATTEMPTS_FROM_NEW_IP );
 				}
 			}
 		}
-
 	}
 }

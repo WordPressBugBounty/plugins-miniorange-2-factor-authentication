@@ -9,7 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 ?>
-<div class="mo2fa-offer-banner" style="background-image:url(<?php echo esc_url( plugin_dir_url( dirname( __FILE__ ) ) . 'includes/images/offer-notice.jpg' ); ?>);">
+<div class="mo2fa-offer-banner" style="background-image:url(<?php echo esc_url( plugin_dir_url( __DIR__ ) . 'includes/images/offer-notice.jpg' ); ?>);">
 <i class="mo2fa-gift fa-solid fa-gift"></i> 
 <?php
 		printf(

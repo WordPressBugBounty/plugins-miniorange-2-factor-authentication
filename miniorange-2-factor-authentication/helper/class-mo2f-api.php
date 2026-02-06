@@ -11,6 +11,10 @@ use TwoFA\Helper\MoWpnsMessages;
 
 use TwoFA\Traits\Instance;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 if ( ! class_exists( 'Mo2f_Api' ) ) {
 	/**
 	 *  Class contains methods for remote calls.
@@ -31,7 +35,7 @@ if ( ! class_exists( 'Mo2f_Api' ) ) {
 			if ( ! is_wp_error( $response ) ) {
 				return $response['body'];
 			} else {
-				$message = MoWpnsMessages::SOMETHING_WENT_WRONG;
+				$message = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG );
 				return wp_json_encode(
 					array(
 						'status'  => 'ERROR',
@@ -85,7 +89,6 @@ if ( ! class_exists( 'Mo2f_Api' ) ) {
 
 			$response = self::mo2f_wp_remote_post( $url, $args );
 			return $response;
-
 		}
 
 		/**
@@ -115,6 +118,5 @@ if ( ! class_exists( 'Mo2f_Api' ) ) {
 
 			return $headers;
 		}
-
 	}
 }

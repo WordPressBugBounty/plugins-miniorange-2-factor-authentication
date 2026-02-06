@@ -59,7 +59,6 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 					$this->mo2f_download_backup_codes_dashboard();
 					break;
 			}
-
 		}
 
 		/**
@@ -76,19 +75,25 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 			$codes                = apply_filters( 'mo2f_basic_plan_settings_filter', $codes, 'generate_backup_codes', array( 'user_id' => $current_user->ID ) );
 			$show_message         = new MoWpnsMessages();
 			if ( get_transient( 'mo2f_backupcode_generated' . $current_user->ID ) ) {
-				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::TRANSIENT_ACTIVE ), 'ERROR' );
+				$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::TRANSIENT_ACTIVE ), 'ERROR' );
 			}
 			$common_helper = new Mo2f_Common_Helper();
 			$mo2f_message  = $common_helper->mo2f_check_backupcode_status( $codes, $current_user->ID );
 			if ( $mo2f_message ) {
-				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( $mo2f_message ), 'ERROR' );
+				$show_message->mo2f_show_message(
+					sprintf(
+						/* translators: %s: error message */
+						__( 'Error: %s', 'miniorange-2-factor-authentication' ),
+						esc_html( $mo2f_message )
+					),
+					'ERROR'
+				);
 			} else {
 				update_user_meta( $current_user->ID, 'mo_backup_code_generated', 1 );
 				update_user_meta( $current_user->ID, 'mo_backup_code_downloaded', 1 );
 				set_transient( 'mo2f_backupcode_generated' . $current_user->ID, 1, 30 );
 				MO2f_Utility::mo2f_download_backup_codes( $current_user->ID, $codes );
 			}
-
 		}
 
 		/**
@@ -113,18 +118,18 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 					break;
 				case 'mo2f_enable_graceperiod_disable':
 					update_site_option( 'mo2f_grace_period', null );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 					break;
 				case 'mo2f_enable2FA_disable':
 					update_site_option( 'mo2f_activate_plugin', 0 );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 					break;
 				case 'mo2f_enable_custom_redirect_option':
 					$this->mo2f_enable_custom_redirect( $_POST );
 					break;
 				case 'mo2f_enable_custom_redirect_disable':
 					update_site_option( 'mo2f_enable_custom_redirect', 0 );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 					break;
 				case 'mo2f_disable_inline_2fa_option':
 					$this->mo2f_disable_inline_2fa( $_POST );
@@ -143,42 +148,46 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 					break;
 				case 'mo2f_enable_backup_methods_disable':
 					update_site_option( 'mo2f_enable_backup_methods', 0 );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 					break;
 				case 'mo2f_new_release_nofify':
 					$this->mo2f_new_release_nofify( $_POST );
 					break;
 				case 'mo2f_save_custom_registration_form_settings':
 					do_action( 'mo2f_basic_plan_settings_action', 'mo2f_save_custom_registration_form_settings', $_POST );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
 					break;
 				case 'mo2f_select_methods_for_users_disable':
 					update_site_option( 'mo2f_select_methods_for_users', 0 );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 					break;
 				case 'mo2f_save_login_form_settings':
 					do_action( 'mo2f_all_inclusive_plan_settings_action', 'mo2f_save_login_form_settings', $_POST );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
 					break;
 				case 'mo2f_enable_disable_login_form':
 					do_action( 'mo2f_all_inclusive_plan_settings_action', 'mo2f_enable_disable_login_form', $_POST );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
 					break;
 				case 'mo2f_save_selected_2fa_methods':
 					do_action( 'mo2f_basic_plan_settings_action', 'save_selected_2fa_methods', $_POST );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
 					break;
 				case 'mo2f_custom_registration_form':
 					do_action( 'mo2f_basic_plan_settings_action', 'mo2f_enable_custom_registration_form_shortcodes', $_POST );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
 					break;
 				case 'mo2f_debug_log_disable':
 					update_site_option( 'mo2f_enable_debug_log', 0 );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 					break;
 				case 'mo2f_debug_log_enable':
 					update_site_option( 'mo2f_enable_debug_log', 1 );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+					break;
+				case 'mo2f_enable_page_protection':
+					do_action( 'mo2f_page_protection_addon_settings_action', 'mo2f_enable_page_protection', $_POST );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
 					break;
 			}
 		}
@@ -207,7 +216,7 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 					update_site_option( $option_to_be_updated, $value );
 				}
 			}
-			wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 		}
 
 
@@ -225,12 +234,12 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 				'mo2f_graceperiod_action' => isset( $post['mo2f_graceperiod_action'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_graceperiod_action'] ) ) : 'enforce_2fa',
 			);
 			if ( 1 > (int) $enable_2fa_settings['mo2f_grace_period_value'] ) {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::EXPECTED_GRACE_PERIOD_VALUE ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::EXPECTED_GRACE_PERIOD_VALUE ) );
 			}
 			foreach ( $enable_2fa_settings as $option_to_be_updated => $value ) {
 				update_site_option( $option_to_be_updated, $value );
 			}
-			wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 		}
 
 		/**
@@ -252,15 +261,14 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 					if ( $is_valid_url ) {
 						update_option( $option_to_be_updated, $value );
 					} else {
-						wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALIDE_REDIRECTION_URL ) );
+						wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALIDE_REDIRECTION_URL ) );
 					}
 				} else {
 					update_site_option( $option_to_be_updated, $value );
 				}
 			}
 			do_action( 'mo2f_enterprise_plan_settings_action', 'save_custom_redirection_urls', $post );
-			wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
-
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 		}
 
 		/**
@@ -272,7 +280,7 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 		public function mo2f_disable_inline_2fa( $post ) {
 			$mo2f_disable_inline_2fa = isset( $post['mo2f_disable_inline_2fa'] ) ? ( 'true' === sanitize_text_field( wp_unslash( $post['mo2f_disable_inline_2fa'] ) ) ? 1 : null ) : null;
 			update_site_option( 'mo2f_disable_inline_registration', $mo2f_disable_inline_2fa );
-			wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 		}
 
 		/**
@@ -284,7 +292,7 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 		public function mo2f_mfa_login( $post ) {
 			$mo2f_mfa_login = isset( $post['mo2f_mfa_login'] ) ? ( 'true' === sanitize_text_field( wp_unslash( $post['mo2f_mfa_login'] ) ) ) : false;
 			update_site_option( 'mo2f_multi_factor_authentication', $mo2f_mfa_login );
-			wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 		}
 
 		/**
@@ -296,7 +304,7 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 		public function mo2f_enable_shortcodes( $post ) {
 			$mo2f_enable_shortcodes = isset( $post['mo2f_enable_shortcodes'] ) ? 'true' === sanitize_text_field( wp_unslash( $post['mo2f_enable_shortcodes'] ) ) : 0;
 			update_site_option( 'mo2f_enable_shortcodes', $mo2f_enable_shortcodes );
-			wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 		}
 
 
@@ -312,7 +320,7 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 			$enabled_backup_methods = apply_filters( 'mo2f_basic_plan_settings_filter', array_diff( $enabled_backup_methods, array( 'backup_kba' ) ), 'get_backup_methods', $post );
 			update_site_option( 'mo2f_enable_backup_methods', $enable_backup_login );
 			update_site_option( 'mo2f_enabled_backup_methods', $enabled_backup_methods );
-			wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 		}
 
 		/**
@@ -327,9 +335,9 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 			update_site_option( 'mo2f_mail_notify_new_release', $mo2f_all_mail_noyifying );
 			if ( is_email( $email ) ) {
 				update_site_option( 'admin_email_address', $email );
-				wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+				wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 			} else {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_EMAIL ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_EMAIL ) );
 			}
 		}
 
@@ -342,7 +350,7 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 		public function mo2f_new_ip_login_notification( $post ) {
 			$mo2f_mail_notifying_i_p = isset( $post['is_notification_enabled'] ) ? 'true' === sanitize_text_field( wp_unslash( $post['is_notification_enabled'] ) ) : false;
 			update_site_option( 'mo_wpns_enable_unusual_activity_email_to_user', $mo2f_mail_notifying_i_p );
-			wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 		}
 	}
 	new Mo2f_2fa_Settings_Handler();

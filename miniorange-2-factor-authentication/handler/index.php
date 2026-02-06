@@ -4,3 +4,7 @@
  *
  * @package miniorange-2-factor-authentication/handler
  */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}

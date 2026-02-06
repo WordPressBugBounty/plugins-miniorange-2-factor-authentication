@@ -6,6 +6,7 @@
  */
 
 use TwoFA\Helper\Mo2f_Common_Helper;
+use TwoFA\Helper\MoWpnsConstants;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
@@ -28,15 +29,15 @@ if ( ! apply_filters( 'mo2f_is_lv_needed', false ) ) {
 		esc_html__( '%1$sNote:%2$s In the free version of the plugin, you can set up 2FA for only up to 3 users. If you wish to set it for more users, please upgrade to a %3$sPremium plan%4$s.', 'miniorange-2-factor-authentication' ),
 		'<b>',
 		'</b>',
-		'<a class="mo2f_report_no_underline" target="_blank" href="https://plugins.miniorange.com/2-factor-authentication-for-wordpress-wp-2fa#pricing">',
+		'<a class="mo2f_report_no_underline" target="_blank" href=' . esc_attr( MoWpnsConstants::MO2F_UPGRADE_PRICING_URL ) . '>',
 		'</a>'
 	);
 	echo '</div>';
 	echo '<hr>';
 }
 
-$common_helper->mo2f_show_registered_user_details();
-$common_helper->mo2f_show_unregistered_user_details();
+$mo2f_common_helper->mo2f_show_registered_user_details();
+$mo2f_common_helper->mo2f_show_unregistered_user_details();
 
 	echo ' </div>
     </div>

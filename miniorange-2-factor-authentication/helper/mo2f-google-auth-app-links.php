@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use TwoFA\Helper\MoWpnsConstants;
 
-$auth_app_links = array(
+$mo2f_auth_app_links = array(
 	'google_authenticator' => array(
 		'Android'  => MoWpnsConstants::AUTH_ANDROID_APP_COMMON_LINK . 'com.google.android.apps.authenticator2',
 		'Ios'      => MoWpnsConstants::AUTH_IOS_APP_COMMON_LINK_ITUNES . 'us/app/google-authenticator/id388497605',

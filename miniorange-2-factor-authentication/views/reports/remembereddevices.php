@@ -31,19 +31,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 </thead>
 <tbody> 
 <?php
-foreach ( $remembered_devices as $remembered_device ) {
-	$removedevice = 'onclick=removeRememberedDevice(' . $remembered_device['mo2f_user_id'] . ',"' . $remembered_device['device_data_hash'] . '")';
+foreach ( $mo2f_remembered_devices as $mo2f_remembered_device ) {
+	$mo2f_remove_device = 'onclick=removeRememberedDevice(' . $mo2f_remembered_device['mo2f_user_id'] . ',"' . $mo2f_remembered_device['device_data_hash'] . '")';
 	?>
-<tr id="<?php echo esc_attr( $remembered_device['mo2f_user_id'] . $remembered_device['device_data_hash'] ); ?>">
-	<td><?php echo esc_html( $remembered_device['mo2f_user_name'] ); ?></td>
-	<td><?php echo esc_html( $remembered_device['device'] ); ?></td>
-	<td><?php echo esc_html( $remembered_device['fingerprint'] ); ?></td>
-	<td><?php echo esc_html( $remembered_device['browser'] ); ?></td>
-	<td><a style='cursor:pointer' <?php echo esc_attr( $removedevice ); ?>><?php echo esc_html( 'Remove' ); ?></a></td>
+<tr id="<?php echo esc_attr( $mo2f_remembered_device['mo2f_user_id'] . $mo2f_remembered_device['device_data_hash'] ); ?>">
+	<td><?php echo esc_html( $mo2f_remembered_device['mo2f_user_name'] ); ?></td>
+	<td><?php echo esc_html( $mo2f_remembered_device['device'] ); ?></td>
+	<td><?php echo esc_html( $mo2f_remembered_device['fingerprint'] ); ?></td>
+	<td><?php echo esc_html( $mo2f_remembered_device['browser'] ); ?></td>
+	<td><a style='cursor:pointer' <?php echo esc_attr( $mo2f_remove_device ); ?>><?php echo esc_html( 'Remove' ); ?></a></td>
 </tr>
 	<?php
 }
-?>												
+?>
 </tbody>
 </table>
 </div>

@@ -48,7 +48,7 @@ if ( ! class_exists( 'Miniorange_Security_Notification' ) ) {
 		 */
 		public function custom_dashboard_help() {
 
-			if ( current_user_can( 'administrator' ) ) {
+			if ( current_user_can( 'manage_options' ) ) {
 				// Inline CSS used intentionally as external files can't be loaded in the admin dashboard.
 				echo "<html>
                        
@@ -82,10 +82,6 @@ if ( ! class_exists( 'Miniorange_Security_Notification' ) ) {
 
           ';
 			}
-
 		}
-
 	}
 }
-
-

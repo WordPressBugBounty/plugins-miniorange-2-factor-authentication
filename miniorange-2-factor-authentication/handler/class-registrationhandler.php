@@ -35,7 +35,8 @@ if ( ! class_exists( 'RegistrationHandler' ) ) {
 		public function mo2f_wp_verification() {
 			$otp_enabled = get_site_option( 'mo2f_enable_form_shortcode' );
 			$current_url = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-			if ( ( ( is_page() && has_shortcode( get_post()->post_content, 'mo2f_enable_register' ) ) || ( isset( $_GET['action'] ) && $_GET['action'] === 'register' ) ) && $otp_enabled ) {
+			$action      = filter_input( INPUT_GET, 'action', FILTER_SANITIZE_FULL_SPECIAL_CHARS );
+			if ( ( ( is_page() && has_shortcode( get_post()->post_content, 'mo2f_enable_register' ) ) || ( 'register' === $action ) ) && $otp_enabled ) {
 				$reg_form_configurations = get_site_option( 'mo2f_custom_registration_form_configurations' );
 				$submit_selector         = isset( $reg_form_configurations['custom_submit_selector'] ) ? $reg_form_configurations['custom_submit_selector'] : '';
 				$form_submit             = isset( $reg_form_configurations['form_submit_after_validation'] ) ? $reg_form_configurations['form_submit_after_validation'] : '';
@@ -123,28 +124,28 @@ if ( ! class_exists( 'RegistrationHandler' ) ) {
 		 * @return object
 		 */
 		public function mo_wpns_registration_validations( $errors, $sanitized_user_login, $user_email ) {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			if ( get_option( 'mo_wpns_activate_recaptcha_for_registration' ) ) {
 				$g_captcha_response = isset( $_POST['g-recaptcha-response'] ) ? sanitize_text_field( wp_unslash( $_POST['g-recaptcha-response'] ) ) : '';  // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Cannot do nonce verification here as this is external flow of captcha verification
 				if ( get_option( 'mo_wpns_recaptcha_version' ) === 'reCAPTCHA_v3' ) {
-					$recaptcha_error = $mo_wpns_utility->verify_recaptcha_3( $g_captcha_response );
+					$recaptcha_error = $mo2f_mo_wpns_utility->verify_recaptcha_3( $g_captcha_response );
 				} elseif ( get_option( 'mo_wpns_recaptcha_version' ) === 'reCAPTCHA_v2' ) {
-					$recaptcha_error = $mo_wpns_utility->verify_recaptcha( sanitize_text_field( $g_captcha_response ) );
+					$recaptcha_error = $mo2f_mo_wpns_utility->verify_recaptcha( sanitize_text_field( $g_captcha_response ) );
 				}
 				if ( ! empty( $recaptcha_error->errors ) ) {
 					$errors = $recaptcha_error;
 				}
 			}
 			if ( get_site_option( 'mo_wpns_enable_fake_domain_blocking' ) ) {
-				if ( $mo_wpns_utility->check_if_valid_email( $user_email ) && empty( $recaptcha_error->errors ) ) {
+				if ( $mo2f_mo_wpns_utility->check_if_valid_email( $user_email ) && empty( $recaptcha_error->errors ) ) {
 					$errors->add( 'blocked_email_error', __( '<strong>ERROR</strong>: Your email address is not allowed to register. Please select different email address.', 'miniorange-2-factor-authentication' ) );
 				} elseif ( ! empty( $recaptcha_error->errors ) ) {
 					$errors = $recaptcha_error;
 				}
 			} else {
 				$count = get_site_option( 'number_of_fake_reg' );
-				if ( $mo_wpns_utility->check_if_valid_email( $user_email ) && empty( $recaptcha_error->errors ) ) {
-					$count = $count ++;
+				if ( $mo2f_mo_wpns_utility->check_if_valid_email( $user_email ) && empty( $recaptcha_error->errors ) ) {
+					$count = $count++;
 					update_site_option( 'number_of_fake_reg', $count );
 				}
 			}

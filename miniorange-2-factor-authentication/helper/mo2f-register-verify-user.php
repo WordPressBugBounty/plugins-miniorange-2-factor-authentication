@@ -140,18 +140,25 @@ function mo2fa_get_current_customer( $email, $password ) {
 					update_site_option( 'cmVtYWluaW5nT1RQ', $content['emailRemaining'] );
 				}
 			}
-			$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::REG_SUCCESS ), 'SUCCESS' );
+			$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::REG_SUCCESS ), 'SUCCESS' );
 			return;
 		} else {
 			update_option( 'mo_2factor_admin_registration_status', 'MO_2_FACTOR_VERIFY_CUSTOMER' );
 			update_option( 'mo_wpns_verify_customer', 'true' );
 			delete_option( 'mo_wpns_new_registration' );
-			$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::ACCOUNT_EXISTS ), 'ERROR' );
+			$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ACCOUNT_EXISTS ), 'ERROR' );
 			return;
 		}
 	} else {
 		$mo2f_message = is_string( $content ) ? $content : '';
-		$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( $mo2f_message ), 'ERROR' );
+		$show_message->mo2f_show_message(
+			sprintf(
+				/* translators: %s: error message */
+				__( 'Error: %s', 'miniorange-2-factor-authentication' ),
+				esc_html( $mo2f_message )
+			),
+			'ERROR'
+		);
 	}
 }
 /**

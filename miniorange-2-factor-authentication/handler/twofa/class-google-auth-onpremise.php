@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class-mo2f-gauth-aesencryption.php file included.
  */
-require_once dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'class-mo2f-gauth-aesencryption.php';
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'class-mo2f-gauth-aesencryption.php';
 
 if ( ! class_exists( 'Google_Auth_Onpremise' ) ) {
 	/**
@@ -176,7 +176,6 @@ if ( ! class_exists( 'Google_Auth_Onpremise' ) ) {
 			if ( null === $current_time_slice ) {
 				$current_time_slice = floor( time() / 30 );
 			}
-			$response = array( 'status' => 'false' );
 			if ( strlen( $code ) !== 6 ) {
 				return wp_json_encode( $response );
 			}
@@ -184,9 +183,7 @@ if ( ! class_exists( 'Google_Auth_Onpremise' ) ) {
 			for ( $i = -$discrepancy; $i <= $discrepancy; ++$i ) {
 				$calculated_code = $this->mo2f_get_code( $secret, $current_time_slice + $i );
 				if ( $this->mo2f_timing_safe_equals( $calculated_code, $code ) ) {
-					array_push( $used_codes, $code );
 					update_site_option( 'mo2f_time_slice', $i );
-					set_transient( 'mo2f_google_auth_used_otp_' . $secret, $used_codes, 60 );
 					$response['status'] = 'SUCCESS';
 					return wp_json_encode( $response );
 				}

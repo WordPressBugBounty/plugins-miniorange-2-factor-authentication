@@ -62,7 +62,7 @@ if ( ! class_exists( 'Mo2f_MenuItems' ) ) {
 		 */
 		private function __construct() {
 			$this->callback    = array( $this, 'mo_wpns' );
-			$this->menu_logo   = plugin_dir_url( dirname( __FILE__ ) ) . 'includes/images/miniorange_icon.png';
+			$this->menu_logo   = plugin_dir_url( __DIR__ ) . 'includes/images/miniorange_icon.png';
 			$tab_details       = Mo2f_TabDetails::instance();
 			$this->tab_details = $tab_details->tab_details;
 			$this->menu_slug   = $tab_details->parent_slug;
@@ -88,7 +88,6 @@ if ( ! class_exists( 'Mo2f_MenuItems' ) ) {
 					$this->menu_logo
 				);
 			}
-
 		}
 
 		/**
@@ -118,11 +117,11 @@ if ( ! class_exists( 'Mo2f_MenuItems' ) ) {
 		 * @return void
 		 */
 		public function mo_wpns() {
-			global $wpns_db_queries, $mo2fdb_queries;
-			$wpns_db_queries->mo_plugin_activate();
+			global $mo2f_wpns_db_queries, $mo2fdb_queries;
+			$mo2f_wpns_db_queries->mo_plugin_activate();
 			$mo2fdb_queries->mo_plugin_activate();
 			add_site_option( 'EmailTransactionCurrent', 30 );
-			include dirname( dirname( __FILE__ ) ) . DIRECTORY_SEPARATOR . 'controllers/main-controller.php';
+			include dirname( __DIR__ ) . DIRECTORY_SEPARATOR . 'controllers/main-controller.php';
 		}
 
 		/**
@@ -164,6 +163,5 @@ if ( ! class_exists( 'Mo2f_MenuItems' ) ) {
 				}
 			}
 		}
-
 	}
 }

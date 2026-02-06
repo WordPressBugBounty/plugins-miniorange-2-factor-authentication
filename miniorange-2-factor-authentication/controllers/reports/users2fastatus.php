@@ -10,7 +10,5 @@ use TwoFA\Helper\Mo2f_Common_Helper;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-$common_helper = new Mo2f_Common_Helper();
+$mo2f_common_helper = new Mo2f_Common_Helper();
 require_once $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . 'reports' . DIRECTORY_SEPARATOR . 'users2fastatus.php';
-
-

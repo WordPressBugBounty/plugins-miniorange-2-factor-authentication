@@ -62,8 +62,9 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const CURRENT_BROWSER      = '<span class="mo2f_current_browser">( Current Browser )</span>';
 
 		// urls .
-		const VIEW_TRANSACTIONS     = MO_HOST_NAME . '/moas/login?redirectUrl=' . MO_HOST_NAME . '/moas/viewtransactions';
-		const MO2F_PLUGINS_PAGE_URL = 'https://plugins.miniorange.com';
+		const VIEW_TRANSACTIONS        = MO_HOST_NAME . '/moas/login?redirectUrl=' . MO_HOST_NAME . '/moas/viewtransactions';
+		const MO2F_PLUGINS_PAGE_URL    = 'https://plugins.miniorange.com';
+		const MO2F_UPGRADE_PRICING_URL = self::MO2F_PLUGINS_PAGE_URL . '/2-factor-authentication-for-wordpress-wp-2fa#pricing';
 
 		// plugins .
 		const TWO_FACTOR_SETTINGS         = 'miniorange-2-factor-authentication/miniorange-2-factor-settings.php';
@@ -287,6 +288,50 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		);
 
 		/**
+		 * Icons for 2FA methods.
+		 *
+		 * @var array
+		 */
+		public static $mo2f_method_icons = array(
+			self::GOOGLE_AUTHENTICATOR   => '🔐',
+			self::AUTHY_AUTHENTICATOR    => '🔐',
+			self::MSFT_AUTHENTICATOR     => '🔐',
+			self::FREEOTP_AUTHENTICATOR  => '🔐',
+			self::LASTPASS_AUTHENTICATOR => '🔐',
+			self::DUO_AUTHENTICATOR      => '🔐',
+			self::OTP_OVER_SMS           => '📱',
+			self::OTP_OVER_EMAIL         => '✉️',
+			self::OTP_OVER_SMS_AND_EMAIL => '📱✉️',
+			self::OTP_OVER_TELEGRAM      => '🌐',
+			self::OTP_OVER_WHATSAPP      => 'whatsapp_image',
+			self::SECURITY_QUESTIONS     => '❓',
+			self::OUT_OF_BAND_EMAIL      => '✉️',
+			self::HARDWARE_TOKEN         => '🔑',
+		);
+
+		/**
+		 * Hint text for 2FA methods.
+		 *
+		 * @var array
+		 */
+		public static $mo2f_method_hints = array(
+			self::GOOGLE_AUTHENTICATOR   => 'Google/Microsoft Authenticator',
+			self::AUTHY_AUTHENTICATOR    => 'Authy Authenticator',
+			self::MSFT_AUTHENTICATOR     => 'Microsoft Authenticator',
+			self::FREEOTP_AUTHENTICATOR  => 'FreeOTP Authenticator',
+			self::LASTPASS_AUTHENTICATOR => 'LastPass Authenticator',
+			self::DUO_AUTHENTICATOR      => 'Duo Authenticator',
+			self::OTP_OVER_SMS           => 'Carrier text message',
+			self::OTP_OVER_EMAIL         => 'Email code',
+			self::OTP_OVER_SMS_AND_EMAIL => 'SMS and Email',
+			self::OTP_OVER_TELEGRAM      => 'Telegram bot',
+			self::OTP_OVER_WHATSAPP      => 'WhatsApp message',
+			self::SECURITY_QUESTIONS     => 'Backup questions',
+			self::OUT_OF_BAND_EMAIL      => 'Email verification',
+			self::HARDWARE_TOKEN         => 'Hardware security key',
+		);
+
+		/**
 		 * Construct function
 		 */
 		public function __construct() {
@@ -299,12 +344,12 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		 * @return void
 		 */
 		public function define_global() {
-			global $wpns_db_queries,$mo_wpns_utility,$mo2f_dir_name,$mo2fdb_queries, $mo2f_onprem_cloud_obj;
-			$wpns_db_queries       = new MoWpnsDB();
-			$mo2f_dir_name         = dirname( dirname( __FILE__ ) ) . DIRECTORY_SEPARATOR;
+			global $mo2f_wpns_db_queries, $mo2f_mo_wpns_utility, $mo2f_dir_name, $mo2fdb_queries, $mo2f_onprem_cloud_obj;
+			$mo2f_wpns_db_queries  = new MoWpnsDB();
+			$mo2f_dir_name         = dirname( __DIR__ ) . DIRECTORY_SEPARATOR;
 			$mo2fdb_queries        = new Mo2fDB();
 			$mo2f_onprem_cloud_obj = MO2f_Cloud_Onprem_Interface::instance();
-			$mo_wpns_utility       = MoWpnsUtility::instance();
+			$mo2f_mo_wpns_utility  = MoWpnsUtility::instance();
 		}
 
 		/**
@@ -328,12 +373,7 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 					return $method;
 				}
 			}
-
 		}
-
 	}
 	new MoWpnsConstants();
 }
-
-
-

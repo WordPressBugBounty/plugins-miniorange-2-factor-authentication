@@ -14,14 +14,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-if ( ! class_exists( 'Wpns_Ajax' ) ) {
+if ( ! class_exists( 'Mo2f_Wpns_Ajax' ) ) {
 	/**
-	 * Class Wpns_Ajax
+	 * Class Mo2f_Wpns_Ajax
 	 */
-	class Wpns_Ajax {
+	class Mo2f_Wpns_Ajax {
 
 		/**
-		 * Class Wpns_Ajax constructor
+		 * Class Mo2f_Wpns_Ajax constructor
 		 */
 		public function __construct() {
 			add_action( 'admin_init', array( $this, 'mo_login_security_ajax' ) );
@@ -145,7 +145,7 @@ if ( ! class_exists( 'Wpns_Ajax' ) ) {
 			} else {
 				$username = isset( $_POST['username'] ) ? sanitize_user( wp_unslash( $_POST['username'] ) ) : '';
 				$password = isset( $_POST['password'] ) ? $_POST['password'] : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- No need to sanitize password as Strong Passwords contain special symbol.
-				apply_filters( 'authenticate', null, $username, $password );
+				apply_filters( 'authenticate', null, $username, $password ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 			}
 		}
 
@@ -174,5 +174,5 @@ if ( ! class_exists( 'Wpns_Ajax' ) ) {
 			}
 		}
 	}
-	new Wpns_Ajax();
+	new Mo2f_Wpns_Ajax();
 }

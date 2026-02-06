@@ -21,7 +21,7 @@ use TwoFA\Helper\MoWpnsConstants;
 	<br>
 	<div class="ml-mo-16">
 		<label class="mo2f_checkbox_container">
-			<input type="checkbox" id="mo2f_remember_ip_feature" <?php checked( $configurations['mo2f_remember_ip_feature'] ); ?>/>
+			<input type="checkbox" id="mo2f_remember_ip_feature" <?php checked( $mo2f_configurations['mo2f_remember_ip_feature'] ); ?>/>
 		</label>
 		<span>
 		<?php
@@ -49,7 +49,7 @@ use TwoFA\Helper\MoWpnsConstants;
 	<div id="mo2f-remeber-ip-content">
 		<div class="mo2f-settings-items ml-mo-20">
 			<div class="mr-mo-4">
-				<input type="radio" name="mo2f_give_rem_ip_choice" id="mo2f_give_rem_ip_give_choice" value="1" <?php checked( $configurations['mo2f_give_rem_ip_choice'] ); ?>>
+				<input type="radio" name="mo2f_give_rem_ip_choice" id="mo2f_give_rem_ip_give_choice" value="1" <?php checked( $mo2f_configurations['mo2f_give_rem_ip_choice'] ); ?>>
 				<?php
 					printf(
 						/* Translators: %s: bold tags */
@@ -63,7 +63,7 @@ use TwoFA\Helper\MoWpnsConstants;
 		<br>
 		<div class="mo2f-settings-items ml-mo-20">
 			<div class="mr-mo-4">
-				<input type="radio" name="mo2f_give_rem_ip_choice" id="mo2f_give_rem_ip_no_choice" value="0" <?php checked( '0' === $configurations['mo2f_give_rem_ip_choice'] ); ?>>
+				<input type="radio" name="mo2f_give_rem_ip_choice" id="mo2f_give_rem_ip_no_choice" value="0" <?php checked( '0' === $mo2f_configurations['mo2f_give_rem_ip_choice'] ); ?>>
 				<?php
 					printf(
 						/* Translators: %s: bold tags */
@@ -80,35 +80,35 @@ use TwoFA\Helper\MoWpnsConstants;
 				<form name="mo2f-remember-ip-form" method="post" action="" id="mo2f-remember-ip-form" >
 					<p> 
 						<label class="mo2f_checkbox_container">
-							<input type="checkbox" id="mo2f_remember_ip_list" <?php checked( $configurations['mo2f_enable_ip_list'] ); ?>/>
+							<input type="checkbox" id="mo2f_remember_ip_list" <?php checked( $mo2f_configurations['mo2f_enable_ip_list'] ); ?>/>
 						</label><?php esc_html_e( 'Add the IPs you want to whitelist for 2FA', 'miniorange-2-factor-authentication' ); ?> 
 					</p>
 					<div class="mo2f-settings-items mo-input-wrapper ml-mo-4">
 						<label class="mo-input-label"><?php esc_html_e( 'Add IPs', 'miniorange-2-factor-authentication' ); ?></label>
-						<input type ="text" class="mo2f-adv-set-input mo2f_width_80" name="mo2f_2fa_whitelist_ip_list" value ="<?php echo esc_attr( isset( $configurations['mo2f_2fa_whitelist_ip_list'] ) ? $configurations['mo2f_2fa_whitelist_ip_list'] : '' ); ?>" placeholder="e.g 192.168.0.100,192.168.0.190,192.168.0.195" />
+						<input type ="text" class="mo2f-adv-set-input mo2f_width_80" name="mo2f_2fa_whitelist_ip_list" value ="<?php echo esc_attr( isset( $mo2f_configurations['mo2f_2fa_whitelist_ip_list'] ) ? $mo2f_configurations['mo2f_2fa_whitelist_ip_list'] : '' ); ?>" placeholder="e.g 192.168.0.100,192.168.0.190,192.168.0.195" />
 					</div>
 					<br>
 					<p>
 						<label class="mo2f_checkbox_container">
-							<input type="checkbox" id="mo2f_remember_ip_range" <?php checked( $configurations['mo2f_enable_ip_range'] ); ?>/>
+							<input type="checkbox" id="mo2f_remember_ip_range" <?php checked( $mo2f_configurations['mo2f_enable_ip_range'] ); ?>/>
 						</label><?php esc_html_e( 'Add range of IPs to whitelist', 'miniorange-2-factor-authentication' ); ?> 
 					</p>		
 					<div class="mo2f-settings-items ml-mo-32">
 						<table>
 							<?php
-							foreach ( $rem_ip_ranges as $index => $rem_ip_range ) {
+							foreach ( $mo2f_rem_ip_ranges as $mo2f_index => $mo2f_rem_ip_range ) {
 								?>
 							<tr>
 								<td>
 									<div class="mo2f-settings-items mo-input-wrapper mo2f-start-ips mb-mo-4">
 										<label class="mo-input-label"><?php esc_html_e( 'Start IP', 'miniorange-2-factor-authentication' ); ?></label>
-										<input type="text"  class="mo2f-adv-set-input mo2f_width_80 mo2f-start-ip-inputs" value ="<?php echo esc_attr( is_array( $rem_ip_range ) && isset( $rem_ip_range[0] ) ? $rem_ip_range[0] : '' ); ?>" placeholder=" e.g 192.168.0.100" />
+										<input type="text"  class="mo2f-adv-set-input mo2f_width_80 mo2f-start-ip-inputs" value ="<?php echo esc_attr( is_array( $mo2f_rem_ip_range ) && isset( $mo2f_rem_ip_range[0] ) ? $mo2f_rem_ip_range[0] : '' ); ?>" placeholder=" e.g 192.168.0.100" />
 									</div>
 								</td>
 								<td>
 									<div class="mo2f-settings-items mo-input-wrapper mo2f-end-ips mb-mo-4">
 										<label class="mo-input-label"><?php esc_html_e( 'End IP', 'miniorange-2-factor-authentication' ); ?></label>
-										<input type="text" class="mo2f-adv-set-input mo2f_width_80 mo2f-end-ip-inputs" value="<?php echo esc_attr( is_array( $rem_ip_range ) && isset( $rem_ip_range[1] ) ? $rem_ip_range[1] : '' ); ?>"  placeholder=" e.g 192.168.0.190" />
+										<input type="text" class="mo2f-adv-set-input mo2f_width_80 mo2f-end-ip-inputs" value="<?php echo esc_attr( is_array( $mo2f_rem_ip_range ) && isset( $mo2f_rem_ip_range[1] ) ? $mo2f_rem_ip_range[1] : '' ); ?>"  placeholder=" e.g 192.168.0.190" />
 									</div>
 								</td>
 								<td>

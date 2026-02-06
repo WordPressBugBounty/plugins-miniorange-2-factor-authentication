@@ -33,7 +33,6 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 		public function __construct() {
 			add_action( 'admin_init', array( $this, 'mo_2f_two_factor' ) );
 			add_action( 'admin_init', array( $this, 'mo2f_handle_advanced_blocking' ) );
-
 		}
 		/**
 		 * Function for handling ajax requests.
@@ -53,7 +52,7 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 			if ( current_user_can( 'manage_options' ) && isset( $_POST['option'] ) && isset( $_POST['mo2f_security_features_nonce'] ) ) {
 				if ( ! wp_verify_nonce( ( sanitize_key( $_POST['mo2f_security_features_nonce'] ) ), 'mo2f_security_nonce' ) ) {
 					$show_message = new MoWpnsMessages();
-					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::SOMETHING_WENT_WRONG ), 'ERROR' );
+					$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ), 'ERROR' );
 				} else {
 					switch ( sanitize_text_field( wp_unslash( $_POST['option'] ) ) ) {
 						case 'mo_wpns_block_ip_range':
@@ -102,9 +101,9 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 		 * @return void
 		 */
 		public function wpns_handle_manual_block_ip( $post ) {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$ip = isset( $post['IP'] ) ? sanitize_text_field( wp_unslash( $post['IP'] ) ) : '';
-			if ( $mo_wpns_utility->check_empty_or_null( $ip ) ) {
+			if ( $mo2f_mo_wpns_utility->check_empty_or_null( $ip ) ) {
 				echo( 'empty IP' );
 				exit;
 			}
@@ -127,9 +126,9 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 						<thead><tr><th>IP Address&emsp;&emsp;</th><th>Reason&emsp;&emsp;</th><th>Blocked Until&emsp;&emsp;</th><th>Blocked Date&emsp;&emsp;</th><th>Action&emsp;&emsp;</th></tr></thead>
 						<tbody>
 						<?php
-						global $wpns_db_queries;
-						$blockedips      = $wpns_db_queries->mo2f_get_blocked_ip_list();
-						$whitelisted_ips = $wpns_db_queries->mo2f_get_whitelisted_ips_list();
+						global $mo2f_wpns_db_queries;
+						$blockedips      = $mo2f_wpns_db_queries->mo2f_get_blocked_ip_list();
+						$whitelisted_ips = $mo2f_wpns_db_queries->mo2f_get_whitelisted_ips_list();
 						global $mo2f_dir_name;
 						foreach ( $blockedips as $blockedip ) {
 							echo "<tr class='mo_wpns_not_bold'><td>" . esc_html( $blockedip->ip_address ) . '</td><td>' . esc_html( $blockedip->reason ) . '</td><td>';
@@ -165,9 +164,9 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 		 * @return void
 		 */
 		public function wpns_handle_whitelist_ip( $post ) {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$ip = isset( $post['IP'] ) ? sanitize_text_field( wp_unslash( $post['IP'] ) ) : '';
-			if ( $mo_wpns_utility->check_empty_or_null( $ip ) ) {
+			if ( $mo2f_mo_wpns_utility->check_empty_or_null( $ip ) ) {
 				echo( 'EMPTY IP' );
 				exit;
 			}
@@ -182,8 +181,8 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 					exit;
 				} else {
 					$mo_wpns_config->mo2f_whitelist_ip( $ip );
-					global $wpns_db_queries;
-					$whitelisted_ips = $wpns_db_queries->mo2f_get_whitelisted_ips_list();
+					global $mo2f_wpns_db_queries;
+					$whitelisted_ips = $mo2f_wpns_db_queries->mo2f_get_whitelisted_ips_list();
 
 					?>
 				<table id="whitelistedips_table1" class="display">
@@ -224,7 +223,7 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 			if ( ! is_wp_error( $result ) ) {
 				$result = json_decode( wp_remote_retrieve_body( $result ), true );
 			}
-		
+
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				// Validate JSON response before processing.
 				if ( ! is_array( $result ) || ! isset( $result['ip'] ) ) {
@@ -270,23 +269,23 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 		 * @return void
 		 */
 		public function wpns_handle_unblock_ip( $post ) {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$entry_id = isset( $post['id'] ) ? sanitize_text_field( wp_unslash( $post['id'] ) ) : '';
-			if ( $mo_wpns_utility->check_empty_or_null( $entry_id ) ) {
+			if ( $mo2f_mo_wpns_utility->check_empty_or_null( $entry_id ) ) {
 				echo( 'UNKNOWN_ERROR' );
 				exit;
 			} else {
 				$entryid = sanitize_text_field( $entry_id );
-				global $wpns_db_queries;
-				$wpns_db_queries->mo2f_delete_blocked_ip( $entryid );
+				global $mo2f_wpns_db_queries;
+				$mo2f_wpns_db_queries->mo2f_delete_blocked_ip( $entryid );
 				?>
 				<table id="blockedips_table1" class="display">
 				<thead><tr><th>IP Address&emsp;&emsp;</th><th>Reason&emsp;&emsp;</th><th>Blocked Until&emsp;&emsp;</th><th>Blocked Date&emsp;&emsp;</th><th>Action&emsp;&emsp;</th></tr></thead>
 				<tbody>
 				<?php
-				global $wpns_db_queries;
-				$blockedips      = $wpns_db_queries->mo2f_get_blocked_ip_list();
-				$whitelisted_ips = $wpns_db_queries->mo2f_get_whitelisted_ips_list();
+				global $mo2f_wpns_db_queries;
+				$blockedips      = $mo2f_wpns_db_queries->mo2f_get_blocked_ip_list();
+				$whitelisted_ips = $mo2f_wpns_db_queries->mo2f_get_whitelisted_ips_list();
 				foreach ( $blockedips as $blockedip ) {
 					echo "<tr class='mo_wpns_not_bold'><td>" . esc_html( $blockedip->ip_address ) . '</td><td>' . esc_html( $blockedip->reason ) . '</td><td>';
 					if ( empty( $blockedip->blocked_for_time ) ) {
@@ -317,16 +316,16 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 		 * @return void
 		 */
 		public function wpns_handle_remove_whitelist( $post ) {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$entry_id = isset( $post['id'] ) ? sanitize_text_field( wp_unslash( $post['id'] ) ) : '';
-			if ( $mo_wpns_utility->check_empty_or_null( $entry_id ) ) {
+			if ( $mo2f_mo_wpns_utility->check_empty_or_null( $entry_id ) ) {
 				echo( 'UNKNOWN_ERROR' );
 				exit;
 			} else {
 				$entryid = isset( $entry_id ) ? sanitize_text_field( $entry_id ) : '';
-				global $wpns_db_queries;
-				$wpns_db_queries->mo2f_delete_whitelisted_ip( $entryid );
-				$whitelisted_ips = $wpns_db_queries->mo2f_get_whitelisted_ips_list();
+				global $mo2f_wpns_db_queries;
+				$mo2f_wpns_db_queries->mo2f_delete_whitelisted_ip( $entryid );
+				$whitelisted_ips = $mo2f_wpns_db_queries->mo2f_get_whitelisted_ips_list();
 
 				?>
 				<table id="whitelistedips_table1" class="display">
@@ -372,12 +371,12 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 						$range  = sanitize_text_field( $posted_value[ 'start_' . $i ] );
 						$range .= '-';
 						$range .= sanitize_text_field( $posted_value[ 'end_' . $i ] );
-						$added_mappings_ranges++;
+						++$added_mappings_ranges;
 						update_site_option( 'mo_wpns_iprange_range_' . $added_mappings_ranges, $range );
 
 					} else {
 						$flag = 1;
-						$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_IP ), 'ERROR' );
+						$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_IP ), 'ERROR' );
 						return;
 					}
 				}
@@ -388,7 +387,7 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 			}
 			update_site_option( 'mo_wpns_iprange_count', $added_mappings_ranges );
 			if ( 0 === $flag ) {
-				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::IP_BLOCK_RANGE_ADDED ), 'SUCCESS' );
+				$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::IP_BLOCK_RANGE_ADDED ), 'SUCCESS' );
 			}
 		}
 
@@ -432,7 +431,6 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 				'hr'    => array(),
 			);
 		}
-
 	}
 	new Mo2f_IP_Blocking_Handler();
 }

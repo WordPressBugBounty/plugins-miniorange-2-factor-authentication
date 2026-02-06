@@ -123,7 +123,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 			} elseif ( $is_nc_with_1_user ) {
 				$customer_feature = 'V3';
 			}
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			if ( $call_setup ) {
 				$query = '[Call Request - WordPress 2 Factor Authentication Plugin: ' . $onprem . $customer_feature . ' - V ' . MO2F_VERSION . ' ]: ' . $query;
 			} else {
@@ -344,7 +344,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 		 * @return string
 		 */
 		public function mo2f_send_email_alert( $email, $phone, $message, $feedback_option, $mo2f_contact_back ) {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			global $user;
 			$url          = MO_HOST_NAME . '/moas/api/notify/send';
 			$customer_key = MoWpnsConstants::DEFAULT_CUSTOMER_KEY;
@@ -360,7 +360,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 				$subject = 'Feedback: WordPress miniOrange 2-Factor Plugin - ' . $email . ' : ' . $di;
 			}
 
-			$user              = wp_get_current_user();
+			$mo2f_user         = wp_get_current_user();
 			$is_nc_with_1_user = MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'site_option' ) && MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NNC', 'site_option' );
 			$is_ec_with_1_user = ! MoWpnsUtility::get_mo2f_db_option( 'mo2f_is_NC', 'site_option' );
 			$onprem            = MO2F_IS_ONPREM ? 'O' : 'C';
@@ -379,7 +379,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 				$query .= ' <strong>Contact me: No</strong>';
 			}
 			$company = isset( $_SERVER['SERVER_NAME'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SERVER_NAME'] ) ) : '';
-			$content = '<div >Hello, <br><br>First Name :' . $user->user_firstname . '<br><br>Last  Name :' . $user->user_lastname . '   <br><br>Company :<a href="' . $company . '" target="_blank" >' . sanitize_text_field( wp_unslash( $_SERVER['SERVER_NAME'] ) ) . '</a><br><br>Phone Number :' . $phone . '<br><br>Email :<a href="mailto:' . esc_html( $email ) . '" target="_blank">' . esc_html( $email ) . '</a><br><br>Query :' . wp_kses_post( $query ) . '</div>';
+			$content = '<div >Hello, <br><br>First Name :' . $mo2f_user->user_firstname . '<br><br>Last  Name :' . $mo2f_user->user_lastname . '   <br><br>Company :<a href="' . $company . '" target="_blank" >' . sanitize_text_field( wp_unslash( $_SERVER['SERVER_NAME'] ) ) . '</a><br><br>Phone Number :' . $phone . '<br><br>Email :<a href="mailto:' . esc_html( $email ) . '" target="_blank">' . esc_html( $email ) . '</a><br><br>Query :' . wp_kses_post( $query ) . '</div>';
 
 			$fields       = array(
 				'customerKey' => $customer_key,
@@ -581,7 +581,6 @@ if ( ! class_exists( 'MocURL' ) ) {
 			} else {
 				return $data;
 			}
-
 		}
 		/**
 		 * Function to retrieve/get the Backup codes.
@@ -603,7 +602,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 			$data        = $mo2f_api->mo2f_wp_remote_post( $url, $args );
 			$status_code = wp_remote_retrieve_response_code( wp_remote_post( $url, $args ) );
 			$data1       = json_decode( $data, true );
-			if ( is_array( $data1 ) && 'ERROR' === $data1['status'] || 200 !== $status_code ) {
+			if ( ( is_array( $data1 ) && 'ERROR' === $data1['status'] ) || 200 !== $status_code ) {
 				return 'InternetConnectivityError';
 			} else {
 				return $data;
@@ -742,7 +741,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 			} else {
 				$content = array(
 					'status'  => 'INVALID_OTP',
-					'message' => MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_OTP ),
+					'message' => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_OTP ),
 				);
 			}
 			return $content;

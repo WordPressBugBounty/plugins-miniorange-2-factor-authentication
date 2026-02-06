@@ -79,20 +79,20 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 
 		/**
 		 * Show E Testing prompt on dashboard.
-		 * 
+		 *
 		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
 		public function mo2f_prompt_2fa_test_dashboard( $session_id_encrypt ) {
-			global $mo2fdb_queries, $mo2f_onprem_cloud_obj, $mo_wpns_utility;
+			global $mo2fdb_queries, $mo2f_onprem_cloud_obj, $mo2f_mo_wpns_utility;
 			$current_user    = wp_get_current_user();
 			$mo2f_user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $current_user->ID );
 			$response        = json_decode( $mo2f_onprem_cloud_obj->send_otp_token( null, $mo2f_user_email, $this->mo2f_current_method, $current_user, $session_id_encrypt ), true );
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'SUCCESS' === $response['status'] ) {
-					MO2f_Utility::mo2f_debug_file( ' OTP has been sent successfully over email. User_IP-' . $mo_wpns_utility->get_client_ip() . ' User_Id-' . $current_user->ID . ' Email-' . $current_user->user_email );
+					MO2f_Utility::mo2f_debug_file( ' OTP has been sent successfully over email. User_IP-' . $mo2f_mo_wpns_utility->get_client_ip() . ' User_Id-' . $current_user->ID . ' Email-' . $current_user->user_email );
 					$mo2f_hidden_email   = MO2f_Utility::mo2f_get_hidden_email( $mo2f_user_email );
-					$mo2fa_login_message = MoWpnsMessages::lang_translate( MoWpnsMessages::OTP_SENT ) . ' ' . $mo2f_hidden_email . '. ' . MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::lang_translate( MoWpnsMessages::VERIFY_YOURSELF );
+					$mo2fa_login_message = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::OTP_SENT ) . ' ' . $mo2f_hidden_email . '. ' . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::VERIFY_YOURSELF );
 					set_transient( $session_id_encrypt . 'mo2f_transactionId', $response['txId'], 300 );
 					$mo2fa_login_status = MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OTP_OVER_EMAIL;
 					$login_popup        = new Mo2f_Login_Popup();
@@ -166,12 +166,12 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		 * @return array
 		 */
 		public function mo2f_handle_success_login( $mo2f_user_email, $current_user, $content, $session_id_encrypt ) {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$mo2f_hidden_email   = MO2f_Utility::mo2f_get_hidden_email( $mo2f_user_email );
-			$mo2fa_login_message = MoWpnsMessages::lang_translate( MoWpnsMessages::OTP_SENT ) . ' ' . $mo2f_hidden_email . '. ' . MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::lang_translate( MoWpnsMessages::VERIFY_YOURSELF );
+			$mo2fa_login_message = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::OTP_SENT ) . ' ' . $mo2f_hidden_email . '. ' . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::VERIFY_YOURSELF );
 			set_transient( $session_id_encrypt . 'mo2f_transactionId', $content['txId'], 300 );
 			$mo2fa_login_status = MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OTP_OVER_EMAIL;
-			MO2f_Utility::mo2f_debug_file( $mo2fa_login_status . ' User_IP-' . $mo_wpns_utility->get_client_ip() . ' User_Id-' . $current_user->ID . ' Email-' . $current_user->user_email );
+			MO2f_Utility::mo2f_debug_file( $mo2fa_login_status . ' User_IP-' . $mo2f_mo_wpns_utility->get_client_ip() . ' User_Id-' . $current_user->ID . ' Email-' . $current_user->user_email );
 			return array(
 				'login_status'  => $mo2fa_login_status,
 				'login_message' => $mo2fa_login_message,
@@ -190,9 +190,8 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		public function mo2f_handle_error_login( $id, $mo2f_user_email, $session_id, $redirect_to ) {
 			$inline_popup = new Mo2f_Inline_Popup();
 			MO2f_Utility::mo2f_debug_file( 'An error occured while sending the OTP- Email-' . $mo2f_user_email );
-			$mo2fa_login_message = user_can( $id, 'administrator' ) ? MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL : MoWpnsMessages::ERROR_DURING_PROCESS;
+			$mo2fa_login_message = user_can( $id, 'manage_options' ) ? MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ) : MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
 			$inline_popup->prompt_user_to_select_2factor_mthod_inline( $id, $mo2fa_login_message, $redirect_to, $session_id );
-
 		}
 
 		/**
@@ -204,7 +203,7 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_login_validate( $otp_token, $redirect_to, $session_id_encrypt ) {
-			global $mo2f_onprem_cloud_obj, $mo_wpns_utility;
+			global $mo2f_onprem_cloud_obj, $mo2f_mo_wpns_utility;
 			$common_helper = new Mo2f_Common_Helper();
 			$user_id       = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 			if ( ! $user_id && is_user_logged_in() ) {
@@ -223,7 +222,7 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 				$common_helper->mo2f_update_current_user_status( $session_id_encrypt );
 				wp_send_json_success( 'VALIDATED_SUCCESS' );
 			} else {
-				$mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $session_id_encrypt );
+				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $session_id_encrypt );
 			}
 		}
 
@@ -234,10 +233,10 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		 * @return string
 		 */
 		public function mo2f_get_error_message( $currentuser ) {
-			if ( user_can( $currentuser->ID, 'administrator' ) ) {
-				return MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL;
+			if ( user_can( $currentuser->ID, 'manage_options' ) ) {
+				return MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL );
 			} else {
-				return MoWpnsMessages::ERROR_DURING_PROCESS;
+				return MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
 			}
 		}
 
@@ -246,7 +245,7 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		 *
 		 * @param string $email Email ID.
 		 * @param string $session_id Session id.
-		 * @param array $user_details Current user details.
+		 * @param array  $user_details Current user details.
 		 * @param string $message Current user.
 		 * @return mixed
 		 */
@@ -263,7 +262,7 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		 * Processes send otp.
 		 *
 		 * @param array  $content Content.
-		 * @param object $current_user User.
+		 * @param object $user_details User details.
 		 * @param string $message message.
 		 * @param string $email Entered email.
 		 * @param string $session_id Session id.
@@ -278,10 +277,10 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 					set_transient( $session_id . 'mo2f_transactionId', $mo2f_transaction_id, 300 );
 					set_transient( $session_id . 'tempRegEmail', $temp_reg_email, 300 );
 					set_transient( $session_id . 'mo2f_otp_send_true', true, 300 );
-					wp_send_json_success( $message . ' ' . MO2f_Utility::mo2f_get_hidden_email( $email ) . '. ' . MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::lang_translate( MoWpnsMessages::VERIFY_YOURSELF ) );
+					wp_send_json_success( $message . ' ' . MO2f_Utility::mo2f_get_hidden_email( $email ) . '. ' . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::VERIFY_YOURSELF ) );
 				}
 			}
-			$mo2fa_login_message = user_can( $current_user->ID, 'manage_options' ) ? MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL : MoWpnsMessages::ERROR_DURING_PROCESS;
+			$mo2fa_login_message = user_can( $current_user->ID, 'manage_options' ) ? MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ) : MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
 			wp_send_json_error( $mo2fa_login_message );
 		}
 
@@ -290,19 +289,19 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		 *
 		 * @param string $otp_token OTP token.
 		 * @param string $session_id Session id.
-		 * @param array $user_details Current user.
+		 * @param array  $user_details Current user.
 		 * @param object $prev_input Previous input.
 		 * @param array  $post Post data.
 		 * @return void
 		 */
 		public function mo2f_validate_otp( $otp_token, $session_id, $user_details, $prev_input, $post ) {
 			global $mo2f_onprem_cloud_obj;
-			$user_id = isset( $user_details['user_id'] ) ? $user_details['user_id'] : null;
-			$user    = get_user_by( 'id', $user_id );
+			$user_id             = isset( $user_details['user_id'] ) ? $user_details['user_id'] : null;
+			$user                = get_user_by( 'id', $user_id );
 			$mo2f_transaction_id = get_transient( $session_id . 'mo2f_transactionId' );
 			$user_email          = get_transient( $session_id . 'tempRegEmail' );
 			$this->mo2f_mismatch_input_check( $user_email, $prev_input );
-			$content             = json_decode( $mo2f_onprem_cloud_obj->validate_otp_token( $this->mo2f_current_method, null, $mo2f_transaction_id, $otp_token, $user, $session_id ), true );
+			$content = json_decode( $mo2f_onprem_cloud_obj->validate_otp_token( $this->mo2f_current_method, null, $mo2f_transaction_id, $otp_token, $user, $session_id ), true );
 			$this->mo2f_process_validate_otp( $content, $user_details, $user_email, $session_id );
 		}
 
@@ -310,21 +309,27 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		 * Processes validate OTP.
 		 *
 		 * @param array  $content Content.
-		 * @param object $user user.
+		 * @param object $user_details user.
 		 * @param string $user_email User email.
 		 * @param string $session_id Session id.
 		 * @return void
 		 */
 		public function mo2f_process_validate_otp( $content, $user_details, $user_email, $session_id ) {
 			if ( 'ERROR' === $content['status'] ) {
-				wp_send_json_error( MoWpnsMessages::lang_translate( $content['message'] ) );
+				wp_send_json_error(
+					sprintf(
+					/* translators: %s: error message */
+						__( 'Error: %s', 'miniorange-2-factor-authentication' ),
+						esc_html( $content['message'] )
+					)
+				);
 			} elseif ( strcasecmp( $content['status'], 'SUCCESS' ) === 0 ) {
 				$user_id  = isset( $user_details['user_id'] ) ? $user_details['user_id'] : null;
 				$user     = get_user_by( 'id', $user_id );
 				$response = $this->mo2f_update_user_details( $user, $user_email );
 				$this->mo2f_process_update_details_response( $response, $user_details, $session_id );
 			} else {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_OTP ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_OTP ) );
 			}
 		}
 
@@ -332,13 +337,20 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		 * Processes updates user details response.
 		 *
 		 * @param array  $response Response.
-		 * @param array $user_details User.
+		 * @param array  $user_details User.
+		 * @param string $session_id Session id.
 		 * @return void
 		 */
 		public function mo2f_process_update_details_response( $response, $user_details, $session_id ) {
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'ERROR' === $response['status'] ) {
-					wp_send_json_error( MoWpnsMessages::lang_translate( $response['message'] ) );
+					wp_send_json_error(
+						sprintf(
+						/* translators: %s: error message */
+							__( 'Error: %s', 'miniorange-2-factor-authentication' ),
+							esc_html( $response['message'] )
+						)
+					);
 				} elseif ( MoWpnsConstants::SUCCESS_RESPONSE === $response['status'] ) {
 					delete_transient( $session_id . 'mo2f_transactionId' );
 					delete_transient( $session_id . 'tempRegEmail' );
@@ -347,12 +359,11 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 					$common_helper->mo2f_update_current_user_status( $session_id );
 					wp_send_json_success( 'Your 2FA method has been set successfully.' );
 				} else {
-					wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::ERROR_DURING_PROCESS ) );
+					wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS ) );
 				}
 			} else {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_REQ ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_REQ ) );
 			}
-
 		}
 
 		/**
@@ -364,7 +375,7 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		 */
 		public function mo2f_mismatch_input_check( $temp_email, $prev_input ) {
 			if ( $temp_email !== $prev_input ) {
-				wp_send_json_error( MoWpnsMessages::lang_translate( 'The current email ID doesn\'t match the one used to send the OTP.' ) );
+				wp_send_json_error( __( 'The current email ID doesn\'t match the one used to send the OTP.', 'miniorange-2-factor-authentication' ) );
 			}
 		}
 
@@ -380,12 +391,12 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		public function mo2f_process_inline_send_otp( $response, $current_user, $session_id, $redirect_to ) {
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'SUCCESS' === $response['status'] ) {
-					$mo2fa_login_message = MoWpnsMessages::lang_translate( MoWpnsMessages::OTP_SENT ) . ' ' . MO2f_Utility::mo2f_get_hidden_email( $current_user->user_email ) . '. ' . MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::lang_translate( MoWpnsMessages::SET_THE_2FA );
+					$mo2fa_login_message = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::OTP_SENT ) . ' ' . MO2f_Utility::mo2f_get_hidden_email( $current_user->user_email ) . '. ' . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SET_THE_2FA );
 					$mo2fa_login_status  = MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OTP_OVER_EMAIL;
 					set_transient( $session_id . 'mo2f_transactionId', $response['txId'], 300 );
 					$this->mo2f_show_login_prompt( $mo2fa_login_message, $mo2fa_login_status, $current_user, $redirect_to, $session_id );
 				} else {
-					$mo2fa_login_message = user_can( $current_user->ID, 'administrator' ) ? MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL : MoWpnsMessages::ERROR_DURING_PROCESS;
+					$mo2fa_login_message = user_can( $current_user->ID, 'manage_options' ) ? MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ) : MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
 					$inline_popup        = new Mo2f_Inline_Popup();
 					$inline_popup->prompt_user_to_select_2factor_mthod_inline( $current_user->ID, $mo2fa_login_message, $redirect_to, $session_id );
 				}
@@ -424,11 +435,12 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		/**
 		 * Show Email configuration prompt on dashboard.
 		 *
+		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
 		public function mo2f_prompt_2fa_setup_dashboard( $session_id_encrypt ) {
 			global $mo2fdb_queries;
-			$current_user = wp_get_current_user();
+			$current_user  = wp_get_current_user();
 			$common_helper = new Mo2f_Common_Helper();
 			$skeleton      = $common_helper->mo2f_email_common_skeleton( $current_user->ID );
 			$html          = $common_helper->mo2f_otp_based_methods_configuration_screen( $skeleton, $this->mo2f_current_method, '', $current_user->ID, '', '', 'dashboard' );
@@ -446,7 +458,6 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 		public function mo2f_get_hidden_forms_dashboard( $common_helper ) {
 			return $common_helper->mo2f_get_dashboard_hidden_forms();
 		}
-
 	}
 	new Mo2f_EMAIL_Handler();
 }

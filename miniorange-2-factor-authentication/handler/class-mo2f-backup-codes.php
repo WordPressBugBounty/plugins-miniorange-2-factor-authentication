@@ -86,7 +86,7 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 			$common_helper      = new Mo2f_Common_Helper();
 			$currentuser_id     = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 			if ( is_null( $currentuser_id ) ) {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_SESSION ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_SESSION ) );
 			}
 			$mo2f_user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $currentuser_id );
 			$this->mo2f_handle_backupcode_validation( $mo2f_backup_code, $currentuser_id, $redirect_to, $session_id_encrypt, $mo2f_user_email, $twofa_method );
@@ -152,7 +152,6 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 			$html              .= $this->mo2f_get_login_script();
 			echo $html;// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped the necessary in the definition.
 			exit;
-
 		}
 
 		/**
@@ -170,7 +169,6 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 			<input type="hidden" name="miniorange_inline_save_2factor_method_nonce" value="' . esc_attr( wp_create_nonce( 'miniorange-2-factor-inline-save-2factor-method-nonce' ) ) . '"/>
 		</form>';
 			return $html;
-
 		}
 
 
@@ -205,7 +203,6 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 			});
 		</script>';
 			return $script;
-
 		}
 
 		/**
@@ -236,14 +233,13 @@ if ( ! class_exists( 'Mo2f_Backup_Codes' ) ) {
 					$mo2fdb_queries->mo2f_delete_user_details( $currentuser_id );
 					$common_helper = new Mo2f_Common_Helper();
 					$common_helper->mo2f_update_current_user_status( $session_id_encrypt );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::BACKUPCODE_VALIDATED ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::BACKUPCODE_VALIDATED ) );
 				} else {
-					wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_BACKUPCODE ) );
+					wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_BACKUPCODE ) );
 				}
 			} else {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_BACKUP_CODES ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_BACKUP_CODES ) );
 			}
-
 		}
 
 		/**

@@ -150,7 +150,7 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 
 		/**
 		 * Show KBA configuration prompt on dashboard.
-		 * 
+		 *
 		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
@@ -317,7 +317,7 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 		}
 
 		/**
-		 * Encodes questions and answers.
+		 * Encodes questions and answers using secure password hashing.
 		 *
 		 * @param array $kba_questions Questions.
 		 * @param array $kba_answers Answers.
@@ -328,7 +328,7 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 			$kba_q_a_list = array();
 			for ( $c = 0; $c < $size; $c++ ) {
 				$question                  = $kba_questions[ $c ];
-				$answer                    = md5( $kba_answers[ $c ] );
+				$answer                    = wp_hash_password( strtolower( $kba_answers[ $c ] ) );
 				$kba_q_a_list[ $question ] = $answer;
 			}
 			return $kba_q_a_list;
@@ -435,6 +435,5 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 				wp_send_json_error( 'INVALID_ANSWERS' );
 			}
 		}
-
 	}
 }

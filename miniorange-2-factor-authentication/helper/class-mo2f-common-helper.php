@@ -47,13 +47,13 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		/**
 		 * Checks if a premium feature file exists for the given plan and returns a tooltip if not.
 		 *
-		 * @param mixed $feature Type of premium feature used to identify the corresponding file.
+		 * @param mixed  $feature Type of premium feature used to identify the corresponding file.
 		 * @param string $plan_name Name of the subscription plan used for displaying the upgrade tooltip.
 		 * @return string
 		 */
 		public static function mo2f_check_plan( $feature, $plan_name ) {
 			global $mo2f_dir_name;
-			$filename = 'class-mo2f-' . $feature . '-premium-settings.php';
+			$filename   = 'class-mo2f-' . $feature . '-premium-settings.php';
 			$basic_path = rtrim( $mo2f_dir_name, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . $filename;
 			if ( file_exists( $basic_path ) ) {
 				return '';
@@ -71,11 +71,11 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			return '<span class="mo2f_premium_tooltip">' . MoWpnsConstants::PREMIUM_CROWN . '
                                 <span class="mo2f_premium_tooltiptext">
                                     <span class="mo2f_premium_header" onclick="upgradeLink()">' . esc_html( $plan_name ) . '</span><br/>
-                                    <span class="mo2f_premium_body">' . esc_html( MoWpnsConstants::MO2F_PREMIUM_PLAN_DESCRIPTION )  . '</span>
+                                    <span class="mo2f_premium_body">' . esc_html( MoWpnsConstants::MO2F_PREMIUM_PLAN_DESCRIPTION ) . '</span>
                                 </span>
                             </span>';
 		}
-		
+
 		/**
 		 * Return the handler object for selected method.
 		 *
@@ -89,7 +89,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			} else {
 				$error_prompt = new Mo2f_Login_Popup();
 				$current_user = wp_get_current_user();
-				$error_prompt->mo2f_show_login_prompt_for_otp_based_methods( MoWpnsMessages::ERROR_DURING_PROCESS, MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT, $current_user, '', '', '' );
+				$error_prompt->mo2f_show_login_prompt_for_otp_based_methods( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS ), MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT, $current_user, '', '', '' );
 				exit;
 			}
 		}
@@ -128,7 +128,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @param array $user_details User details.
 		 * @return mixed
 		 */
-		public function mo2f_is_validation_error( $user_details ){
+		public function mo2f_is_validation_error( $user_details ) {
 			if ( empty( $user_details ) || 'MFA_COMPLETED' !== $user_details['login_status'] ) {
 				$error = new WP_Error();
 				$error->add( 'invalid_request', '<strong>' . __( 'ERROR', 'miniorange-2-factor-authentication' ) . '</strong>: ' . __( 'Invalid Request. Please try again after some time.', 'miniorange-2-factor-authentication' ) );
@@ -151,7 +151,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		/**
 		 * It will invoke after inline registration setup success
 		 *
-		 * @param string $current_user_id It will carry the user id value .
+		 * @param string $user_details It will carry the user details value .
 		 * @param string $redirect_to It will carry the redirect url .
 		 * @param string $session_id It will carry the session id .
 		 * @return void
@@ -213,7 +213,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			update_user_meta( $user_id, 'mo_backup_code_screen_shown', 1 );
 			return $codes;
 		}
-        
+
 		/**
 		 * Get current user id from session id
 		 *
@@ -225,7 +225,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			if ( is_array( $user_details ) && isset( $user_details['user_id'] ) ) {
 				return $user_details['user_id'];
 			}
-		    return null;	
+			return null;
 		}
 
 		/**
@@ -342,13 +342,13 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_check_backupcode_status( $status, $user_id ) {
-			$status = is_array( $status ) ? $status[0] : $status;
+			$status                   = is_array( $status ) ? $status[0] : $status;
 			$error_status_and_message = array(
-				'InternetConnectivityError' => MoWpnsMessages::BACKUP_CODE_INTERNET_ISSUE,
-				'AllUsed'                   => MoWpnsMessages::BACKUP_CODE_ALL_USED,
-				'UserLimitReached'          => MoWpnsMessages::BACKUP_CODE_DOMAIN_LIMIT_REACH,
-				'LimitReached'              => MoWpnsMessages::BACKUP_CODE_LIMIT_REACH,
-				'invalid_request'           => MoWpnsMessages::BACKUP_CODE_INVALID_REQUEST,
+				'InternetConnectivityError' => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::BACKUP_CODE_INTERNET_ISSUE ),
+				'AllUsed'                   => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::BACKUP_CODE_ALL_USED ),
+				'UserLimitReached'          => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::BACKUP_CODE_DOMAIN_LIMIT_REACH ),
+				'LimitReached'              => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::BACKUP_CODE_LIMIT_REACH ),
+				'invalid_request'           => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::BACKUP_CODE_INVALID_REQUEST ),
 			);
 			foreach ( $error_status_and_message as $error_status => $error_message ) {
 				if ( $error_status === $status ) {
@@ -369,10 +369,10 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		public function mo2f_send_backcodes_on_email( $codes, $mo2f_user_email, $user_id ) {
 			$result = MO2f_Utility::mo2f_email_backup_codes( $codes, $mo2f_user_email );
 			if ( $result ) {
-				$mo2fa_login_message = MoWpnsMessages::BACKUP_CODES_SENT_SUCCESS;
+				$mo2fa_login_message = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::BACKUP_CODES_SENT_SUCCESS );
 				update_user_meta( $user_id, 'mo_backup_code_generated', 1 );
 			} else {
-				$mo2fa_login_message = MoWpnsMessages::BACKUP_CODE_SENT_ERROR;
+				$mo2fa_login_message = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::BACKUP_CODE_SENT_ERROR );
 				update_user_meta( $user_id, 'mo_backup_code_generated', 0 );
 			}
 			return $mo2fa_login_message;
@@ -1016,7 +1016,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				'<button type="button" class="mo2f_close" data-dismiss="modal" aria-label="Close" title="' . esc_attr__( 'Back to login', 'miniorange-2-factor-authentication' ) . '" onclick="mologinback();">
 					<span aria-hidden="true">&times;</span>
 				</button>';
-				$html            .= esc_html__( 'Configure ' . MoWpnsConstants::mo2f_convert_method_name( $current_selected_method, 'cap_to_small' ), 'miniorange-2-factor-authentication' ); // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- This is a string literal.
+				$html            .= esc_html__( 'Configure', 'miniorange-2-factor-authentication' ) . ' ' . MoWpnsConstants::mo2f_convert_method_name( $current_selected_method, 'cap_to_small' );
 				$html            .= '</h4>
 				</div>';
 			$html                .= '<div class="mo2f_modal-body"> 
@@ -1102,7 +1102,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 						$html         .= ' 	<div id="showPushImage" style="display:none;">
 						<div class="mo2fa_text-align-center">We are waiting for your approval...</div>
 <div class="mo2fa_text-align-center">
-   <img src="' . esc_url( plugins_url( 'includes/images/email-loader.gif', dirname( __FILE__ ) ) ) . '"/>
+   <img src="' . esc_url( plugins_url( 'includes/images/email-loader.gif', __DIR__ ) ) . '"/>
 </div></div></div><br>';
 			if ( 'mo2f_inline_form' === $prev_screen ) {
 				$prev_screen = 'mo2f_inline_form';
@@ -1409,7 +1409,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				'<button type="button" class="mo2f_close" data-dismiss="modal" aria-label="Close" title="' . esc_attr__( 'Back to login', 'miniorange-2-factor-authentication' ) . '" onclick="mologinback();">
 					<span aria-hidden="true">&times;</span>
 				</button>';
-				$html .= esc_html__( 'Configure ' . MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::SECURITY_QUESTIONS, 'cap_to_small' ), 'miniorange-2-factor-authentication' ); // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- This is a string literal.
+				$html .= esc_html__( 'Configure', 'miniorange-2-factor-authentication' ) . ' ' . MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::SECURITY_QUESTIONS, 'cap_to_small' );
 				$html .= '</h4>
 				</div>';
 				$html .= '<div class="mo2f_modal-body">';
@@ -1586,13 +1586,19 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					}
 					update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', isset( $content['smsRemaining'] ) ? $content['smsRemaining'] : 0 );
 					update_site_option( 'cmVtYWluaW5nT1RQ', get_site_option( 'cmVtYWluaW5nT1RQ', 30 ) );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::REG_SUCCESS ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::REG_SUCCESS ) );
 				} else {
-					wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::ACCOUNT_EXISTS ) );
+					wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ACCOUNT_EXISTS ) );
 				}
 			} else {
 				$mo2f_message = is_string( $content ) ? $content : '';
-				wp_send_json_error( MoWpnsMessages::lang_translate( $mo2f_message ) );
+				wp_send_json_error(
+					sprintf(
+						/* translators: %s: error message */
+						__( 'Error: %s', 'miniorange-2-factor-authentication' ),
+						esc_html( $mo2f_message )
+					)
+				);
 			}
 		}
 
@@ -1722,7 +1728,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$custom_logo_enabled = get_site_option( 'mo2f_custom_logo', 'miniOrange2.png' );
 			$html                = '<div style="float:right;"><img
 							alt="logo"
-							src="' . esc_url( plugins_url( 'includes/images/' . $custom_logo_enabled, dirname( __FILE__ ) ) ) . '"/></div>';
+							src="' . esc_url( plugins_url( 'includes/images/' . $custom_logo_enabled, __DIR__ ) ) . '"/></div>';
 			return $html;
 		}
 
@@ -1734,15 +1740,15 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		public function mo2f_echo_js_css_files() {
 
 			if ( is_user_logged_in() && ! get_site_transient( 'mo2f_page_protection_flow_1' . wp_get_current_user()->ID ) ) {
-				wp_register_style( 'mo2f_style_settings', plugins_url( 'includes/css/twofa_style_settings.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
+				wp_register_style( 'mo2f_style_settings', plugins_url( 'includes/css/twofa_style_settings.min.css', __DIR__ ), array(), MO2F_VERSION );
 				wp_print_styles( 'mo2f_style_settings' );
 			} else {
-				wp_register_style( 'mo2f_bootstrap_settings', plugins_url( 'includes/css/bootstrap.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
+				wp_register_style( 'mo2f_bootstrap_settings', plugins_url( 'includes/css/bootstrap.min.css', __DIR__ ), array(), MO2F_VERSION );
 				wp_print_styles( 'mo2f_bootstrap_settings' );
 			}
-			wp_register_style( 'mo2f_main_css', plugins_url( 'includes/css/mo2f-main.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
+			wp_register_style( 'mo2f_main_css', plugins_url( 'includes/css/mo2f-main.min.css', __DIR__ ), array(), MO2F_VERSION );
 			wp_print_styles( 'mo2f_main_css' );
-			wp_register_script( 'mo2f_bootstrap_js', plugins_url( 'includes/js/bootstrap.min.js', dirname( __FILE__ ) ), array(), MO2F_VERSION, true );
+			wp_register_script( 'mo2f_bootstrap_js', plugins_url( 'includes/js/bootstrap.min.js', __DIR__ ), array(), MO2F_VERSION, true );
 			wp_print_scripts( 'jquery' );
 			wp_print_scripts( 'mo2f_bootstrap_js' );
 			if ( get_site_option( 'mo2f_enable_login_popup_customization' ) ) {
@@ -1818,19 +1824,19 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$html .= '<div id="mo2f_choose_app_tour" class="mo2f-choose-app-container">
 				<label for="authenticator_type"><b>' . esc_html__( '1. Choose an Authenticator App:', 'miniorange-2-factor-authentication' ) . '</b></label>
 				<select id="authenticator_type" class="mo2f-select-authenticator-app">';
-			foreach ( $auth_app_links as $auth_app => $auth_app_link ) {
+			foreach ( $mo2f_auth_app_links as $auth_app => $auth_app_link ) {
 				$html .= '<option data-apptype="' . esc_attr( $auth_app ) . '" data-playstorelink="' . esc_attr( $auth_app_link['Android'] ) . '" data-appstorelink="' . esc_attr( $auth_app_link['Ios'] ) . '">' . esc_html( MoWpnsConstants::mo2f_convert_method_name( $auth_app_link['app_name'], 'cap_to_small' ) ) . '</option>';
 			}
 			$html .= '</select></div>';
 
-			$html .= '<div class="mo2f-auth-icons">';
+			$html       .= '<div class="mo2f-auth-icons">';
 			$auth_images = array(
-				'google authenticator.png',
-				'microsoft authenticator.png',
-				'authy authenticator.png',
-				'duo authenticator.png',
-				'lastpass authenticator.png',
-				'freeotp authenticator.png',
+				'google-authenticator.png',
+				'microsoft-authenticator.png',
+				'authy-authenticator.png',
+				'duo-authenticator.png',
+				'lastpass-authenticator.png',
+				'freeotp-authenticator.png',
 			);
 			foreach ( $auth_images as $img ) {
 				$html .= '<img src="' . esc_url( plugins_url( 'includes/images/' . $img, __DIR__ ) ) . '" width="34" height="34" class="mo2f-auth-icon-img" />';
@@ -2054,22 +2060,22 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 */
 		public function mo2f_inline_css_and_js() {
 
-			wp_register_style( 'mo2f_bootstrap', plugins_url( 'includes/css/bootstrap.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
-			wp_register_style( 'mo2f_front_end_login', plugins_url( 'includes/css/front_end_login.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
-			wp_register_style( 'mo2f_style_setting', plugins_url( 'includes/css/style_settings.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
-			if ( file_exists( plugin_dir_path( dirname( __FILE__ ) ) . 'includes/css/hide-login.min.css' ) ) {
-				wp_register_style( 'mo2f_hide-login', plugins_url( 'includes/css/hide-login.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
+			wp_register_style( 'mo2f_bootstrap', plugins_url( 'includes/css/bootstrap.min.css', __DIR__ ), array(), MO2F_VERSION, false );
+			wp_register_style( 'mo2f_front_end_login', plugins_url( 'includes/css/front_end_login.min.css', __DIR__ ), array(), MO2F_VERSION, false );
+			wp_register_style( 'mo2f_style_setting', plugins_url( 'includes/css/style_settings.min.css', __DIR__ ), array(), MO2F_VERSION, false );
+			if ( file_exists( plugin_dir_path( __DIR__ ) . 'includes/css/hide-login.min.css' ) ) {
+				wp_register_style( 'mo2f_hide-login', plugins_url( 'includes/css/hide-login.min.css', __DIR__ ), array(), MO2F_VERSION, false );
 			}
 			wp_print_styles( 'mo2f_bootstrap' );
 			wp_print_styles( 'mo2f_front_end_login' );
 			wp_print_styles( 'mo2f_style_setting' );
 			wp_print_styles( 'mo2f_hide-login' );
-			wp_register_script( 'mo2f_bootstrap_js', plugins_url( 'includes/js/bootstrap.min.js', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
+			wp_register_script( 'mo2f_bootstrap_js', plugins_url( 'includes/js/bootstrap.min.js', __DIR__ ), array(), MO2F_VERSION, false );
 			wp_print_scripts( 'jquery' );
 			wp_print_scripts( 'mo2f_bootstrap_js' );
-			wp_register_script( 'mo2f_phone_js', plugins_url( 'includes/js/phone.min.js', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
+			wp_register_script( 'mo2f_phone_js', plugins_url( 'includes/js/phone.min.js', __DIR__ ), array(), MO2F_VERSION, false );
 			wp_print_scripts( 'mo2f_phone_js' );
-			wp_register_style( 'mo2f_phone', plugins_url( 'includes/css/phone.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
+			wp_register_style( 'mo2f_phone', plugins_url( 'includes/css/phone.min.css', __DIR__ ), array(), MO2F_VERSION, false );
 			wp_print_styles( 'mo2f_phone' );
 			if ( get_site_option( 'mo2f_enable_login_popup_customization' ) ) {
 				$this->mo2f_output_custom_login_popup_css();
@@ -2088,7 +2094,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			if ( apply_filters( 'mo2f_is_lv_needed', false ) ) {
 				array_push( $methods, MoWpnsConstants::OTP_OVER_WHATSAPP );
 			}
-			if ( ! is_null( $current_user ) && ( 'administrator' !== $current_user->roles[0] ) && ! get_site_option( 'mo2f_email' ) || ! get_site_option( 'mo2f_customerKey' ) ) {
+			if ( ( ! is_null( $current_user ) && ( 'administrator' !== $current_user->roles[0] ) && ! get_site_option( 'mo2f_email' ) ) || ! get_site_option( 'mo2f_customerKey' ) ) {
 				$methods = array( MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SECURITY_QUESTIONS, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OTP_OVER_TELEGRAM, MoWpnsConstants::OUT_OF_BAND_EMAIL );
 			}
 			if ( get_site_option( 'duo_credentials_save_successfully' ) ) {
@@ -2123,14 +2129,18 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$show_message = new MoWpnsMessages();
 			if ( $data && ! get_site_option( 'mo2fa_lk' ) ) {
 				if ( current_user_can( 'manage_options' ) ) {
-					$message = 'Please <a href="' . admin_url() . 'admin.php?page=mo_2fa_my_account" target="_blank">click here</a> to verify your license before configuring the plugin.';
+					$message = sprintf(
+						/* translators: %s: admin url */
+						__( 'Please <a href="%s" target="_blank">click here</a> to verify your license before configuring the plugin.', 'miniorange-2-factor-authentication' ),
+						esc_url( admin_url( 'admin.php?page=mo_2fa_my_account' ) )
+					);
 				} else {
-					$message = MoWpnsMessages::ERROR_DURING_PROCESS;
+					$message = $show_message->mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
 				}
 				if ( $is_ajax ) {
-					wp_send_json_error( MoWpnsMessages::lang_translate( $message ) );
+					wp_send_json_error( $message );
 				} else {
-					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( $message ), 'ERROR' );
+					$show_message->mo2f_show_message( $message, 'ERROR' );
 					return true;
 				}
 			}
@@ -2173,16 +2183,12 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				} else {
 					$redirect_url = isset( get_option( 'mo2f_custom_login_urls' )[ 'mo2fa_' . $current_role ] ) ? get_option( 'mo2f_custom_login_urls' )[ 'mo2fa_' . $current_role ] : ( ! empty( $redirect_to ) ? $redirect_to : home_url() );
 				}
-			} else {
-				if ( is_multisite() && is_super_admin( $user->ID ) ) {
+			} elseif ( is_multisite() && is_super_admin( $user->ID ) ) {
 					$redirect_url = isset( $redirect_to ) && ! empty( $redirect_to ) ? $redirect_to : admin_url();
-				} else {
-					if ( 'administrator' === $current_role ) {
-						$redirect_url = isset( $redirect_to ) && ! empty( $redirect_to ) ? $redirect_to : admin_url();
-					} else {
-						$redirect_url = isset( $redirect_to ) && ! empty( $redirect_to ) ? $redirect_to : home_url();
-					}
-				}
+			} elseif ( 'administrator' === $current_role ) {
+					$redirect_url = isset( $redirect_to ) && ! empty( $redirect_to ) ? $redirect_to : admin_url();
+			} else {
+				$redirect_url = isset( $redirect_to ) && ! empty( $redirect_to ) ? $redirect_to : home_url();
 			}
 			if ( MO2f_Utility::get_index_value( 'GLOBALS', 'mo2f_is_ajax_request' ) ) {
 				$redirect = array(

@@ -35,6 +35,7 @@ if ( ! class_exists( 'Mo2fCustomRegFormShortcode' ) ) {
 			if ( get_site_option( 'mo2f_enable_form_shortcode' ) ) {
 				add_action( 'woocommerce_created_customer', array( $this, 'wc_post_registration' ), 1, 3 );
 			}
+			add_action( 'admin_init', array( $this, 'mo_enqueue_shortcode' ) );
 		}
 		/**
 		 * It will enqueue the shortcode
@@ -56,7 +57,7 @@ if ( ! class_exists( 'Mo2fCustomRegFormShortcode' ) ) {
 			$show_message = new MoWpnsMessages();
 			$nonce        = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
 			if ( ! wp_verify_nonce( $nonce, 'ajax-nonce' ) ) {
-				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::SOMETHING_WENT_WRONG ), 'ERROR' );
+				$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ), 'ERROR' );
 			}
 
 			$choice = isset( $_POST['mo_action'] ) ? sanitize_text_field( wp_unslash( $_POST['mo_action'] ) ) : '';
@@ -86,7 +87,7 @@ if ( ! class_exists( 'Mo2fCustomRegFormShortcode' ) ) {
 			$show_message = new MoWpnsMessages();
 			$nonce        = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
 			if ( ! wp_verify_nonce( $nonce, 'ajax-nonce' ) ) {
-				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::SOMETHING_WENT_WRONG ), 'ERROR' );
+				$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ), 'ERROR' );
 			}
 
 			$choice = isset( $_POST['mo_action'] ) ? sanitize_text_field( wp_unslash( $_POST['mo_action'] ) ) : '';
@@ -124,7 +125,7 @@ if ( ! class_exists( 'Mo2fCustomRegFormShortcode' ) ) {
 			$show_message = new MoWpnsMessages();
 			$nonce        = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
 			if ( ! wp_verify_nonce( $nonce, 'ajax-nonce' ) ) {
-				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::SOMETHING_WENT_WRONG ), 'ERROR' );
+				$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ), 'ERROR' );
 			}
 			if ( isset( $_POST['phone'] ) ) {
 				update_user_meta( $user_id, 'billing_phone', sanitize_text_field( wp_unslash( $_POST['phone'] ) ) );
@@ -132,4 +133,3 @@ if ( ! class_exists( 'Mo2fCustomRegFormShortcode' ) ) {
 		}
 	}
 }
-

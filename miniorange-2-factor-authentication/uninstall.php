@@ -5,15 +5,18 @@
  * @package miniOrange-2-factor-authentication.
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit();
 }
 global $wpdb;
-$tablename = $wpdb->base_prefix . 'options';
-$prefix    = 'mo2f_%';
-$wpdb->query( $wpdb->prepare( 'DELETE FROM %1s  WHERE `option_name` LIKE %s', $tablename, $prefix ) ); //phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring complex warning of Direct Database call as it is used for tablename.
-$value = get_site_option( 'mo_wpns_registration_status' );
-if ( isset( $value ) || ! empty( $value ) ) {
+$mo2f_tablename = $wpdb->base_prefix . 'options';
+$mo2f_prefix    = 'mo2f_%';
+$wpdb->query( $wpdb->prepare( 'DELETE FROM %1s  WHERE `option_name` LIKE %s', $mo2f_tablename, $mo2f_prefix ) ); //phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- Ignoring complex warning of Direct Database call as it is used for tablename.
+$mo2f_value = get_site_option( 'mo_wpns_registration_status' );
+if ( isset( $mo2f_value ) || ! empty( $mo2f_value ) ) {
 	delete_site_option( 'mo2f_email' );
 }
 delete_site_option( 'mo2f_activate_plugin' );
@@ -93,13 +96,13 @@ delete_site_option( 'duo_credentials_save_successfully' );
 
 if ( get_site_option( 'is_onprem' ) ) {
 	$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-		$wpdb->prepare( 'DELETE FROM  %1s WHERE meta_key LIKE %s or meta_key=%s or meta_key=%s or meta_key=%s or meta_key=%s  or meta_key=%s or meta_key=%s', array( $wpdb->base_prefix . 'usermeta', $prefix, 'currentMethod', 'email', 'Security Questions', 'Email Verification', 'kba_questions_user', 'Google Authenticator' ) ) // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
+		$wpdb->prepare( 'DELETE FROM  %1s WHERE meta_key LIKE %s or meta_key=%s or meta_key=%s or meta_key=%s or meta_key=%s  or meta_key=%s or meta_key=%s', array( $wpdb->base_prefix . 'usermeta', $mo2f_prefix, 'currentMethod', 'email', 'Security Questions', 'Email Verification', 'kba_questions_user', 'Google Authenticator' ) ) // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
 	);
 
 }
-$mo_prefix = 'mo_%';
+$mo2f_mo_prefix = 'mo_%';
 $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-	$wpdb->prepare( 'DELETE FROM  %1s WHERE meta_key LIKE %s or meta_key LIKE %s or meta_key=%s or meta_key=%s or meta_key=%s or meta_key=%s  or meta_key=%s or meta_key=%s', array( $wpdb->base_prefix . 'usermeta', $prefix, $mo_prefix, 'phone_verification_status', 'test_2FA', 'mo2f_configure_2FA', 'miniorageqr', 'tempRegEmail', 'user_not_enroll' ) ) // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
+	$wpdb->prepare( 'DELETE FROM  %1s WHERE meta_key LIKE %s or meta_key LIKE %s or meta_key=%s or meta_key=%s or meta_key=%s or meta_key=%s  or meta_key=%s or meta_key=%s', array( $wpdb->base_prefix . 'usermeta', $mo2f_prefix, $mo2f_mo_prefix, 'phone_verification_status', 'test_2FA', 'mo2f_configure_2FA', 'miniorageqr', 'tempRegEmail', 'user_not_enroll' ) ) // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnquotedComplexPlaceholder -- We can not have table name in quotes.
 );
 if ( ! class_exists( 'WPSecurityPro' ) ) {
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->base_prefix}wpns_transactions" );  //phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching -- Ignoring complex schema change query as it is used for tablename.
@@ -154,9 +157,9 @@ if ( ! is_multisite() ) {
 	delete_site_option( 'recovery_mode_email_last_sent' );
 	// delete all stored key-value pairs for the roles.
 	global $wp_roles;
-	foreach ( $wp_roles->role_names as $user_id => $name ) {
-		delete_site_option( 'mo2fa_' . $user_id );
-		delete_site_option( 'mo2fa_' . $user_id . '_login_url' );
+	foreach ( $wp_roles->role_names as $mo2f_user_id => $mo2f_name ) {
+		delete_site_option( 'mo2fa_' . $mo2f_user_id );
+		delete_site_option( 'mo2fa_' . $mo2f_user_id . '_login_url' );
 	}
 }
 // delete previous version key-value pairs.

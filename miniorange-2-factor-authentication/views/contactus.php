@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-global $image_path;
+global $mo2f_image_path;
 echo '
 <div class="w-[296px] mo2f-contact-us-container" style="transition-duration: 300ms;"> 
     <div id="mo_contact_us" class="flex relative justify-end" style="gap: 1rem;">
@@ -54,19 +54,19 @@ echo '
             </div>
             <form name="f" method="post" action="" value="mo_wpns_send_query" class="flex flex-col gap-mo-3 p-mo-6 mo2f-scrollable-div">
             <input type="hidden" name="option" value="mo_wpns_send_query"/>
-            <input type="hidden" name="nonce" value="' . esc_attr( $support_form_nonce ) . '">';
+            <input type="hidden" name="nonce" value="' . esc_attr( $mo2f_support_form_nonce ) . '">';
 
 			echo '
             
                 <div class="mo-input-wrapper">   
                     <label class="mo-input-label">Email</label>
-                        <input type="email" class="mo-input w-full" id="mo2f_query_email" name="mo2f_query_email" value="' . esc_attr( $email ) . '"
+                        <input type="email" class="mo-input w-full" id="mo2f_query_email" name="mo2f_query_email" value="' . esc_attr( $mo2f_email ) . '"
                                 placeholder="' . esc_attr( ( 'Enter your Email' ) ) . '" required />
                 </div>  
 
                 <div class="mo-input-wrapper">            
                     <label class="mo-input-label">Phone</label>
-                        <input type="text" class="mo-input w-full" id="mo2f_query_phone" name="mo2f_query_phone" value="' . esc_attr( $phone ) . '"
+                        <input type="text" class="mo-input w-full" id="mo2f_query_phone" name="mo2f_query_phone" value="' . esc_attr( $mo2f_phone ) . '"
                             placeholder="' . esc_attr( ( 'Enter your Phone' ) ) . '" /> 
                 </div>         
                             

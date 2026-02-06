@@ -63,7 +63,6 @@ if ( ! class_exists( 'Mo2f_Classloader' ) ) {
 		 */
 		public function mo2f_autoload() {
 			spl_autoload_register( array( $this, 'mo2f_autoload_classes' ) );
-
 		}
 
 		/**
@@ -100,6 +99,5 @@ if ( ! class_exists( 'Mo2f_Classloader' ) ) {
 		private function mo2f_is_same_namespace( $class_name ) {
 			return substr( $class_name, 0, strlen( $this->namespace . $this->namespace_separator ) ) === $this->namespace . $this->namespace_separator;
 		}
-
 	}
 }

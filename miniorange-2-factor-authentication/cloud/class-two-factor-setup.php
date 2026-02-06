@@ -20,6 +20,10 @@
 
 namespace TwoFA\Cloud;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 use TwoFA\Helper\Mo2f_Api;
 use TwoFA\Traits\Instance;
 
@@ -28,7 +32,7 @@ use TwoFA\Traits\Instance;
  * Contains Request Calls to Customer service.
  */
 
-require_once dirname( dirname( __FILE__ ) ) . DIRECTORY_SEPARATOR . 'helper' . DIRECTORY_SEPARATOR . 'class-mo2f-api.php';
+require_once dirname( __DIR__ ) . DIRECTORY_SEPARATOR . 'helper' . DIRECTORY_SEPARATOR . 'class-mo2f-api.php';
 
 if ( ! class_exists( 'Two_Factor_Setup' ) ) {
 	/**
@@ -70,10 +74,7 @@ if ( ! class_exists( 'Two_Factor_Setup' ) ) {
 
 			$response = $mo2f_api->mo2f_http_request( $url, $field_string, $http_header_array );
 			return $response;
-
 		}
 	}
 	new Two_Factor_Setup();
 }
-
-

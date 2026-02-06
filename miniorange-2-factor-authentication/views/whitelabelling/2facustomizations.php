@@ -5,6 +5,9 @@
  * @package miniorange-2-factor-authentication/views/whitelabelling
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsConstants;
@@ -12,13 +15,13 @@ use TwoFA\Helper\Mo2f_Common_Helper;
 ?>
 <div class="mo2f-settings-div">
 	<div class="mo2f-settings-head -ml-mo-9">
-	<?php $gauth_name = get_option( 'mo2f_google_appname' ) ? get_option( 'mo2f_google_appname' ) : DEFAULT_GOOGLE_APPNAME; ?>
+	<?php $mo2f_gauth_name = get_option( 'mo2f_google_appname' ) ? get_option( 'mo2f_google_appname' ) : DEFAULT_GOOGLE_APPNAME; ?>
 		<span><?php esc_html_e( 'Google Authenticator', 'miniorange-2-factor-authentication' ); ?></span>
 	</div>
 	<div class="mo2f-sub-settings-div">
 		<span><?php esc_html_e( 'Change App name in authenticator app:', 'miniorange-2-factor-authentication' ); ?></span>
 		<span>
-			<input type="text" class="m-mo-4" id= "mo2f_change_app_name" name="mo2f_google_auth_appname" placeholder="Enter the app name" value="<?php echo esc_attr( $gauth_name ); ?>"  />
+			<input type="text" class="m-mo-4" id= "mo2f_change_app_name" name="mo2f_google_auth_appname" placeholder="Enter the app name" value="<?php echo esc_attr( $mo2f_gauth_name ); ?>"  />
 			<input type="hidden" id="mo2f_nonce" name="mo2f_nonce" value="<?php echo esc_attr( wp_create_nonce( 'mo2f-white-labelling-ajax-nonce' ) ); ?>" />
 		</span>
 	</div>
@@ -50,16 +53,16 @@ use TwoFA\Helper\Mo2f_Common_Helper;
 			<input type="hidden" name="mo2f_whitelabelling_nonce" id="mo2f_whitelabelling_nonce" value="<?php echo esc_attr( wp_create_nonce( 'mo2f-white-labelling-ajax-nonce' ) ); ?>"/><br />
 			<table class="mo2f_kba_table">
 				<?php
-					$questions_to_display = ! empty( $saved_questions ) ? $saved_questions : array_slice( $GLOBALS['mo2f_default_kba_question_set'], 0, 10 );
-				foreach ( $questions_to_display as $index => $question_value ) {
-					$question_number = $index + 1;
+					$mo2f_questions_to_display = ! empty( $mo2f_saved_questions ) ? $mo2f_saved_questions : array_slice( $GLOBALS['mo2f_default_kba_question_set'], 0, 10 );
+				foreach ( $mo2f_questions_to_display as $mo2f_question_index => $mo2f_question_value ) {
+					$mo2f_question_number = $mo2f_question_index + 1;
 					?>
 					<tr class="mo2f_kba_body">
-						<td style="width: 40px;"><?php echo 'Q' . esc_html( $question_number ) . ':'; ?></td>
+						<td style="width: 40px;"><?php echo 'Q' . esc_html( $mo2f_question_number ) . ':'; ?></td>
 						<td>
 							<input class="w-2/3" type="text" name="mo2f_kbaquestion_custom_admin[]" 
-							id="mo2f_kbaquestion_custom_admin_<?php echo esc_attr( $question_number ); ?>" 
-							value="<?php echo esc_attr( $question_value ); ?>" 
+							id="mo2f_kbaquestion_custom_admin_<?php echo esc_attr( $mo2f_question_number ); ?>" 
+							value="<?php echo esc_attr( $mo2f_question_value ); ?>" 
 							placeholder="<?php esc_attr_e( 'Enter your custom question here', 'miniorange-2-factor-authentication' ); ?>" 
 							autocomplete="off" />
 							<button type="button" class="mo2f_add_question">+</button>
@@ -78,7 +81,7 @@ use TwoFA\Helper\Mo2f_Common_Helper;
 					<span><?php esc_html_e( 'No. of default questions to be selected from the above list during security question configuration : ', 'miniorange-2-factor-authentication' ); ?></span>
 				</td>
 				<td>
-					<input type="number" name="mo2f_default_kbaquestions_users" id="mo2f_default_kbaquestions_users" value="<?php echo esc_attr( $default_question_count ); ?>" min="1" max="5" />
+					<input type="number" name="mo2f_default_kbaquestions_users" id="mo2f_default_kbaquestions_users" value="<?php echo esc_attr( $mo2f_default_question_count ); ?>" min="1" max="5" />
 				</td>
 				</tr>
 				<tr>
@@ -86,7 +89,7 @@ use TwoFA\Helper\Mo2f_Common_Helper;
 					<span><?php esc_html_e( 'No. of custom questions user can add during security question configuration : ', 'miniorange-2-factor-authentication' ); ?></span>
 				</td>
 				<td>
-					<input type="number" name="mo2f_custom_kbaquestions_users" id="mo2f_custom_kbaquestions_users" value="<?php echo esc_attr( $custom_question_count ); ?>" min="0" max="5" />
+					<input type="number" name="mo2f_custom_kbaquestions_users" id="mo2f_custom_kbaquestions_users" value="<?php echo esc_attr( $mo2f_custom_question_count ); ?>" min="0" max="5" />
 				</td>
 				</tr>
 			</table>

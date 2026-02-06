@@ -89,6 +89,5 @@ if ( ! class_exists( 'Mo2f_PluginPageDetails' ) ) {
 		 * @var array $nav_tabs
 		 */
 		public $nav_tabs;
-
 	}
 }

@@ -96,9 +96,9 @@ if ( ! class_exists( 'AjaxHandler' ) ) {
 		 * @return void
 		 */
 		private function whitelist_self() {
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$mo_plugins_utility = new MoWpnsHandler();
-			$mo_plugins_utility->mo2f_whitelist_ip( $mo_wpns_utility->get_client_ip() );
+			$mo_plugins_utility->mo2f_whitelist_ip( $mo2f_mo_wpns_utility->get_client_ip() );
 			wp_send_json_success();
 		}
 

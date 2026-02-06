@@ -20,6 +20,7 @@ if ( ! class_exists( 'Handle_Migration' ) ) {
 	class Handle_Migration {
 
 		use Instance;
+
 		/**
 		 * Handle_Migration class constructor
 		 */

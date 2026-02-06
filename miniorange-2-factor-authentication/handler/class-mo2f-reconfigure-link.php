@@ -11,6 +11,7 @@ use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\Mo2f_Login_Popup;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\Mo2f_Common_Helper;
 use TwoFA\Traits\Instance;
 use WP_REST_Request;
@@ -67,7 +68,7 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 			if ( $email_delivered ) {
 				return 'An email containing the link to recover your account by resettings your Two-Factor Authentication (2FA) details has been sent to your inbox. Please click on that link for the same.';
 			} else {
-				return 'Apologies, we\'re encountering an issue while attempting to send the reconfiguration email. Kindly verify your network ' . ( user_can( $user_id, 'administrator' ) ? 'or SMTP connection settings.' : 'and try again.' );
+				return 'Apologies, we\'re encountering an issue while attempting to send the reconfiguration email. Kindly verify your network ' . ( user_can( $user_id, 'manage_options' ) ? 'or SMTP connection settings.' : 'and try again.' );
 			}
 		}
 
@@ -134,10 +135,10 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 		 * @return string
 		 */
 		public function mo2f_2fa_reconfiguration_email_template( $reset_token, $current_user, $email ) {
-			global $image_path;
+			global $mo2f_image_path;
 			$user_id = $current_user->ID;
 			$image   = wp_upload_dir();
-			$img_url = $image_path . 'includes/images/' . get_site_option( 'mo2f_custom_logo', 'miniOrange2.png' );
+			$img_url = $mo2f_image_path . 'includes/images/' . get_site_option( 'mo2f_custom_logo', 'miniOrange2.png' );
 			$url     = get_site_option( 'siteurl' );
 			$url    .= '/wp-json/miniorange/mo_2fa_two_fa/resetuser2fa=' . $reset_token . '/message=resetsuccess';
 			$message = MoWpnsUtility::get_mo2f_db_option( 'mo2f_reconfig_link_email_template', 'site_option' );
@@ -165,7 +166,6 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 					'permission_callback' => '__return_true',
 				),
 			);
-
 		}
 
 
@@ -226,9 +226,7 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 				$message = 'You have successfully reset your 2FA. Please login and reconfigure the 2FA method for yourself.';
 				return "<div> <p class='message'>" . $message . '</p></div>';
 			}
-
 		}
-
 	}
 	new Mo2f_Reconfigure_Link();
 }

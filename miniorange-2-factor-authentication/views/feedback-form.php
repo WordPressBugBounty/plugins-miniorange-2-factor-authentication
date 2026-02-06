@@ -18,31 +18,31 @@ if ( 'plugins.php' !== basename( isset( $_SERVER['PHP_SELF'] ) ? sanitize_text_f
 }
 global $mo2fdb_queries;
 $mo2f_configured_2_f_a_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', get_current_user_id() );
-$no_of_2fa_users              = $mo2fdb_queries->mo2f_get_no_of_2fa_users();
-$deactivate_reasons           = array(
+$mo2f_no_of_2fa_users         = $mo2fdb_queries->mo2f_get_no_of_2fa_users();
+$mo2f_deactivate_reasons      = array(
 	'Conflicts with other plugins',
 	'Redirecting back to login page after Authentication',
 );
-$message                      = (
+$mo2f_message                 = (
 	'We are sad to see you go!  Help us to improve our plugin by giving your opinion.'
 );
 if ( strlen( $mo2f_configured_2_f_a_method ) ) {
-	array_push( $deactivate_reasons, "Couldn't understand how to make it work" );
+	array_push( $mo2f_deactivate_reasons, "Couldn't understand how to make it work" );
 } elseif ( strpos( $mo2f_configured_2_f_a_method, MoWpnsConstants::GOOGLE_AUTHENTICATOR ) !== false ) {
-	array_push( $deactivate_reasons, 'Unable to verify Google Authenticator' );
+	array_push( $mo2f_deactivate_reasons, 'Unable to verify Google Authenticator' );
 } elseif ( strpos( $mo2f_configured_2_f_a_method, MoWpnsConstants::OTP_OVER_SMS ) !== false || strpos( $mo2f_configured_2_f_a_method, MoWpnsConstants::OTP_OVER_EMAIL ) !== false ) {
-	array_push( $deactivate_reasons, 'Exhausted Email or SMS transactions' );
+	array_push( $mo2f_deactivate_reasons, 'Exhausted Email or SMS transactions' );
 }
 if ( 'MO_2_FACTOR_CUSTOMER_REGISTERED_SUCCESS' !== get_site_option( 'mo_2factor_admin_registration_status' ) ) {
-	array_push( $deactivate_reasons, 'Did not want to create an account' );
+	array_push( $mo2f_deactivate_reasons, 'Did not want to create an account' );
 }
 if ( get_site_option( 'mo2fa_visit' ) ) {
-	array_push( $deactivate_reasons, 'Plans are expensive' );
+	array_push( $mo2f_deactivate_reasons, 'Plans are expensive' );
 }
-if ( 3 === $no_of_2fa_users ) {
-	array_push( $deactivate_reasons, 'User Limit' );
+if ( 3 === $mo2f_no_of_2fa_users ) {
+	array_push( $mo2f_deactivate_reasons, 'User Limit' );
 }
-array_push( $deactivate_reasons, 'Other Reasons:' );
+array_push( $mo2f_deactivate_reasons, 'Other Reasons:' );
 ?>
 </head>
 
@@ -61,20 +61,20 @@ array_push( $deactivate_reasons, 'Other Reasons:' );
 			<form class="p-mo-6 flex flex-col gap-mo-6" name="f" method="post" action="" id="mo_wpns_feedback" style="padding: 1.5rem; flex-direction: column; display: flex;">
 				<input type="hidden" id="mo_wpns_feedback_nonce" name="mo_wpns_feedback_nonce" value="<?php echo esc_attr( wp_create_nonce( 'mo-wpns-feedback-nonce' ) ); ?>"/>
 				<input type="hidden" name="option" value="mo_wpns_feedback" />
-				<div class="mo2f_deactivation_message" style="border: 1px solid; border-radius: 4px; border-color: rgb(203, 213, 225); background-color: rgb(248, 250, 252); padding: 1rem; color: rgb(15, 23, 42);"><?php echo esc_attr( $message ); ?></div>
+				<div class="mo2f_deactivation_message" style="border: 1px solid; border-radius: 4px; border-color: rgb(203, 213, 225); background-color: rgb(248, 250, 252); padding: 1rem; color: rgb(15, 23, 42);"><?php echo esc_attr( $mo2f_message ); ?></div>
 
 				<div class="mo_feedback_text" style="text-align: left;">
 					<span id="mo2f_link_id"></span>
 					<div id="feedback_reasons" style="margin-top:20px;margin-bottom:20px;">
 					<?php
 
-					foreach ( $deactivate_reasons as $deactivate_reason ) {
+					foreach ( $mo2f_deactivate_reasons as $mo2f_deactivate_reason ) {
 						?>
 						<div style="margin:8px;">
-							<label for="<?php echo esc_attr( $deactivate_reason ); ?>">
-								<input type="radio" name="mo_wpns_deactivate_plugin" value="<?php echo esc_attr( $deactivate_reason ); ?>" required>
-								<?php echo esc_attr( $deactivate_reason ); ?>
-								<?php if ( 'Conflicts with other plugins' === $deactivate_reason ) { ?>
+							<label for="<?php echo esc_attr( $mo2f_deactivate_reason ); ?>">
+								<input type="radio" name="mo_wpns_deactivate_plugin" value="<?php echo esc_attr( $mo2f_deactivate_reason ); ?>" required>
+								<?php echo esc_attr( $mo2f_deactivate_reason ); ?>
+								<?php if ( 'Conflicts with other plugins' === $mo2f_deactivate_reason ) { ?>
 									<div id="mo_wpns_other_plugins_installed">
 										<?php
 											MO2f_Utility::get_all_plugins_installed();

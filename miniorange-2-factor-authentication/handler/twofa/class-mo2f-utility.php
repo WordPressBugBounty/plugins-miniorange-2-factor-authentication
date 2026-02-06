@@ -127,7 +127,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 			$partialemail = substr( $email, 0, 1 );
 			$temp         = strrpos( $email, '@' );
 			$endemail     = substr( $email, $temp - 1, $emailsize );
-			for ( $i = 1; $i < $temp; $i ++ ) {
+			for ( $i = 1; $i < $temp; $i++ ) {
 				$partialemail = $partialemail . 'x';
 			}
 			$hiddenemail = $partialemail . $endemail;
@@ -178,19 +178,17 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 			return $decrypted_text;
 		}
 		/**
-		 * This function to generate the random string .
+		 * This function to generate the random string.
 		 *
 		 * @param string $length It will carry the length .
 		 * @param string $keyspace It will carry thye key .
 		 * @return string
 		 */
 		public static function random_str( $length, $keyspace = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' ) {
-			$random_string     = '';
-			$characters_length = strlen( $keyspace );
-			$keyspace          = $keyspace . microtime( true );
-			$keyspace          = str_shuffle( $keyspace );
-			for ( $i = 0; $i < $length; $i ++ ) {
-				$random_string .= $keyspace[ wp_rand( 0, $characters_length - 1 ) ];
+			$random_string   = '';
+			$keyspace_length = strlen( $keyspace );
+			for ( $i = 0; $i < $length; $i++ ) {
+				$random_string .= $keyspace[ random_int( 0, $keyspace_length - 1 ) ];
 			}
 
 			return $random_string;
@@ -216,11 +214,11 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		/**
 		 * This function is to check wheather it is json.
 		 *
-		 * @param string $string It will the string message .
+		 * @param string $mo2f_string It will the string message .
 		 * @return boolean
 		 */
-		public static function is_json( $string ) {
-			return is_string( $string ) && is_array( json_decode( $string, true ) ) ? true : false;
+		public static function is_json( $mo2f_string ) {
+			return is_string( $mo2f_string ) && is_array( json_decode( $mo2f_string, true ) ) ? true : false;
 		}
 
 		/**
@@ -293,19 +291,29 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		 * @return string .
 		 */
 		public static function get_plugin_name_by_identifier( $plugin_identitifier ) {
-			$all_plugins    = get_plugins();
+			if ( 'None' === $plugin_identitifier ) {
+				return 'None';
+			}
+			$all_plugins = get_plugins();
+
+			if ( ! isset( $all_plugins[ $plugin_identitifier ] ) ) {
+				return 'No Plugin selected';
+			}
 			$plugin_details = $all_plugins[ $plugin_identitifier ];
-			return $plugin_details['Name'] ? $plugin_details['Name'] : 'No Plugin selected';
+			if ( is_array( $plugin_details ) && isset( $plugin_details['Name'] ) ) {
+				return $plugin_details['Name'];
+			}
+			return 'No Plugin selected';
 		}
 		/**
 		 * It will return the index is exist or not
 		 *
-		 * @param string $var It will store the variable data .
+		 * @param string $variable It will store the variable data .
 		 * @param string $index It will carry the index value .
 		 * @return boolean .
 		 */
-		public static function get_index_value( $var, $index ) {
-			switch ( $var ) {
+		public static function get_index_value( $variable, $index ) {
+			switch ( $variable ) {
 				case 'GLOBALS':
 					return isset( $GLOBALS[ $index ] ) ? $GLOBALS[ $index ] : false;
 				default:
@@ -319,7 +327,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		 * @return string .
 		 */
 		public static function get_codes_warning_email_content( $codes_remaining ) {
-			global $image_path;
+			global $mo2f_image_path;
 			$message = '<table cellpadding="25" style="margin:0px auto">
         <tbody>
         <tr>
@@ -327,7 +335,7 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
         <table cellpadding="24" width="584px" style="margin:0 auto;max-width:584px;background-color:#f6f4f4;border:1px solid #a8adad">
         <tbody>
         <tr>
-        <td><img src="' . esc_url( $image_path ) . 'includes/images/xecurify-logo.png" alt="Xecurify" style="color:#5fb336;text-decoration:none;display:block;width:auto;height:auto;max-height:35px" class="CToWUd"></td>
+        <td><img src="' . esc_url( $mo2f_image_path ) . 'includes/images/xecurify-logo.png" alt="Xecurify" style="color:#5fb336;text-decoration:none;display:block;width:auto;height:auto;max-height:35px" class="CToWUd"></td>
         </tr>
         </tbody>
         </table>
@@ -349,6 +357,101 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
         </table>';
 			return $message;
 		}
+
+		/**
+		 * Sanitizes SVG content by removing potentially dangerous elements and attributes.
+		 *
+		 * @param string $svg_string Raw SVG content.
+		 * @return string Sanitized SVG content or empty string if invalid
+		 */
+		public static function mo2f_sanitize_svg( $svg_string ) {
+			$svg_string = is_string( $svg_string ) ? $svg_string : '';
+			if ( '' === $svg_string ) {
+				return '';
+			}
+			// Strip NUL bytes and any DOCTYPE to avoid XXE and entity attacks.
+			$svg_string = preg_replace( '/\x00+/', '', $svg_string );
+			$svg_string = preg_replace( '/<!DOCTYPE[^>]*>/i', '', $svg_string );
+			// Prefer DOM-based sanitization when DOM extension is available.
+			if ( class_exists( '\\DOMDocument' ) ) {
+				$dom      = new \DOMDocument();
+				$previous = libxml_use_internal_errors( true );
+				// Disable network access, ignore errors, compact tree, remove blanks.
+				$loaded = $dom->loadXML( $svg_string, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_COMPACT | LIBXML_NOBLANKS );
+				libxml_clear_errors();
+				libxml_use_internal_errors( $previous );
+				// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- documentElement is a built-in PHP DOMDocument property.
+				if ( ! $loaded || ! $dom->documentElement || 'svg' !== strtolower( $dom->documentElement->tagName ) ) {
+					return '';
+				}
+				$xpath = new \DOMXPath( $dom );
+				// Remove dangerous elements in a single XPath query.
+				$danger_query = '//*[local-name()="script" or local-name()="foreignObject" or local-name()="iframe" or local-name()="object" or local-name()="embed" or local-name()="audio" or local-name()="video" or local-name()="canvas" or local-name()="animate" or local-name()="animateTransform" or local-name()="set" or local-name()="style"]';
+				$nodes        = $xpath->query( $danger_query );
+				if ( $nodes && $nodes->length ) {
+					// Collect first to avoid live list issues.
+					$to_remove = array();
+					foreach ( $nodes as $n ) {
+						$to_remove[] = $n;
+					}
+					foreach ( $to_remove as $n ) {
+						// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- parentNode is a built-in PHP DOMNode property.
+						if ( $n->parentNode ) {
+							// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- parentNode is a built-in PHP DOMNode property.
+							$n->parentNode->removeChild( $n );
+						}
+					}
+				}
+				// Clean attributes from all remaining elements.
+				$elements = $xpath->query( '//*' );
+				if ( $elements && $elements->length ) {
+					foreach ( $elements as $el ) {
+						if ( ! $el->hasAttributes() ) {
+							continue;
+						}
+						$attributes_to_remove = array();
+						foreach ( $el->attributes as $attr ) {
+							$attr_name = strtolower( $attr->name );
+							// Remove event handlers and risky linking/style attributes.
+							if ( 0 === strpos( $attr_name, 'on' ) || 'style' === $attr_name || 'href' === $attr_name || 'xlink:href' === $attr_name || 'src' === $attr_name || 'filter' === $attr_name || 'mask' === $attr_name || 'clip-path' === $attr_name ) {
+								$attributes_to_remove[] = $attr->name;
+								continue;
+							}
+							$attr_value = (string) $attr->value;
+							// Strip dangerous protocols without lowercasing whole string.
+							if ( false !== stripos( $attr_value, 'javascript:' ) || 0 === stripos( $attr_value, 'data:' ) || false !== stripos( $attr_value, 'vbscript:' ) || 0 === stripos( $attr_value, 'file:' ) ) {
+								$attributes_to_remove[] = $attr->name;
+							}
+						}
+						foreach ( $attributes_to_remove as $attr_name ) {
+							$el->removeAttribute( $attr_name );
+						}
+					}
+				}
+				// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- documentElement is a built-in PHP DOMDocument property.
+				return trim( $dom->saveXML( $dom->documentElement ) );
+			}
+			// Fallback regex-based sanitization.
+			$patterns   = array(
+				'/<script[\s\S]*?<\/script>/i',
+				'/<foreignObject[\s\S]*?<\/foreignObject>/i',
+				'/<iframe[\s\S]*?<\/iframe>/i',
+				'/<object[\s\S]*?<\/object>/i',
+				'/<embed[\s\S]*?<\/embed>/i',
+				'/<audio[\s\S]*?<\/audio>/i',
+				'/<video[\s\S]*?<\/video>/i',
+				'/<canvas[\s\S]*?<\/canvas>/i',
+				'/<style[\s\S]*?<\/style>/i',
+			);
+			$svg_string = preg_replace( $patterns, '', $svg_string );
+			// Remove event handler attributes and risky links/styles.
+			$svg_string = preg_replace( '/\s+on[a-z-]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $svg_string );
+			$svg_string = preg_replace( '/\s+(href|xlink:href|src)\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $svg_string );
+			$svg_string = preg_replace( '/\s+style\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $svg_string );
+			$svg_string = preg_replace( '/\s+(filter|mask|clip-path)\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $svg_string );
+			return trim( $svg_string );
+		}
+
 		/**
 		 * It will invoke to send the back up code over email
 		 *
@@ -397,13 +500,71 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		 */
 		public static function mo2f_debug_file( $text ) {
 			if ( (int) MoWpnsUtility::get_mo2f_db_option( 'mo2f_enable_debug_log', 'site_option' ) ) {
-				$debug_log_path = wp_upload_dir();
-				$debug_log_path = $debug_log_path['basedir'] . DIRECTORY_SEPARATOR;
-				$filename       = 'miniorange_2FA_plugin_debug_log.txt';
-				$data           = '[' . gmdate( 'Y/m/d' ) . ' ' . time() . ']:' . $text . "\n";
-				$handle         = fopen( $debug_log_path . DIRECTORY_SEPARATOR . $filename, 'a+' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fopen -- fopen
-				fwrite( $handle, $data ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fwrite -- fclose
-				fclose( $handle ); //phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_read_fclose -- fclose
+				$plugin_root_path = dirname( dirname( plugin_dir_path( __FILE__ ) ) );
+				$debug_log_path   = $plugin_root_path . DIRECTORY_SEPARATOR . 'logs';
+				if ( ! is_dir( $debug_log_path ) ) {
+					$dir_created = wp_mkdir_p( $debug_log_path );
+					if ( ! $dir_created ) {
+						return;
+					}
+				}
+
+				$filename   = 'miniorange_2FA_plugin_debug_log.php';
+				$file_path  = $debug_log_path . DIRECTORY_SEPARATOR . $filename;
+				$php_header = "<?php if ( ! defined( 'ABSPATH' ) ) { exit; } ?>";
+
+				if ( ! function_exists( 'WP_Filesystem' ) ) {
+					require_once ABSPATH . 'wp-admin/includes/file.php';
+				}
+
+				global $wp_filesystem;
+
+				if ( ! $wp_filesystem instanceof WP_Filesystem_Base ) {
+					WP_Filesystem();
+				}
+
+				$use_wp_filesystem = ( $wp_filesystem instanceof WP_Filesystem_Base );
+
+				$existing_log = '';
+
+				if ( $use_wp_filesystem ) {
+					if ( $wp_filesystem->exists( $file_path ) ) {
+						$existing_log = $wp_filesystem->get_contents( $file_path );
+						if ( false === $existing_log ) {
+							$existing_log = '';
+						}
+					} else {
+						$existing_log = $php_header . PHP_EOL;
+					}
+				} elseif ( file_exists( $file_path ) ) {
+					// Fallback to direct PHP file operations.
+					$existing_log = @file_get_contents( $file_path );
+					if ( false === $existing_log ) {
+						$existing_log = '';
+					}
+				} else {
+					$existing_log = $php_header . PHP_EOL;
+				}
+
+				if ( 0 !== strpos( $existing_log, $php_header ) ) {
+					$existing_log = $php_header . PHP_EOL . ltrim( $existing_log, "\r\n" );
+				}
+
+				$data = '[' . gmdate( 'Y/m/d' ) . ' ' . time() . ']:' . $text . "\n";
+
+				if ( $use_wp_filesystem ) {
+					$wp_filesystem->put_contents(
+						$file_path,
+						$existing_log . $data,
+						defined( 'FS_CHMOD_FILE' ) ? FS_CHMOD_FILE : false
+					);
+				} else {
+					// Fallback to direct PHP file operations.
+					@file_put_contents( $file_path, $existing_log . $data, LOCK_EX );
+					if ( defined( 'FS_CHMOD_FILE' ) && isset( $wp_filesystem ) && method_exists( $wp_filesystem, 'chmod' ) ) {
+						$wp_filesystem->chmod( $file_path, FS_CHMOD_FILE );
+					}
+				}
 			}
 		}
 
@@ -419,4 +580,3 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		}
 	}
 }
-

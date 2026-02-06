@@ -14,7 +14,7 @@ use TwoFA\Helper\MoWpnsHandler;
 		<div class="mo2f-settings-div" id="mo2f_manual_ip_blocking">
 		<div class="mo2f-settings-head justify-between -ml-mo-9">
 			<span><?php esc_html_e( 'Manual IP Blocking', 'miniorange-2-factor-authentication' ); ?></span>
-			<a href='<?php echo esc_url( $two_factor_premium_doc['Manual IP Blocking'] ); ?>' target="_blank"><span class="dashicons dashicons-text-page mo2f-dash-icons-doc"></span></a>
+			<a href='<?php echo esc_url( $mo2f_two_factor_premium_doc['Manual IP Blocking'] ); ?>' target="_blank"><span class="dashicons dashicons-text-page mo2f-dash-icons-doc"></span></a>
 		</div>
 			<div class="mo2f-sub-settings-div">
 				<div class="my-mo-3 mb-mo-3 flex">
@@ -37,19 +37,19 @@ use TwoFA\Helper\MoWpnsHandler;
 						<tbody>
 
 							<?php
-							global $wpns_db_queries;
-							$blockedips      = $wpns_db_queries->mo2f_get_blocked_ip_list();
-							$whitelisted_ips = $wpns_db_queries->mo2f_get_whitelisted_ips_list();
-							$disabled        = '';
+							global $mo2f_wpns_db_queries;
+							$mo2f_blocked_ips     = $mo2f_wpns_db_queries->mo2f_get_blocked_ip_list();
+							$mo2f_whitelisted_ips = $mo2f_wpns_db_queries->mo2f_get_whitelisted_ips_list();
+							$mo2f_disabled        = '';
 							global $mo2f_dir_name;
-							foreach ( $blockedips as $blockedip ) {
-								echo '<tr class="text-mo-caption font-normal"><td>' . esc_html( $blockedip->ip_address ) . '</td><td>' . esc_html( $blockedip->reason ) . '</td><td>';
-								if ( empty( $blockedip->blocked_for_time ) ) {
+							foreach ( $mo2f_blocked_ips as $mo2f_blocked_ip ) {
+								echo '<tr class="text-mo-caption font-normal"><td>' . esc_html( $mo2f_blocked_ip->ip_address ) . '</td><td>' . esc_html( $mo2f_blocked_ip->reason ) . '</td><td>';
+								if ( empty( $mo2f_blocked_ip->blocked_for_time ) ) {
 									echo '<span class="text-red-500">Permanently</span>';
 								} else {
-									echo esc_html( gmdate( 'M j, Y, g:i:s a', $blockedip->blocked_for_time ) );
+									echo esc_html( gmdate( 'M j, Y, g:i:s a', $mo2f_blocked_ip->blocked_for_time ) );
 								}
-								echo '</td><td>' . esc_html( gmdate( 'M j, Y, g:i:s a', $blockedip->created_timestamp ) ) . '</td><td><a ' . esc_attr( $disabled ) . " onclick=unblockip('" . esc_js( $blockedip->id ) . "')>Unblock IP</a></td></tr>";
+								echo '</td><td>' . esc_html( gmdate( 'M j, Y, g:i:s a', $mo2f_blocked_ip->created_timestamp ) ) . '</td><td><a ' . esc_attr( $mo2f_disabled ) . " onclick=unblockip('" . esc_js( $mo2f_blocked_ip->id ) . "')>Unblock IP</a></td></tr>";
 							}
 							?>
 						</tbody>
@@ -81,8 +81,8 @@ use TwoFA\Helper\MoWpnsHandler;
 						</thead>
 						<tbody>
 							<?php
-							foreach ( $whitelisted_ips as $whitelisted_ip ) {
-								echo '<tr class="text-mo-caption font-normal"><td>' . esc_html( $whitelisted_ip->ip_address ) . '</td><td>' . esc_html( gmdate( 'M j, Y, g:i:s a', $whitelisted_ip->created_timestamp ) ) . '</td><td><a ' . esc_attr( $disabled ) . " onclick=removefromwhitelist('" . esc_js( $whitelisted_ip->id ) . "')>Remove</a></td></tr>";
+							foreach ( $mo2f_whitelisted_ips as $mo2f_whitelisted_ip ) {
+								echo '<tr class="text-mo-caption font-normal"><td>' . esc_html( $mo2f_whitelisted_ip->ip_address ) . '</td><td>' . esc_html( gmdate( 'M j, Y, g:i:s a', $mo2f_whitelisted_ip->created_timestamp ) ) . '</td><td><a ' . esc_attr( $mo2f_disabled ) . " onclick=removefromwhitelist('" . esc_js( $mo2f_whitelisted_ip->id ) . "')>Remove</a></td></tr>";
 							}
 
 							echo '			</tbody>
@@ -97,7 +97,7 @@ use TwoFA\Helper\MoWpnsHandler;
 		<div class="mo2f-settings-div" id="mo2f_ip_lookup">
 			<div class="mo2f-settings-head justify-between -ml-mo-9">
 				<span><?php esc_html_e( 'IP LookUp', 'miniorange-2-factor-authentication' ); ?></span>
-				<a href='<?php echo esc_url( $two_factor_premium_doc['IP LookUp'] ); ?>' target="_blank"><span class="dashicons dashicons-text-page mo2f-dash-icons-doc"></span></a>
+				<a href='<?php echo esc_url( $mo2f_two_factor_premium_doc['IP LookUp'] ); ?>' target="_blank"><span class="dashicons dashicons-text-page mo2f-dash-icons-doc"></span></a>
 			</div>
 			<div class="mo2f-sub-settings-div">
 				<div class="my-mo-3 mb-mo-3 flex">

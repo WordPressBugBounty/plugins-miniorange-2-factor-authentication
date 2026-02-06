@@ -100,6 +100,5 @@ if ( ! class_exists( 'Mo2f_Cloud_Validate' ) ) {
 				return $error;
 			}
 		}
-
 	}
 }

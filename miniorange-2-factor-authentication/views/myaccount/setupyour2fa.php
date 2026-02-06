@@ -17,30 +17,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div>
 	<div class="mo2f-tw-top-content">
 		<div class="mo2f-setup-two-factor-title">
-		<?php if ( $can_display_admin_features ) { ?>
 			<span><?php esc_html_e( 'Setup 2-factor Method for You', 'miniorange-2-factor-authentication' ); ?></span>
-		<?php } ?>
 		</div>
 		<div class="test_auth_button">
 		<?php
-		if ( isset( $mo2f_two_fa_method ) && ! empty( $mo2f_two_fa_method ) && ! get_user_meta( $user_id, 'mo_backup_code_limit_reached' ) ) {
+		if ( isset( $mo2f_two_fa_method ) && ! empty( $mo2f_two_fa_method ) && ! get_user_meta( $mo2f_user_id, 'mo_backup_code_limit_reached', true ) && $mo2f_can_display_admin_features ) {
 			?>
 			<button class="mo2f-tw-test-button" id="mo_2f_generate_codes">Download Backup Codes</button>
 			<?php
 		}
-		$count           = $mo2fdb_queries->mo2f_get_specific_method_users_count( MoWpnsConstants::OTP_OVER_SMS );
-		$auth_method_abr = str_replace( ' ', '', MoWpnsConstants::mo2f_convert_method_name( $selected_method, 'cap_to_small' ) );
-		if ( $is_customer_admin_registered && 0 !== $count && $can_display_admin_features ) {// to do: can show recharge link universal. check.
+		$mo2f_sms_user_count       = $mo2fdb_queries->mo2f_get_specific_method_users_count( MoWpnsConstants::OTP_OVER_SMS );
+		$mo2f_selected_method_abbr = str_replace( ' ', '', MoWpnsConstants::mo2f_convert_method_name( $mo2f_selected_method, 'cap_to_small' ) );
+		if ( $mo2f_is_customer_admin_registered && 0 !== $mo2f_sms_user_count && $mo2f_can_display_admin_features ) {// to do: can show recharge link universal. check.
 			?>
 			<button onclick="window.open('<?php echo esc_url( MoWpnsConstants::RECHARGELINK ); ?>')" class="mo2f-tw-test-button">Add SMS</button>
 			<?php
 		}
-		$common_helper = new Mo2f_Common_Helper();
-		if ( $common_helper->mo2f_is_2fa_set( wp_get_current_user()->ID ) ) {
+		$mo2f_common_helper = new Mo2f_Common_Helper();
+		if ( $mo2f_common_helper->mo2f_is_2fa_set( wp_get_current_user()->ID ) ) {
 			?>
 
-<button class="mo2f-reset-settings-button" id="mo2f_test_method" onclick="testAuthenticationMethod('<?php echo esc_attr( $auth_method_abr ); ?>');"
-			<?php echo ( 'NONE' !== $selected_method ) ? '' : ' disabled '; ?>>Test - <strong> <?php echo esc_html( MoWpnsConstants::mo2f_convert_method_name( $selected_method, 'cap_to_small' ) ); ?> </strong>
+<button class="mo2f-reset-settings-button" id="mo2f_test_method" onclick="testAuthenticationMethod('<?php echo esc_attr( $mo2f_selected_method_abbr ); ?>');"
+			<?php echo ( 'NONE' !== $mo2f_selected_method ) ? '' : ' disabled '; ?>>Test - <strong> <?php echo esc_html( MoWpnsConstants::mo2f_convert_method_name( $mo2f_selected_method, 'cap_to_small' ) ); ?> </strong>
 			</button>
 			<?php
 		}
@@ -51,8 +49,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 		// ----------------------------------------.
 		global $mo2fdb_queries;
 
-		$is_customer_registered        = 'SUCCESS' === $mo2fdb_queries->mo2f_get_user_detail( 'user_registration_with_miniorange', $user->ID );
-		$can_user_configure_2fa_method = $can_display_admin_features || $is_customer_registered;
+		$mo2f_is_customer_registered        = 'SUCCESS' === $mo2fdb_queries->mo2f_get_user_detail( 'user_registration_with_miniorange', $mo2f_user->ID );
+		$mo2f_can_user_configure_2fa_method = $mo2f_can_display_admin_features || $mo2f_is_customer_registered;
 
 		echo '<div class="overlay1" id="overlay" hidden ></div>';
 		echo '<form name="f" method="post" action="" id="mo2f_save_free_plan_auth_methods_form">
@@ -60,93 +58,93 @@ if ( ! defined( 'ABSPATH' ) ) {
                     <br>
                     <table class="mo2f_auth_methods_table">';
 
-		foreach ( $mo2f_methods_on_dashboard as $auth_method ) {
-			$is_premium_feature        = isset( $two_factor_methods_details[ $auth_method ]['crown'] ) && $two_factor_methods_details[ $auth_method ]['crown'];
-			$auth_method_abr           = str_replace( ' ', '', MoWpnsConstants::mo2f_convert_method_name( $auth_method, 'cap_to_small' ) );
-			$auth_method_abr           = empty( $auth_method_abr ) ? 'NoMethod' : $auth_method_abr;
-			$is_auth_method_selected   = ( $auth_method === $selected_method ? true : false );
-			$doc_link                  = isset( $two_factor_methods_details[ $auth_method ]['doc'] ) ? $two_factor_methods_details[ $auth_method ]['doc'] : null;
-			$video_link                = isset( $two_factor_methods_details[ $auth_method ]['video'] ) ? $two_factor_methods_details[ $auth_method ]['video'] : null;
-			$is_auth_method_configured = 0;
-			if ( ( MoWpnsConstants::OTP_OVER_EMAIL === $auth_method || MoWpnsConstants::OUT_OF_BAND_EMAIL === $auth_method ) && ! MO2F_IS_ONPREM ) {
-				$is_auth_method_configured = 1;
+		foreach ( $mo2f_methods_on_dashboard as $mo2f_auth_method ) {
+			$mo2f_is_premium_feature        = isset( $mo2f_two_factor_methods_details[ $mo2f_auth_method ]['crown'] ) && $mo2f_two_factor_methods_details[ $mo2f_auth_method ]['crown'];
+			$mo2f_auth_method_abbr          = str_replace( ' ', '', MoWpnsConstants::mo2f_convert_method_name( $mo2f_auth_method, 'cap_to_small' ) );
+			$mo2f_auth_method_abbr          = empty( $mo2f_auth_method_abbr ) ? 'NoMethod' : $mo2f_auth_method_abbr;
+			$mo2f_is_auth_method_selected   = ( $mo2f_auth_method === $mo2f_selected_method ? true : false );
+			$mo2f_doc_link                  = isset( $mo2f_two_factor_methods_details[ $mo2f_auth_method ]['doc'] ) ? $mo2f_two_factor_methods_details[ $mo2f_auth_method ]['doc'] : null;
+			$mo2f_video_link                = isset( $mo2f_two_factor_methods_details[ $mo2f_auth_method ]['video'] ) ? $mo2f_two_factor_methods_details[ $mo2f_auth_method ]['video'] : null;
+			$mo2f_is_auth_method_configured = 0;
+			if ( ( MoWpnsConstants::OTP_OVER_EMAIL === $mo2f_auth_method || MoWpnsConstants::OUT_OF_BAND_EMAIL === $mo2f_auth_method ) && ! MO2F_IS_ONPREM ) {
+				$mo2f_is_auth_method_configured = 1;
 			} else {
-				$is_auth_method_configured = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_' . $auth_method_abr . '_config_status', $user->ID );
+				$mo2f_is_auth_method_configured = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_' . $mo2f_auth_method_abbr . '_config_status', $mo2f_user->ID );
 			}
-			$is_mfa_enabled            = get_site_option( 'mo2f_multi_factor_authentication' );
-			$is_all_inclusive_file     = file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-all-inclusive-premium-settings.php' );
-			echo '<div class="mo2f-tw-thumbnail ' . ( ( ! $is_all_inclusive_file && 'WHATSAPP' === $auth_method ) ? 'mo2f-all-inclusive-plan' : ' ' ) . '"';
-			echo ( $is_mfa_enabled && $is_auth_method_configured || $is_auth_method_selected ) ? 'bg-indigo-50' : 'bg-indigo-white';
-			echo '" id="' . esc_attr( $auth_method_abr ) . '_thumbnail_2_factor"';
-			echo $is_auth_method_selected ? '#07b52a' : 'var(--mo2f-theme-blue)';
+			$mo2f_is_mfa_enabled        = get_site_option( 'mo2f_multi_factor_authentication' );
+			$mo2f_is_all_inclusive_file = file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-all-inclusive-premium-settings.php' );
+			echo '<div class="mo2f-tw-thumbnail ' . ( ( ! $mo2f_is_all_inclusive_file && 'WHATSAPP' === $mo2f_auth_method ) ? 'mo2f-all-inclusive-plan' : ' ' ) . '"';
+			echo ( ( $mo2f_is_mfa_enabled && $mo2f_is_auth_method_configured ) || $mo2f_is_auth_method_selected ) ? 'bg-indigo-50' : 'bg-indigo-white';
+			echo '" id="' . esc_attr( $mo2f_auth_method_abbr ) . '_thumbnail_2_factor"';
+			echo $mo2f_is_auth_method_selected ? '#07b52a' : 'var(--mo2f-theme-blue)';
 			echo ';">';
 			echo '<div class="mo2f-thumbnail-top-section">
                         <div class="mo2f-method-header"><div class="">';
-			echo '<img src="' . esc_url( plugins_url( 'includes/images/authmethods/' . $auth_method_abr . '.png', dirname( dirname( __FILE__ ) ) ) ) . '" class="mo2f-method-icon" />';
+			echo '<img src="' . esc_url( plugins_url( 'includes/images/authmethods/' . $mo2f_auth_method_abbr . '.png', dirname( __DIR__ ) ) ) . '" class="mo2f-method-icon" />';
 
 			echo '</div><div class="mo2f-method-title">';
 			echo '<b>';
-			if ( MoWpnsConstants::OUT_OF_BAND_EMAIL === $auth_method ) {
-				echo esc_html( MoWpnsConstants::mo2f_convert_method_name( $auth_method, 'cap_to_small' ) . ' Via Link' );
+			if ( MoWpnsConstants::OUT_OF_BAND_EMAIL === $mo2f_auth_method ) {
+				echo esc_html( MoWpnsConstants::mo2f_convert_method_name( $mo2f_auth_method, 'cap_to_small' ) . ' Via Link' );
 			} else {
-				echo esc_html( MoWpnsConstants::mo2f_convert_method_name( $auth_method, 'cap_to_small' ) );
+				echo esc_html( MoWpnsConstants::mo2f_convert_method_name( $mo2f_auth_method, 'cap_to_small' ) );
 			}
 
 			echo '</b></div></div>';
 			echo '<div>';
-			if ( ! $is_all_inclusive_file && 'WHATSAPP' === $auth_method ) {
+			if ( ! $mo2f_is_all_inclusive_file && 'WHATSAPP' === $mo2f_auth_method ) {
 				echo MoWpnsConstants::PREMIUM_CROWN; //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. 
 			}
 			echo '</div>';
 			echo '   <div class="mo2f-guide-icons" >';
-			if ( isset( $doc_link ) ) {
-				echo '<a href=' . esc_url( $doc_link ) . ' class="mx-auto" target="_blank">
+			if ( isset( $mo2f_doc_link ) ) {
+				echo '<a href=' . esc_url( $mo2f_doc_link ) . ' class="mx-auto" target="_blank">
                 <span title="View Setup Guide" class="dashicons dashicons-text-page  mo2f-dash-icons-doc"></span>
                 </a>';
 			}
-			if ( isset( $video_link ) ) {
-				echo '<a href=' . esc_url( $video_link ) . ' class="mx-auto" target="_blank">
+			if ( isset( $mo2f_video_link ) ) {
+				echo '<a href=' . esc_url( $mo2f_video_link ) . ' class="mx-auto" target="_blank">
                 <span title="Watch Setup Video" class="dashicons dashicons-video-alt3 mo2f-dash-icons-video"></span>
                 </a>';
 			}
 			echo '</div>';
 			echo '</div>';
 			echo '<div class="mo2f-thumbnail-method-desc">';
-			echo wp_kses_post( __( $two_factor_methods_details[ $auth_method ]['desc'], 'miniorange-2-factor-authentication' ) ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal 
+			echo wp_kses_post( __( $mo2f_two_factor_methods_details[ $mo2f_auth_method ]['desc'], 'miniorange-2-factor-authentication' ) ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal 
 			echo '</div>';
-			if ( $is_premium_feature ) {
+			if ( $mo2f_is_premium_feature ) {
 				echo '<div class="mo2f_settings_overlay"></div>';
 			}
 			echo '<div class="mo2f-thumbnail-bottom-section">';
 			if ( MO2F_IS_ONPREM ) {
-				$twofactor_transactions        = new Mo2fDB();
-				$exceeded                      = apply_filters( 'mo2f_basic_plan_settings_filter', $mo2fdb_queries->check_alluser_limit_exceeded( $user->ID ), 'is_user_limit_exceeded', array() );
-				$can_user_configure_2fa_method = ! $exceeded || ! empty( $selected_method );
-				$display_configure_button      = 1;
-				$disabled                      = $can_user_configure_2fa_method ? '' : ' disabled ';
+				$twofactor_transactions             = new Mo2fDB();
+				$mo2f_limit_exceeded                = apply_filters( 'mo2f_basic_plan_settings_filter', $mo2fdb_queries->check_alluser_limit_exceeded( $mo2f_user->ID ), 'is_user_limit_exceeded', array() );
+				$mo2f_can_user_configure_2fa_method = ! $mo2f_limit_exceeded || ! empty( $mo2f_selected_method );
+				$mo2f_display_configure_button      = 1;
+				$mo2f_disabled_attr                 = $mo2f_can_user_configure_2fa_method ? '' : ' disabled ';
 			} else {
-				$display_configure_button = ! $is_customer_registered ? true : ( MoWpnsConstants::OUT_OF_BAND_EMAIL !== $auth_method && MoWpnsConstants::OTP_OVER_EMAIL !== $auth_method );
+				$mo2f_display_configure_button = ! $mo2f_is_customer_registered ? true : ( MoWpnsConstants::OUT_OF_BAND_EMAIL !== $mo2f_auth_method && MoWpnsConstants::OTP_OVER_EMAIL !== $mo2f_auth_method );
 
-				if ( ! MO2F_IS_ONPREM && ( MoWpnsConstants::OUT_OF_BAND_EMAIL === $auth_method || MoWpnsConstants::OTP_OVER_EMAIL === $auth_method ) ) {
-					$display_configure_button = 0;
+				if ( ! MO2F_IS_ONPREM && ( MoWpnsConstants::OUT_OF_BAND_EMAIL === $mo2f_auth_method || MoWpnsConstants::OTP_OVER_EMAIL === $mo2f_auth_method ) ) {
+					$mo2f_display_configure_button = 0;
 				}
-				$disabled = $can_user_configure_2fa_method ? '' : '  ';
+				$mo2f_disabled_attr = $mo2f_can_user_configure_2fa_method ? '' : '  ';
 			}
 			echo '<div>';
-			if ( ! $is_all_inclusive_file && 'WHATSAPP' === $auth_method ) {
-				echo '<span class="mo2f-tw-configure-2fa-whatsapp" id="' . esc_attr( $auth_method_abr ) . '_configuration" >Configure</span>';
-			} elseif ( $display_configure_button ) {
-				echo '<button type="button" id="' . esc_attr( $auth_method_abr ) . '_configuration" class="mo2f-tw-configure-2fa" onclick="configureOrSet2ndFactor_free_plan(\'' . esc_js( $auth_method_abr ) . '\', \'configure2factor\');"';
-				echo esc_attr( $disabled );
+			if ( ! $mo2f_is_all_inclusive_file && 'WHATSAPP' === $mo2f_auth_method ) {
+				echo '<span class="mo2f-tw-configure-2fa-whatsapp" id="' . esc_attr( $mo2f_auth_method_abbr ) . '_configuration" >Configure</span>';
+			} elseif ( $mo2f_display_configure_button ) {
+				echo '<button type="button" id="' . esc_attr( $mo2f_auth_method_abbr ) . '_configuration" class="mo2f-tw-configure-2fa" onclick="configureOrSet2ndFactor_free_plan(\'' . esc_js( $mo2f_auth_method_abbr ) . '\', \'configure2factor\');"';
+				echo esc_attr( $mo2f_disabled_attr );
 				echo '>';
-				echo $is_auth_method_configured ? 'Reconfigure' : 'Configure';
+				echo $mo2f_is_auth_method_configured ? 'Reconfigure' : 'Configure';
 				echo '</button>';
 			}
 			echo '</div>';
 			echo '<div>';
-			if ( $is_auth_method_configured && ! $is_auth_method_selected && ! $is_mfa_enabled ) {
-				echo '<button type="button" id="' . esc_attr( $auth_method_abr ) . '_set_2_factor" class="mo2f-tw-configure-2fa" onclick="configureOrSet2ndFactor_free_plan(\'' . esc_js( $auth_method_abr ) . '\', \'select2factor\');"';
-				echo esc_attr( $disabled );
+			if ( $mo2f_is_auth_method_configured && ! $mo2f_is_auth_method_selected && ! $mo2f_is_mfa_enabled ) {
+				echo '<button type="button" id="' . esc_attr( $mo2f_auth_method_abbr ) . '_set_2_factor" class="mo2f-tw-configure-2fa" onclick="configureOrSet2ndFactor_free_plan(\'' . esc_js( $mo2f_auth_method_abbr ) . '\', \'select2factor\');"';
+				echo esc_attr( $mo2f_disabled_attr );
 				echo '>Set as 2-factor</button>';
 
 			}
@@ -157,7 +155,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		}
 		echo '</table>';
 
-		$configured_auth_method_abr = str_replace( ' ', '', $selected_method );
+		$mo2f_configured_auth_method_abbr = str_replace( ' ', '', $mo2f_selected_method );
 		echo '</div> <input type="hidden" name="miniorange_save_form_auth_methods_nonce"
                         value="' . esc_attr( wp_create_nonce( 'miniorange-save-form-auth-methods-nonce' ) ) . '"/>
                     <input type="hidden" name="option" value="mo2f_save_free_plan_auth_methods" />
@@ -167,19 +165,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 		?>
 </div><br>
 <hr><br>
-<div class="mo2f-setup-two-factor-title">
-		<?php if ( $can_display_admin_features ) { ?>
-			<span><?php esc_html_e( 'Set 2-factor method for other users?', 'miniorange-2-factor-authentication' ); ?></span>&emsp13;<span class="text-mo-caption"><?php esc_html_e( '  Click ', 'miniorange-2-factor-authentication' ); ?><a href="<?php echo esc_url( admin_url( 'users.php' ) ); ?>"><?php esc_html_e( 'here', 'miniorange-2-factor-authentication' ); ?></a> <?php esc_html_e( ' to setup 2FA method for your users.', 'miniorange-2-factor-authentication' ); ?></span>
-		<?php } ?>
-		</div>
+<?php if ( $mo2f_can_display_admin_features ) { ?>
+<div class="mo2f-setup-two-factor-title footer-setup-2fa">
+
+	<span><?php esc_html_e( 'Set 2-factor method for other users?', 'miniorange-2-factor-authentication' ); ?></span>&emsp13;<span class="text-mo-caption"><?php esc_html_e( '  Click ', 'miniorange-2-factor-authentication' ); ?><a href="<?php echo esc_url( admin_url( 'users.php' ) ); ?>"><?php esc_html_e( 'here', 'miniorange-2-factor-authentication' ); ?></a> <?php esc_html_e( ' to setup 2FA method for your users.', 'miniorange-2-factor-authentication' ); ?></span>
+
+</div>
+<?php } ?>
 <form name="f" method="post" action="" id="mo2f_2factor_generate_backup_codes">
 	<input type="hidden" name="option" value="mo2f_download_backup_codes_dashboard"/>
 	<input type="hidden" name="mo2f_login_settings_nonce"
 			value="<?php echo esc_attr( wp_create_nonce( 'mo2f-login-settings-nonce' ) ); ?>"/>
 </form>
 <?php
-global $main_dir;
-wp_enqueue_script( 'setup-2fa-for-me-script', $main_dir . '/includes/js/setup-2fa-for-me.min.js', array(), MO2F_VERSION, false );
+global $mo2f_main_dir;
+wp_enqueue_script( 'setup-2fa-for-me-script', $mo2f_main_dir . '/includes/js/setup-2fa-for-me.min.js', array(), MO2F_VERSION, false );
 wp_localize_script(
 	'setup-2fa-for-me-script',
 	'setup2faForMe',

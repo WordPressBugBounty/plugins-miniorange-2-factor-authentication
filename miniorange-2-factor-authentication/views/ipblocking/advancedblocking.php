@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 echo '<div class="mo2f-settings-div"  id= "mo2f_ip_range_blocking">';
 
-echo '		<div class="mo2f-settings-head justify-between -ml-mo-9"><span>' . esc_html__( 'IP Address Range Blocking', 'miniorange-2-factor-authentication' ) . '</span><a href=' . esc_url( $two_factor_premium_doc['IP Address Range Blocking'] ) . ' target="_blank"><span class="dashicons dashicons-text-page mo2f-dash-icons-doc"></span></a></div>
+echo '		<div class="mo2f-settings-head justify-between -ml-mo-9"><span>' . esc_html__( 'IP Address Range Blocking', 'miniorange-2-factor-authentication' ) . '</span><a href=' . esc_url( $mo2f_two_factor_premium_doc['IP Address Range Blocking'] ) . ' target="_blank"><span class="dashicons dashicons-text-page mo2f-dash-icons-doc"></span></a></div>
 			You can block range of IP addresses here  ( Examples: 192.168.0.100 - 192.168.0.190 )
 			<form name="f" method="post" action="" id="iprangeblockingform" >
 				<input type="hidden" name="option" value="mo_wpns_block_ip_range" />
@@ -20,8 +20,8 @@ echo '		<div class="mo2f-settings-head justify-between -ml-mo-9"><span>' . esc_h
 			<br>
 			<table id="iprangetable">		
 ';
-for ( $i = 1; $i <= $range_count; $i++ ) {
-	echo '<tr><td>Start IP	<input style="width :30%" type ="text" class="mo_wpns_table_textbox" name="start_' . intval( esc_html( $i ) ) . '" value ="' . esc_html( $start[ $i ] ) . '" placeholder=" e.g 192.168.0.100" />End IP	<input style="width :30%" type ="text" placeholder=" e.g 192.168.0.190" class="mo_wpns_table_textbox" value="' . esc_html( $end[ $i ] ) . '"  name="end_' . intval( esc_html( $i ) ) . '"/></td></tr>';
+for ( $mo2f_i = 1; $mo2f_i <= $mo2f_range_count; $mo2f_i++ ) {
+	echo '<tr><td>Start IP	<input style="width :30%" type ="text" class="mo_wpns_table_textbox" name="start_' . intval( esc_html( $mo2f_i ) ) . '" value ="' . esc_html( $mo2f_start[ $mo2f_i ] ) . '" placeholder=" e.g 192.168.0.100" />End IP	<input style="width :30%" type ="text" placeholder=" e.g 192.168.0.190" class="mo_wpns_table_textbox" value="' . esc_html( $mo2f_end[ $mo2f_i ] ) . '"  name="end_' . intval( esc_html( $mo2f_i ) ) . '"/></td></tr>';
 }
 echo '
 		</table>

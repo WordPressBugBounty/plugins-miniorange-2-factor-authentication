@@ -43,7 +43,7 @@ echo '	<div>
 		            </tr>
 		        </thead>
 		        <tbody>';
-				$common_helper->mo2f_show_login_transactions_report( $logintranscations );
+				$mo2f_common_helper->mo2f_show_login_transactions_report( $mo2f_logintranscations );
 
 echo '	        </tbody>
 		    </table>

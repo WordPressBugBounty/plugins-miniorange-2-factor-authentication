@@ -54,7 +54,7 @@ echo '<div class="mo2f-settings-div"><div class="mo2f-settings-head">Verify Lice
        </form>
 <form style="display:none;" id="mo2f_view_licensekey_form" action="' . esc_attr( MO_HOST_NAME ) . '/moas/login"
 target="_blank" method="post">
-<input type="email" name="username" value="' . esc_attr( $email ) . '" /> 
+<input type="email" name="username" value="' . esc_attr( $mo2f_email ) . '" /> 
 <input type="text" name="redirectUrl" value="' . esc_attr( MO_HOST_NAME ) . '/moas/viewlicensekeys" />
 <input type="text" name="requestOrigin" value="wp_security_two_factor_all_inclusive_plan"  />
 </form>

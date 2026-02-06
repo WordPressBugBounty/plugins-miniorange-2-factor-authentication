@@ -67,18 +67,18 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 			// Set current step.
 			$current_step       = ( isset( $_GET['current-step'] ) ) ? sanitize_text_field( wp_unslash( $_GET['current-step'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended -- Reading GET parameter from the URL for checking the tab name, doesn't require nonce verification.
 			$this->current_step = ! empty( $current_step ) ? $current_step : current( array_keys( $this->wizard_steps ) );
-			wp_register_style( 'mo_2fa_admin_setupWizard', plugins_url( 'includes' . DIRECTORY_SEPARATOR . 'css' . DIRECTORY_SEPARATOR . 'setup-wizard.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
-			wp_enqueue_script( 'mo2f_setup_wizard', plugins_url( 'includes' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'setup-wizard.min.js', dirname( __FILE__ ) ), array(), MO2F_VERSION, false );
+			wp_register_style( 'mo_2fa_admin_setupWizard', plugins_url( 'includes' . DIRECTORY_SEPARATOR . 'css' . DIRECTORY_SEPARATOR . 'setup-wizard.min.css', __DIR__ ), array(), MO2F_VERSION );
+			wp_enqueue_script( 'mo2f_setup_wizard', plugins_url( 'includes' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'setup-wizard.min.js', __DIR__ ), array(), MO2F_VERSION, false );
 			$save_step = ( isset( $_POST['save_step'] ) ) ? sanitize_text_field( wp_unslash( $_POST['save_step'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Reading POST parameter for checking the saved step, doesn't require nonce verification for the 1st window.
 			if ( ! empty( $save_step ) && ! empty( $this->wizard_steps[ $this->current_step ]['save'] ) ) {
 				call_user_func( $this->wizard_steps[ $this->current_step ]['save'] );
 			}
 			wp_enqueue_script( 'jquery' );
 			$this->mo2f_setup_page_header();
-			wp_register_script( 'mo2f_qr_code_minjs', plugins_url( '/includes/jquery-qrcode/jquery-qrcode.min.js', dirname( __FILE__ ) ), array(), MO2F_VERSION, true );
-			wp_register_script( 'mo2f_phone_js', plugins_url( '/includes/js/phone.min.js', dirname( __FILE__ ) ), array(), MO2F_VERSION, true );
-			wp_register_style( 'mo_2fa_admin_setupWizard', plugins_url( 'includes/css/setup-wizard.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
-			wp_register_style( 'mo2f_phone_css', plugins_url( 'includes/css/phone.min.css', dirname( __FILE__ ) ), array(), MO2F_VERSION );
+			wp_register_script( 'mo2f_qr_code_minjs', plugins_url( '/includes/jquery-qrcode/jquery-qrcode.min.js', __DIR__ ), array(), MO2F_VERSION, true );
+			wp_register_script( 'mo2f_phone_js', plugins_url( '/includes/js/phone.min.js', __DIR__ ), array(), MO2F_VERSION, true );
+			wp_register_style( 'mo_2fa_admin_setupWizard', plugins_url( 'includes/css/setup-wizard.min.css', __DIR__ ), array(), MO2F_VERSION );
+			wp_register_style( 'mo2f_phone_css', plugins_url( 'includes/css/phone.min.css', __DIR__ ), array(), MO2F_VERSION );
 			echo '<head>';
 			wp_print_scripts( 'mo2f_qr_code_minjs' );
 			wp_print_scripts( 'mo2f_phone_js' );
@@ -132,9 +132,9 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 				<meta name="viewport" content="width=device-width" />
 				<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 				<title><?php esc_html_e( 'miniOrange 2-factor Setup Wizard', 'miniorange-2-factor-authentication' ); ?></title>
-				<?php do_action( 'admin_print_styles' ); ?>
-				<?php do_action( 'admin_print_scripts' ); ?>
-				<?php do_action( 'admin_head' ); ?>
+				<?php do_action( 'admin_print_styles' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook. ?>
+				<?php do_action( 'admin_print_scripts' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook. ?>
+				<?php do_action( 'admin_head' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook. ?>
 			</head>
 
 			<body class="mo2f_setup_wizard">
@@ -162,7 +162,7 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 		<head>
 		<body class="mo2f_body">
 				<header class="mo2f-setup-wizard-header">
-					<img width="70px" height="auto" src="<?php echo esc_url( plugin_dir_url( dirname( __FILE__ ) ) . 'includes/images/miniorange-new-logo.png' ); ?>" alt="<?php esc_attr_e( 'miniOrange 2-factor Logo', 'miniorange-2-factor-authentication' ); ?>" >
+					<img width="70px" height="auto" src="<?php echo esc_url( plugin_dir_url( __DIR__ ) . 'includes/images/miniorange-new-logo.png' ); ?>" alt="<?php esc_attr_e( 'miniOrange 2-factor Logo', 'miniorange-2-factor-authentication' ); ?>" >
 					<h1><?php esc_html_e( 'miniOrange 2-factor authentication Setup', 'miniorange-2-factor-authentication' ); ?></h1>
 					<span class="mo2f_loader" id="mo2f_loader" style="display: none;"></span>
 				</header>

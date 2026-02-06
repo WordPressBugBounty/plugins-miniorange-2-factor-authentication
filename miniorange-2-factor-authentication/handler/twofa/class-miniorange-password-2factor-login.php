@@ -169,7 +169,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 		public function mo_2_factor_pass2login_show_wp_login_form() {
 			$session_id_encrypt = $this->create_session();
 			if ( class_exists( 'Theme_My_Login' ) ) {
-				wp_enqueue_script( 'tmlajax_script', plugins_url( 'includes/js/tmlajax.min.js', dirname( dirname( __FILE__ ) ) ), array( 'jQuery' ), MO2F_VERSION, false );
+				wp_enqueue_script( 'tmlajax_script', plugins_url( 'includes/js/tmlajax.min.js', dirname( __DIR__ ) ), array( 'jQuery' ), MO2F_VERSION, false );
 				wp_localize_script(
 					'tmlajax_script',
 					'my_ajax_object',
@@ -177,7 +177,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 				);
 			}
 			if ( class_exists( 'LoginWithAjax' ) ) {
-				wp_enqueue_script( 'login_with_ajax_script', plugins_url( 'includes/js/login_with_ajax.min.js', dirname( dirname( __FILE__ ) ) ), array( 'jQuery' ), MO2F_VERSION, false );
+				wp_enqueue_script( 'login_with_ajax_script', plugins_url( 'includes/js/login_with_ajax.min.js', dirname( __DIR__ ) ), array( 'jQuery' ), MO2F_VERSION, false );
 				wp_localize_script(
 					'login_with_ajax_script',
 					'my_ajax_object',
@@ -275,7 +275,7 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 					$this->miniorange_pass2login_form_fields( $mo2fa_login_status, $mo2fa_login_message, $redirect_to, null, $session_id_encrypt, 1, $mo2fa_transaction_id );
 				} else {
 					$mo2fa_login_status  = 'MO_2_FACTOR_PROMPT_USER_FOR_2FA_METHODS';
-					$mo2fa_login_message = user_can( $current_user->ID, 'administrator' ) ? MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL : MoWpnsMessages::ERROR_DURING_PROCESS;
+					$mo2fa_login_message = user_can( $current_user->ID, 'manage_options' ) ? MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ) : MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
 					$this->miniorange_pass2login_form_fields( $mo2fa_login_status, $mo2fa_login_message, $redirect_to, null, $session_id_encrypt, 1 );
 				}
 			}
@@ -293,10 +293,9 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 					$redirect_to = sanitize_text_field( wp_unslash( $_REQUEST['redirect_to'] ) ); //phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Request is coming from WooCommerce login form.
 				} elseif ( isset( $_REQUEST['_wp_http_referer'] ) ) { //phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Request is coming from WooCommerce login form.
 					$redirect_to = sanitize_text_field( wp_unslash( $_REQUEST['_wp_http_referer'] ) ); //phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Request is coming from WooCommerce login form.
-				} else {
-					if ( function_exists( 'wc_get_page_permalink' ) ) {
+				} elseif ( function_exists( 'wc_get_page_permalink' ) ) {
 						$redirect_to = wc_get_page_permalink( 'myaccount' ); // function exists in WooCommerce plugin.
-					}
+
 				}
 			} elseif ( get_site_option( 'mo2f_enable_custom_redirect' ) ) {
 				$redirect_to = get_site_option( 'mo2f_custom_redirect_url' );

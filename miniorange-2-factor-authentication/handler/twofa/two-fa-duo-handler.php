@@ -27,10 +27,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * This library is miniOrange Authentication Service.
  * Contains Request Calls to Customer service.
  **/
-const INITIAL_BACKOFF_SECONDS = 1;
-const MAX_BACKOFF_SECONDS     = 32;
-const BACKOFF_FACTOR          = 2;
-const RATE_LIMIT_HTTP_CODE    = 429;
+const MO2F_INITIAL_BACKOFF_SECONDS = 1;
+const MO2F_MAX_BACKOFF_SECONDS     = 32;
+const MO2F_BACKOFF_FACTOR          = 2;
+const MO2F_RATE_LIMIT_HTTP_CODE    = 429;
 
 /**
  * It is for ping .
@@ -40,13 +40,12 @@ const RATE_LIMIT_HTTP_CODE    = 429;
  * @param string $host .
  * @return array
  */
-function ping( $skey, $ikey, $host ) {
+function mo2f_ping( $skey, $ikey, $host ) {
 		$method   = 'GET';
 		$endpoint = '/auth/v2/ping';
 		$params   = array();
 
-		return json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
-
+		return mo2f_json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
 }
 /**
  * It will help to check the values
@@ -56,12 +55,12 @@ function ping( $skey, $ikey, $host ) {
  * @param string $host .
  * @return array
  */
-function check( $skey, $ikey, $host ) {
+function mo2f_check( $skey, $ikey, $host ) {
 		$method   = 'GET';
 		$endpoint = '/auth/v2/check';
 		$params   = array();
 
-		return json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
+		return mo2f_json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
 }
 
 /**
@@ -73,11 +72,11 @@ function check( $skey, $ikey, $host ) {
  * @param int    $user_id .
  * @return array
  */
-function delete( $skey, $ikey, $host, $user_id ) {
+function mo2f_delete( $skey, $ikey, $host, $user_id ) {
 		$method   = 'DELETE';
 		$endpoint = '/admin/v1/users/' . $user_id;
 		$params   = array();
-		return json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
+		return mo2f_json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
 }
 /**
  * It will invoke to enroll the user
@@ -86,7 +85,7 @@ function delete( $skey, $ikey, $host, $user_id ) {
  * @param string $valid_secs .
  * @return array .
  */
-function enroll( $username = null, $valid_secs = null ) {
+function mo2f_enroll( $username = null, $valid_secs = null ) {
 		$ikey = get_site_option( 'mo2f_d_integration_key' );
 		$skey = get_site_option( 'mo2f_d_secret_key' );
 		$host = get_site_option( 'mo2f_d_api_hostname' );
@@ -104,7 +103,7 @@ function enroll( $username = null, $valid_secs = null ) {
 		$params['valid_secs'] = $valid_secs;
 	}
 
-		return json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
+		return mo2f_json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
 }
 /**
  * It will enroll the status
@@ -116,7 +115,7 @@ function enroll( $username = null, $valid_secs = null ) {
  * @param string $host .
  * @return string
  */
-function enroll_status( $user_id, $activation_code, $skey, $ikey, $host ) {
+function mo2f_enroll_status( $user_id, $activation_code, $skey, $ikey, $host ) {
 	assert( is_string( $user_id ) );
 	assert( is_string( $activation_code ) );
 	$method   = 'POST';
@@ -126,7 +125,7 @@ function enroll_status( $user_id, $activation_code, $skey, $ikey, $host ) {
 		'activation_code' => $activation_code,
 	);
 
-	return json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
+	return mo2f_json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
 }
 
 /**
@@ -141,16 +140,15 @@ function enroll_status( $user_id, $activation_code, $skey, $ikey, $host ) {
  * @param string $trusted_device_token .
  * @return string
  */
-function preauth(
-		$user_identifier,
-		$username,
-		$skey,
-		$ikey,
-		$host,
-		$ipaddr = null,
-		$trusted_device_token = null
-
-	) {
+function mo2f_preauth(
+	$user_identifier,
+	$username,
+	$skey,
+	$ikey,
+	$host,
+	$ipaddr = null,
+	$trusted_device_token = null
+) {
 
 	assert( is_string( $ipaddr ) || is_null( $ipaddr ) );
 	assert( is_string( $trusted_device_token ) || is_null( $trusted_device_token ) );
@@ -170,7 +168,7 @@ function preauth(
 		$params['trusted_device_token'] = $trusted_device_token;
 	}
 
-	return json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
+	return mo2f_json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
 }
 
 /**
@@ -189,17 +187,17 @@ function preauth(
  * @return string
  */
 function mo2f_duo_auth(
-		$user_identifier,
-		$factor,
-		$factor_params,
-		$skey,
-		$ikey,
-		$host,
-		$username = true,
-		$ipaddr = null,
-		$async = false,
-		$timeout = 60
-	) {
+	$user_identifier,
+	$factor,
+	$factor_params,
+	$skey,
+	$ikey,
+	$host,
+	$username = true,
+	$ipaddr = null,
+	$async = false,
+	$timeout = 60
+) {
 		assert( is_string( $user_identifier ) );
 		assert(
 			is_string( $factor ) &&
@@ -260,15 +258,15 @@ function mo2f_duo_auth(
 		);
 		$requester_timeout = array_key_exists( 'timeout', $options ) ? $options['timeout'] : null;
 		if ( ! $requester_timeout || $requester_timeout < $timeout ) {
-			set_requester_option( 'timeout', $timeout );
+			mo2f_set_requester_option( 'timeout', $timeout );
 		}
 
 		try {
-			$result = json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
+			$result = mo2f_json_api_call( $method, $endpoint, $params, $skey, $ikey, $host );
 		} finally {
 
 			if ( $requester_timeout ) {
-				set_requester_option( 'timeout', $requester_timeout );
+				mo2f_set_requester_option( 'timeout', $requester_timeout );
 			} else {
 				unset( $options['timeout'] );
 			}
@@ -282,7 +280,7 @@ function mo2f_duo_auth(
  * @param string $value .
  * @return string
  */
-function set_requester_option( $option, $value ) {
+function mo2f_set_requester_option( $option, $value ) {
 		$options[ $option ] = $value;
 		return $options;
 }
@@ -305,7 +303,7 @@ function mo2f_sleep( $seconds ) {
  * @param string $body .
  * @return string
  */
-function execute( $url, $method, $headers, $body = null ) {
+function mo2f_execute( $url, $method, $headers, $body = null ) {
 	assert( is_string( $url ) );
 	assert( is_string( $method ) );
 	assert( is_array( $headers ) );
@@ -376,12 +374,12 @@ function execute( $url, $method, $headers, $body = null ) {
  * @param string $host .
  * @return string
  */
-function json_api_call( $method, $path, $params, $skey, $ikey, $host ) {
+function mo2f_json_api_call( $method, $path, $params, $skey, $ikey, $host ) {
 	assert( is_string( $method ) );
 	assert( is_string( $path ) );
 	assert( is_array( $params ) );
 
-	$result = api_call( $method, $path, $params, $skey, $ikey, $host );
+	$result = mo2f_api_call( $method, $path, $params, $skey, $ikey, $host );
 
 	$result['response'] = json_decode( $result['response'], true );
 	return $result;
@@ -392,7 +390,7 @@ function json_api_call( $method, $path, $params, $skey, $ikey, $host ) {
  * @param string $params .
  * @return array
  */
-function url_encode_parameters( $params ) {
+function mo2f_url_encode_parameters( $params ) {
 	assert( is_array( $params ) );
 
 	ksort( $params );
@@ -415,14 +413,14 @@ function url_encode_parameters( $params ) {
  * @param string $now .
  * @return string
  */
-function canonicalize( $method, $host, $path, $params, $now ) {
+function mo2f_canonicalize( $method, $host, $path, $params, $now ) {
 	assert( is_string( $method ) );
 	assert( is_string( $host ) );
 	assert( is_string( $path ) );
 	assert( is_array( $params ) );
 	assert( is_string( $now ) );
 
-	$args  = url_encode_parameters( $params );
+	$args  = mo2f_url_encode_parameters( $params );
 	$canon = array( $now, strtoupper( $method ), strtolower( $host ), $path, $args );
 
 	$canon = implode( "\n", $canon );
@@ -436,7 +434,7 @@ function canonicalize( $method, $host, $path, $params, $now ) {
  * @param string $key .
  * @return string
  */
-function sign( $msg, $key ) {
+function mo2f_sign( $msg, $key ) {
 	assert( is_string( $msg ) );
 	assert( is_string( $key ) );
 
@@ -454,7 +452,7 @@ function sign( $msg, $key ) {
  * @param string $now .
  * @return string
  */
-function sign_parameters( $method, $host, $path, $params, $skey, $ikey, $now ) {
+function mo2f_sign_parameters( $method, $host, $path, $params, $skey, $ikey, $now ) {
 	assert( is_string( $method ) );
 	assert( is_string( $host ) );
 	assert( is_string( $path ) );
@@ -463,9 +461,9 @@ function sign_parameters( $method, $host, $path, $params, $skey, $ikey, $now ) {
 	assert( is_string( $ikey ) );
 	assert( is_string( $now ) );
 
-	$canon = canonicalize( $method, $host, $path, $params, $now );
+	$canon = mo2f_canonicalize( $method, $host, $path, $params, $now );
 
-	$signature = sign( $canon, $skey );
+	$signature = mo2f_sign( $canon, $skey );
 	$auth      = sprintf( '%s:%s', $ikey, $signature );
 	$b64auth   = base64_encode( $auth ); //phpcs:ignore -- Bse64 is needed for the authorization header
 
@@ -482,23 +480,23 @@ function sign_parameters( $method, $host, $path, $params, $skey, $ikey, $now ) {
  * @param string $host .
  * @return string
  */
-function make_request( $method, $uri, $body, $headers, $host ) {
+function mo2f_make_request( $method, $uri, $body, $headers, $host ) {
 	assert( is_string( $method ) );
 	assert( is_string( $uri ) );
 	assert( is_string( $body ) || is_null( $body ) );
 	assert( is_array( $headers ) );
 	$url = 'https://' . $host . $uri;
 
-	$backoff_seconds = INITIAL_BACKOFF_SECONDS;
+	$backoff_seconds = MO2F_INITIAL_BACKOFF_SECONDS;
 	while ( true ) {
-		$result = execute( $url, $method, $headers, $body );
+		$result = mo2f_execute( $url, $method, $headers, $body );
 
-		if ( RATE_LIMIT_HTTP_CODE !== $result['http_status_code'] || $backoff_seconds > MAX_BACKOFF_SECONDS ) {
+		if ( MO2F_RATE_LIMIT_HTTP_CODE !== $result['http_status_code'] || $backoff_seconds > MO2F_MAX_BACKOFF_SECONDS ) {
 			return $result;
 		}
 
 		mo2f_sleep( $backoff_seconds + ( wp_rand( 0, 1000 ) / 1000.0 ) );
-		$backoff_seconds *= BACKOFF_FACTOR;
+		$backoff_seconds *= MO2F_BACKOFF_FACTOR;
 	}
 }
 /**
@@ -512,7 +510,7 @@ function make_request( $method, $uri, $body, $headers, $host ) {
  * @param string $host .
  * @return string
  */
-function api_call( $method, $path, $params, $skey, $ikey, $host ) {
+function mo2f_api_call( $method, $path, $params, $skey, $ikey, $host ) {
 	assert( is_string( $method ) );
 	assert( is_string( $path ) );
 	assert( is_array( $params ) );
@@ -522,7 +520,7 @@ function api_call( $method, $path, $params, $skey, $ikey, $host ) {
 	$headers                  = array();
 	$headers['Date']          = $now;
 	$headers['Host']          = $host;
-	$headers['Authorization'] = sign_parameters(
+	$headers['Authorization'] = mo2f_sign_parameters(
 		$method,
 		$host,
 		$path,
@@ -540,8 +538,8 @@ function api_call( $method, $path, $params, $skey, $ikey, $host ) {
 		$uri                       = $path;
 	} else {
 		$body = null;
-		$uri  = $path . ( ! empty( $params ) ? '?' . url_encode_parameters( $params ) : '' );
+		$uri  = $path . ( ! empty( $params ) ? '?' . mo2f_url_encode_parameters( $params ) : '' );
 	}
 
-	return make_request( $method, $uri, $body, $headers, $host );
+	return mo2f_make_request( $method, $uri, $body, $headers, $host );
 }

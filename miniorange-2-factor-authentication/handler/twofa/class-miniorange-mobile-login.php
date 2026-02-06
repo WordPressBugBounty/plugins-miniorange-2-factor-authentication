@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * This library is miniOrange Authentication Service.
  * Contains Request Calls to Customer service.
  */
-require dirname( dirname( dirname( __FILE__ ) ) ) . DIRECTORY_SEPARATOR . 'helper' . DIRECTORY_SEPARATOR . 'mo2f-common-login-onprem-cloud.php';
+require dirname( dirname( __DIR__ ) ) . DIRECTORY_SEPARATOR . 'helper' . DIRECTORY_SEPARATOR . 'mo2f-common-login-onprem-cloud.php';
 
 if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 	/**
@@ -38,10 +38,10 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 		public function custom_login_enqueue_scripts() {
 
 			wp_enqueue_script( 'jquery' );
-			$bootstrappath = plugins_url( 'includes/css/bootstrap.min.css', dirname( dirname( __FILE__ ) ) );
+			$bootstrappath = plugins_url( 'includes/css/bootstrap.min.css', dirname( __DIR__ ) );
 			$bootstrappath = str_replace( '/handler/includes/css', '/includes/css', $bootstrappath );
 			wp_enqueue_style( 'bootstrap_script', $bootstrappath, array(), MO2F_VERSION );
-			wp_enqueue_script( 'bootstrap_script', plugins_url( 'includes/js/bootstrap.min.js', dirname( dirname( __FILE__ ) ) ), array(), MO2F_VERSION, false );
+			wp_enqueue_script( 'bootstrap_script', plugins_url( 'includes/js/bootstrap.min.js', dirname( __DIR__ ) ), array(), MO2F_VERSION, false );
 		}
 		/**
 		 * This function is useful for hide login form.
@@ -50,10 +50,10 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 		 */
 		public function mo_2_factor_hide_login() {
 
-			$bootstrappath = plugins_url( 'includes/css/bootstrap.min.css', dirname( dirname( __FILE__ ) ) );
+			$bootstrappath = plugins_url( 'includes/css/bootstrap.min.css', dirname( __DIR__ ) );
 			$bootstrappath = str_replace( '/handler/includes/css', '/includes/css', $bootstrappath );
-			if ( file_exists( plugin_dir_path( dirname( dirname( __FILE__ ) ) ) . 'includes/css/hide-login-form.min.css' ) ) {
-				$hidepath = plugins_url( 'includes/css/hide-login-form.min.css', dirname( dirname( __FILE__ ) ) );
+			if ( file_exists( plugin_dir_path( dirname( __DIR__ ) ) . 'includes/css/hide-login-form.min.css' ) ) {
+				$hidepath = plugins_url( 'includes/css/hide-login-form.min.css', dirname( __DIR__ ) );
 			}
 			$hidepath = str_replace( '/handler/includes/css', '/includes/css', $hidepath );
 
@@ -70,8 +70,8 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 		 */
 		public function mo_2_factor_show_login_with_password_when_phonelogin_enabled() {
 
-			if ( file_exists( plugin_dir_path( dirname( dirname( __FILE__ ) ) ) . 'includes/css/show-login.min.css' ) ) {
-				wp_register_style( 'show-login', plugins_url( 'includes/css/show-login.min.css', dirname( dirname( __FILE__ ) ) ), array(), MO2F_VERSION );
+			if ( file_exists( plugin_dir_path( dirname( __DIR__ ) ) . 'includes/css/show-login.min.css' ) ) {
+				wp_register_style( 'show-login', plugins_url( 'includes/css/show-login.min.css', dirname( __DIR__ ) ), array(), MO2F_VERSION );
 			}
 			wp_enqueue_style( 'show-login' );
 		}
@@ -99,11 +99,11 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 		 */
 		public function mo_2_factor_show_login() {
 
-			if ( file_exists( plugin_dir_path( dirname( dirname( __FILE__ ) ) ) . 'includes/css/hide-login-form.min.css' ) ) {
-				$hidepath = plugins_url( 'includes/css/hide-login-form.min.css', dirname( dirname( __FILE__ ) ) );
+			if ( file_exists( plugin_dir_path( dirname( __DIR__ ) ) . 'includes/css/hide-login-form.min.css' ) ) {
+				$hidepath = plugins_url( 'includes/css/hide-login-form.min.css', dirname( __DIR__ ) );
 			}
-			if ( file_exists( plugin_dir_path( dirname( dirname( __FILE__ ) ) ) . 'includes/css/show-login.min.css' ) ) {
-				$showpath = plugins_url( 'includes/css/show-login.min.css', dirname( dirname( __FILE__ ) ) );
+			if ( file_exists( plugin_dir_path( dirname( __DIR__ ) ) . 'includes/css/show-login.min.css' ) ) {
+				$showpath = plugins_url( 'includes/css/show-login.min.css', dirname( __DIR__ ) );
 			}
 
 			if ( get_option( 'mo2f_enable_login_with_2nd_factor' ) ) {
@@ -215,7 +215,6 @@ if ( ! class_exists( 'Miniorange_Mobile_Login' ) ) {
 		});
 		</script>
 			<?php
-
 		}
 	}
 }

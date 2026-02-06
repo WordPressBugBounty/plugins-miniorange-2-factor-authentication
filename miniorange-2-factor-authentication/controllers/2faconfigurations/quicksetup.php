@@ -14,28 +14,35 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 global $mo2f_addon_dir;
 
-global $wp_roles,$mo2f_onprem_cloud_obj;
+global $wp_roles, $mo2f_onprem_cloud_obj;
+$mo2f_lv_needed = apply_filters( 'mo2f_is_lv_needed', false );
 if ( is_multisite() ) {
-	$first_role           = array( 'superadmin' => 'Superadmin' );
-	$wp_roles->role_names = array_merge( $first_role, $wp_roles->role_names );
+	$mo2f_first_role      = array( 'superadmin' => 'Superadmin' );
+	$wp_roles->role_names = array_merge( $mo2f_first_role, $wp_roles->role_names );
 }
-$two_factor_methods_details    = $mo2f_onprem_cloud_obj->mo2f_plan_methods();
-$mo2f_methods_on_dashboard     = array_keys( $two_factor_methods_details );
-$mo2f_method_names             = MoWpnsConstants::$mo2f_cap_to_small;
-$mo2fa_enable_method_selection = get_site_option( 'mo2f_select_methods_for_users', 1 );
-$selected_methods              = (array) get_site_option( 'mo2f_auth_methods_for_users', array( MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::OTP_OVER_SMS, MoWpnsConstants::OTP_OVER_TELEGRAM, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OTP_OVER_WHATSAPP, MoWpnsConstants::OUT_OF_BAND_EMAIL, MoWpnsConstants::SECURITY_QUESTIONS ) );
-$selected_roles                = (array) get_site_option( 'mo2f_auth_methods_roles' );
-$selected_type                 = get_site_option( 'mo2f_all_users_method', 1 );
-$pp_addon_installed            = apply_filters( 'mo2f_page_protection_addon_filter', false, 'mo2f_is_addon_installed', array() );
-if( $pp_addon_installed ){
-	$pages                    = get_pages();
-	$posts                    = get_posts();
-	$pages                    = array_merge( $pages, $posts );
-	$counter                  = 0;
-    $select_all_checked       = true;
-	$page_protection_settings = get_site_option( 'mo2f_page_protection_addon_settings' );
-	$settings_status          = isset($page_protection_settings['enable_settings']) ? $page_protection_settings['enable_settings'] : 0;
-	$enabled_pages            = isset($page_protection_settings['enabled_pages']) ? $page_protection_settings['enabled_pages'] : array();
-	$session_time             = isset($page_protection_settings['session_time']) ? $page_protection_settings['session_time'] : 24;
-}
-require dirname( dirname( dirname( __FILE__ ) ) ) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'quicksetup.php';
+$mo2f_two_factor_methods_details = $mo2f_onprem_cloud_obj->mo2f_plan_methods();
+$mo2f_methods_on_dashboard       = array_keys( $mo2f_two_factor_methods_details );
+$mo2f_method_names               = MoWpnsConstants::$mo2f_cap_to_small;
+$mo2f_method_icons               = MoWpnsConstants::$mo2f_method_icons;
+$mo2f_method_hints               = MoWpnsConstants::$mo2f_method_hints;
+$mo2fa_enable_method_selection   = get_site_option( 'mo2f_select_methods_for_users', 1 );
+$mo2f_selected_methods           = (array) get_site_option( 'mo2f_auth_methods_for_users', array( MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::OTP_OVER_SMS, MoWpnsConstants::OTP_OVER_TELEGRAM, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OTP_OVER_WHATSAPP, MoWpnsConstants::OUT_OF_BAND_EMAIL, MoWpnsConstants::SECURITY_QUESTIONS ) );
+$mo2f_selected_roles             = (array) get_site_option( 'mo2f_auth_methods_roles' );
+$mo2f_selected_type              = get_site_option( 'mo2f_all_users_method', 1 );
+$mo2f_pages                      = get_pages();
+$mo2f_posts                      = get_posts();
+$mo2f_pages                      = array_merge( $mo2f_pages, $mo2f_posts );
+$mo2f_counter                    = 0;
+$mo2f_select_all_checked         = true;
+$mo2f_page_protection_settings   = get_site_option( 'mo2f_page_protection_addon_settings' );
+$mo2f_settings_status            = isset( $mo2f_page_protection_settings['enable_settings'] ) ? $mo2f_page_protection_settings['enable_settings'] : 0;
+$mo2f_enabled_pages              = isset( $mo2f_page_protection_settings['enabled_pages'] ) ? $mo2f_page_protection_settings['enabled_pages'] : array();
+$mo2f_session_time               = isset( $mo2f_page_protection_settings['session_time'] ) ? $mo2f_page_protection_settings['session_time'] : 24;
+$mo2f_pp_addon_installed         = isset( $mo2f_page_protection_settings['addon_installed'] ) ? true : false;
+$mo2f_page_protection_addon_css  = $mo2f_pp_addon_installed ? '' : 'mo2f-disable-div';
+?>
+<div>
+	<?php
+	require dirname( dirname( __DIR__ ) ) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'quicksetup' . DIRECTORY_SEPARATOR . 'quicksetup.php';
+	require dirname( dirname( __DIR__ ) ) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'quicksetup' . DIRECTORY_SEPARATOR . 'pageprotectionaddon.php';
+	?>

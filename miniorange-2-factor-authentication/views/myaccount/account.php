@@ -15,19 +15,19 @@ echo '
         <table>
             <tr>
                 <td class="mo2f-myaccount-column1">' . esc_html__( 'Username/Email', 'miniorange-2-factor-authentication' ) . '</td>
-                <td class="mo2f-myaccount-column2">' . esc_html( $email ) . '</td>
+                <td class="mo2f-myaccount-column2">' . esc_html( $mo2f_email ) . '</td>
             </tr>
             <tr>
                 <td>' . esc_html__( 'Customer ID', 'miniorange-2-factor-authentication' ) . '</td>
-                <td>' . esc_html( $key ) . '</td>
+                <td>' . esc_html( $mo2f_key ) . '</td>
             </tr>
             <tr>
                 <td>' . esc_html__( 'API Key', 'miniorange-2-factor-authentication' ) . '</td>
-                <td>' . esc_html( $api ) . '</td>
+                <td>' . esc_html( $mo2f_api ) . '</td>
             </tr>
             <tr>
                 <td>' . esc_html__( 'Token Key', 'miniorange-2-factor-authentication' ) . '</td>
-                <td>' . esc_html( $token ) . '</td>
+                <td>' . esc_html( $mo2f_token ) . '</td>
             </tr>
         </table>
         <div class="mo2f-flex-table">

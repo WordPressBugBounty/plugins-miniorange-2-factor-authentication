@@ -21,7 +21,7 @@ use TwoFA\Helper\Mo2f_Common_Helper;
 use TwoFA\Helper\TwoFAMoSessions;
 use TwoFA\Traits\Instance;
 
-require_once dirname( dirname( dirname( __FILE__ ) ) ) . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'twofa' . DIRECTORY_SEPARATOR . 'class-google-auth-onpremise.php';
+require_once dirname( dirname( __DIR__ ) ) . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'twofa' . DIRECTORY_SEPARATOR . 'class-google-auth-onpremise.php';
 
 if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 	/**
@@ -77,7 +77,7 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 			}
 			$microsoft_url = $this->mo2f_geturl( $ga_secret, $gauth_name, '' );
 			update_user_meta( $user->ID, 'mo2f_secret_ga', $ga_secret );
-			wp_register_script( 'mo2f_qr_code_minjs', plugins_url( '/includes/jquery-qrcode/jquery-qrcode.min.js', dirname( dirname( __FILE__ ) ) ), array(), MO2F_VERSION, false );
+			wp_register_script( 'mo2f_qr_code_minjs', plugins_url( '/includes/jquery-qrcode/jquery-qrcode.min.js', dirname( __DIR__ ) ), array(), MO2F_VERSION, false );
 			$common_helper = new Mo2f_Common_Helper();
 			$inline_helper = new Mo2f_Inline_Popup();
 			$prev_screen   = $common_helper->mo2f_get_previous_screen_for_inline( $user->ID );
@@ -98,7 +98,7 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 
 		/**
 		 * Show Google Authenticator configuration prompt on dashboard.
-		 * 
+		 *
 		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
@@ -121,13 +121,13 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 
 		/**
 		 * Show E Testing prompt on dashboard.
-		 * 
+		 *
 		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
 		public function mo2f_prompt_2fa_test_dashboard( $session_id_encrypt ) {
 			$current_user        = wp_get_current_user();
-			$mo2fa_login_message = MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::lang_translate( MoWpnsMessages::VERIFY_YOURSELF );
+			$mo2fa_login_message = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::VERIFY_YOURSELF );
 			$mo2fa_login_status  = 'MO_2_FACTOR_CHALLENGE_GOOGLE_AUTHENTICATION';
 			$login_popup         = new Mo2f_Login_Popup();
 			$common_helper       = new Mo2f_Common_Helper();
@@ -296,7 +296,7 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 				$google_response = json_decode( $mo2f_onprem_cloud_obj->mo2f_validate_google_auth( $email, $otp_token, $ga_secret ), true );
 				$this->mo2f_process_inline_ga_validate( $google_response, $user_details, $email, $ga_secret, $session_id_encrypt );
 			} else {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::ONLY_DIGITS_ALLOWED ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ONLY_DIGITS_ALLOWED ) );
 			}
 		}
 
@@ -318,10 +318,10 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 					$response = $this->mo2f_update_user_details( $user, $email );
 					$this->mo2f_process_update_details_response( $response, $user_details, $ga_secret, $session_id );
 				} else {
-					wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_OTP ) );
+					wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_OTP ) );
 				}
 			}
-			wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::ERROR_WHILE_VALIDATING_OTP ) );
+			wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_WHILE_VALIDATING_OTP ) );
 		}
 
 		/**
@@ -378,10 +378,10 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 		 */
 		public function mo2f_prompt_2fa_login( $currentuser, $session_id_encrypt, $redirect_to ) {
 
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			$mo2fa_login_message = 'Please enter the one time passcode shown in the <b> Authenticator</b> app.';
 			$mo2fa_login_status  = 'MO_2_FACTOR_CHALLENGE_GOOGLE_AUTHENTICATION';
-			MO2f_Utility::mo2f_debug_file( $mo2fa_login_status . ' User_IP-' . $mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );
+			MO2f_Utility::mo2f_debug_file( $mo2fa_login_status . ' User_IP-' . $mo2f_mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );
 			$this->mo2f_show_login_prompt( $mo2fa_login_message, $mo2fa_login_status, $currentuser, $redirect_to, $session_id_encrypt );
 			exit;
 		}
@@ -411,7 +411,7 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_login_validate( $otp_token, $redirect_to, $session_id_encrypt ) {
-			global $mo2f_onprem_cloud_obj, $mo2fdb_queries, $mo_wpns_utility;
+			global $mo2f_onprem_cloud_obj, $mo2fdb_queries, $mo2f_mo_wpns_utility;
 			$common_helper = new Mo2f_Common_Helper();
 			$user_id       = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 			if ( ! $user_id && is_user_logged_in() ) {
@@ -426,9 +426,9 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 				$common_helper->mo2f_update_current_user_status( $session_id_encrypt );
 				wp_send_json_success( 'VALIDATED_SUCCESS' );
 			} elseif ( 'ALREADY_USED' === $content['status'] ) {
-				$mo_wpns_utility->mo2f_handle_attempt_validation( 'ALREADY_USED', $session_id_encrypt );
+				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'ALREADY_USED', $session_id_encrypt );
 			} else {
-				$mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $session_id_encrypt );
+				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $session_id_encrypt );
 			}
 			return $content;
 		}

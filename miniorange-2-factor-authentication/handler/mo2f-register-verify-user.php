@@ -13,14 +13,14 @@ use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MocURL;
 
-require_once dirname( dirname( __FILE__ ) ) . DIRECTORY_SEPARATOR . 'helper' . DIRECTORY_SEPARATOR . 'mo2f-register-verify-user.php';
+require_once dirname( __DIR__ ) . DIRECTORY_SEPARATOR . 'helper' . DIRECTORY_SEPARATOR . 'mo2f-register-verify-user.php';
 
-global $mo_wpns_utility,$mo2f_dir_name,$mo2fdb_queries;
-$nonce = isset( $_POST['mo2f_general_nonce'] ) ? sanitize_key( wp_unslash( $_POST['mo2f_general_nonce'] ) ) : '';
-if ( wp_verify_nonce( $nonce, 'miniOrange_2fa_nonce' ) ) {
+global $mo2f_mo_wpns_utility, $mo2f_dir_name, $mo2fdb_queries;
+$mo2f_nonce = isset( $_POST['mo2f_general_nonce'] ) ? sanitize_key( wp_unslash( $_POST['mo2f_general_nonce'] ) ) : '';
+if ( wp_verify_nonce( $mo2f_nonce, 'miniOrange_2fa_nonce' ) ) {
 	if ( isset( $_POST['option'] ) ) {
-		$option = trim( isset( $_POST['option'] ) ? sanitize_text_field( wp_unslash( $_POST['option'] ) ) : null );
-		switch ( $option ) {
+		$mo2f_option = trim( isset( $_POST['option'] ) ? sanitize_text_field( wp_unslash( $_POST['option'] ) ) : null );
+		switch ( $mo2f_option ) {
 			case 'mo_wpns_register_customer':
 				mo2fa_register_customer( $_POST );
 				break;
@@ -57,17 +57,17 @@ function mo2fa_register_customer( $post ) {
 	$confirm_password = $post['confirmPassword'];
 
 	if ( strlen( $password ) < 6 || strlen( $confirm_password ) < 6 ) {
-		$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::PASS_LENGTH ), 'ERROR' );
+		$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::PASS_LENGTH ), 'ERROR' );
 		return;
 	}
 
 	if ( $password !== $confirm_password ) {
-		$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::PASS_MISMATCH ), 'ERROR' );
+		$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::PASS_MISMATCH ), 'ERROR' );
 		return;
 	}
 	if ( MoWpnsUtility::check_empty_or_null( $email ) || MoWpnsUtility::check_empty_or_null( $password )
 		|| MoWpnsUtility::check_empty_or_null( $confirm_password ) ) {
-		$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::REQUIRED_FIELDS ), 'ERROR' );
+		$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::REQUIRED_FIELDS ), 'ERROR' );
 		return;
 	}
 	update_option( 'mo2f_email', $email );
@@ -88,10 +88,24 @@ function mo2fa_register_customer( $post ) {
 					$app_secret = isset( $customer_key['appSecret'] ) ? $customer_key['appSecret'] : '';
 					mo2fa_save_success_customer_config( $email, $id, $api_key, $token, $app_secret );
 					mo2fa_get_current_customer( $email, $password );
-					$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( $mo2f_message ), 'SUCCESS' );
+					$show_message->mo2f_show_message(
+						sprintf(
+							/* translators: %s: success message */
+							__( 'Success: %s', 'miniorange-2-factor-authentication' ),
+							$mo2f_message
+						),
+						'SUCCESS'
+					);
 					return;
 			} else {
-				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( $mo2f_message ), 'ERROR' );
+				$show_message->mo2f_show_message(
+					sprintf(
+						/* translators: %s: error message */
+						__( 'Error: %s', 'miniorange-2-factor-authentication' ),
+						$mo2f_message
+					),
+					'ERROR'
+				);
 				return;
 			}
 			break;
@@ -99,17 +113,24 @@ function mo2fa_register_customer( $post ) {
 			update_option( 'mo_2factor_admin_registration_status', 'MO_2_FACTOR_VERIFY_CUSTOMER' );
 			update_option( 'mo_wpns_verify_customer', 'true' );
 			delete_option( 'mo_wpns_new_registration' );
-			$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::ACCOUNT_EXISTS ), 'ERROR' );
+			$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ACCOUNT_EXISTS ), 'ERROR' );
 			return;
 		case 'ERROR':
-			$show_message->mo2f_show_message( __( $content['message'], 'miniorange-2-factor-authentication' ), 'ERROR' ); // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- This is a string literal.
+			$show_message->mo2f_show_message(
+				sprintf(
+					/* translators: %s: error message */
+					__( 'Error: %s', 'miniorange-2-factor-authentication' ),
+					$content['message']
+				),
+				'ERROR'
+			);
 			return;
 		default:
 			mo2fa_get_current_customer( $email, $password );
 			return;
 	}
 	$message = __( 'Error Occured while registration', 'miniorange-2-factor-authentication' );
-	$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( $message ), 'ERROR' );
+	$show_message->mo2f_show_message( $message, 'ERROR' );
 }
 
 /**
@@ -119,12 +140,12 @@ function mo2fa_register_customer( $post ) {
  * @return void
  */
 function mo2fa_verify_customer( $post ) {
-	global $mo_wpns_utility;
+	global $mo2f_mo_wpns_utility;
 	$email        = sanitize_email( $post['email'] );
 	$password     = $post['password'];
 	$show_message = new MoWpnsMessages();
-	if ( $mo_wpns_utility->check_empty_or_null( $email ) || $mo_wpns_utility->check_empty_or_null( $password ) ) {
-		$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::REQUIRED_FIELDS ), 'ERROR' );
+	if ( $mo2f_mo_wpns_utility->check_empty_or_null( $email ) || $mo2f_mo_wpns_utility->check_empty_or_null( $password ) ) {
+		$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::REQUIRED_FIELDS ), 'ERROR' );
 		return;
 	}
 	mo2fa_get_current_customer( $email, $password );
@@ -152,7 +173,7 @@ function mo2f_reset_password() {
 	$show_message             = new MoWpnsMessages();
 	$forgot_password_response = json_decode( $customer->mo_wpns_forgot_password() );
 	if ( 'SUCCESS' === $forgot_password_response->status ) {
-		$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::RESET_PASS ), 'SUCCESS' );
+		$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::RESET_PASS ), 'SUCCESS' );
 	}
 }
 

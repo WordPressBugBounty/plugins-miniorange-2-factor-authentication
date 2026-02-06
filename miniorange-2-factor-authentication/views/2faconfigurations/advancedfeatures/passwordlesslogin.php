@@ -63,11 +63,11 @@ use TwoFA\Helper\Mo2f_Common_Helper;
 	</div> 
 	<div class="mo2f_collapse ml-mo-80 <?php echo ( esc_attr( $lv_needed ) ? 'hidden' : '' ); ?>" id="mo2f-preview2">
 	<br>	
-		<img  class="h-mo-60" src="<?php echo esc_url( plugin_dir_url( dirname( dirname( dirname( __FILE__ ) ) ) ) . 'includes/images/passwordless_login.png' ); ?>" alt="<?php esc_attr_e( 'Passwordless login preview', 'miniorange-2-factor-authentication' ); ?>" >
+		<img  class="h-mo-60" src="<?php echo esc_url( plugin_dir_url( dirname( dirname( __DIR__ ) ) ) . 'includes/images/passwordless_login.png' ); ?>" alt="<?php esc_attr_e( 'Passwordless login preview', 'miniorange-2-factor-authentication' ); ?>" >
 	</div>
 	<div class="mo2f_collapse ml-mo-80 <?php echo ( esc_attr( $lv_needed ) ? 'hidden' : '' ); ?>" id="mo2f-preview1">
 		<br>
-		<img class="h-mo-80" src="<?php echo esc_url( plugin_dir_url( dirname( dirname( dirname( __FILE__ ) ) ) ) . 'includes/images/password_login.png' ); ?>" alt="<?php esc_attr_e( 'Passwordless login preview', 'miniorange-2-factor-authentication' ); ?>" >
+		<img class="h-mo-80" src="<?php echo esc_url( plugin_dir_url( dirname( dirname( __DIR__ ) ) ) . 'includes/images/password_login.png' ); ?>" alt="<?php esc_attr_e( 'Passwordless login preview', 'miniorange-2-factor-authentication' ); ?>" >
 		<br>
 	</div> 
 	<br><br>

@@ -32,7 +32,6 @@ if ( ! class_exists( 'Mo2f_Whitelabelling' ) ) {
 		public function __construct() {
 			add_action( 'admin_init', array( $this, 'mo2f_whitelabeling_action' ) );
 			add_action( 'wp_ajax_mo2f_white_labelling_ajax', array( $this, 'mo2f_white_labelling_ajax' ) );
-
 		}
 
 		/**
@@ -43,7 +42,7 @@ if ( ! class_exists( 'Mo2f_Whitelabelling' ) ) {
 		public function mo2f_white_labelling_ajax() {
 			$nonce = isset( $_POST['nonce'] ) ? sanitize_key( wp_unslash( $_POST['nonce'] ) ) : null;
 			if ( ! wp_verify_nonce( $nonce, 'mo2f-white-labelling-ajax-nonce' ) || ! current_user_can( 'manage_options' ) ) {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::SOMETHING_WENT_WRONG ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ) );
 			}
 			$common_helper = new Mo2f_Common_Helper();
 			$common_helper->mo2f_ilvn();
@@ -54,7 +53,7 @@ if ( ! class_exists( 'Mo2f_Whitelabelling' ) ) {
 					break;
 				case 'mo2f_custom_security_questions_settings':
 					do_action( 'mo2f_enterprise_plan_settings_action', 'mo2f_save_custom_security_questions_settings', $_POST );
-					wp_send_json_success( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
 					break;
 			}
 		}
@@ -141,17 +140,10 @@ if ( ! class_exists( 'Mo2f_Whitelabelling' ) ) {
 		 * @return void
 		 */
 		public function mo2f_save_custom_email_template( $post ) {
-			$show_message  = new MoWpnsMessages();
-			$email_content = stripslashes( $post[ $post['option'] . '_config_message' ] );
-			$is_lv_needed  = apply_filters( 'mo2f_is_lv_needed', false );
-			if ( $is_lv_needed  || strpos( $email_content, 'https://login.xecurify.com/moas/images/xecurify-logo.png' ) ) {
-				update_site_option( $post['subject_name'], stripslashes( $post['mo2f_email_subject'] ) );
-				update_site_option( $post['option'], stripslashes( $post[ $post['option'] . '_config_message' ] ) );
-				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::EMAIL_TEMPLATE_SAVED ), 'SUCCESS' );
-			} else {
-				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( 'Custom logos are available in premium plans. Please upgrade to access.' ), 'ERROR' );
-			}
-
+			$show_message = new MoWpnsMessages();
+			update_site_option( $post['subject_name'], stripslashes( $post['mo2f_email_subject'] ) );
+			update_site_option( $post['option'], stripslashes( $post[ $post['option'] . '_config_message' ] ) );
+			$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::EMAIL_TEMPLATE_SAVED ), 'SUCCESS' );
 		}
 
 		/**
@@ -165,8 +157,7 @@ if ( ! class_exists( 'Mo2f_Whitelabelling' ) ) {
 			$option_name  = str_replace( 'reset', 'template', $post['option'] );
 			update_site_option( $post['subject_name'], stripslashes( $GLOBALS[ $post['subject_name'] ] ) );
 			update_site_option( str_replace( 'reset', 'template', $option_name ), $GLOBALS[ str_replace( 'reset', 'template', $option_name ) ] );
-			$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::EMAIL_TEMPLATE_RESET ), 'SUCCESS' );
+			$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::EMAIL_TEMPLATE_RESET ), 'SUCCESS' );
 		}
 	}
-	new Mo2f_Whitelabelling();
 }

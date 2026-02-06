@@ -43,12 +43,12 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 		 * @return boolean .
 		 */
 		public function mo_wpns_is_ip_blocked( $ip_address ) {
-			global $wpns_db_queries;
+			global $mo2f_wpns_db_queries;
 			if ( empty( $ip_address ) ) {
 				return false;
 			}
 
-			$user_count = $wpns_db_queries->mo2f_get_ip_blocked_count( $ip_address );
+			$user_count = $mo2f_wpns_db_queries->mo2f_get_ip_blocked_count( $ip_address );
 
 			if ( $user_count ) {
 				$user_count = intval( $user_count );
@@ -68,7 +68,7 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 		 * @return void
 		 */
 		public function mo_wpns_block_ip( $ip_address, $reason, $permenently ) {
-			global $wpns_db_queries;
+			global $mo2f_wpns_db_queries;
 			if ( empty( $ip_address ) ) {
 				return;
 			}
@@ -83,21 +83,20 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 					$time_of_blocking_val = get_site_option( 'mo2f_time_of_blocking_val' );
 				}
 				if ( 'months' === $blocking_type ) {
-					$blocked_for_time = current_time( 'timestamp' ) + $time_of_blocking_val * 30 * 24 * 60 * 60; // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- This will return the current time of user action
+					$blocked_for_time = wp_date( 'U' ) + $time_of_blocking_val * 30 * 24 * 60 * 60;
 				} elseif ( 'days' === $blocking_type ) {
-					$blocked_for_time = current_time( 'timestamp' ) + $time_of_blocking_val * 24 * 60 * 60; // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- This will return the current time of user action
+					$blocked_for_time = wp_date( 'U' ) + $time_of_blocking_val * 24 * 60 * 60;
 				} elseif ( 'hours' === $blocking_type ) {
-					$blocked_for_time = current_time( 'timestamp' ) + $time_of_blocking_val * 60 * 60; // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- This will return the current time of user action
+					$blocked_for_time = wp_date( 'U' ) + $time_of_blocking_val * 60 * 60;
 				}
 			}
 
-			$wpns_db_queries->mo2f_insert_blocked_ip( $ip_address, $reason, $blocked_for_time );
+			$mo2f_wpns_db_queries->mo2f_insert_blocked_ip( $ip_address, $reason, $blocked_for_time );
 			// send notification.
-			global $mo_wpns_utility;
+			global $mo2f_mo_wpns_utility;
 			if ( MoWpnsUtility::get_mo2f_db_option( 'mo_wpns_enable_ip_blocked_email_to_admin', 'site_option' ) ) {
-				$mo_wpns_utility->sendIpBlockedNotification( $ip_address, MoWpnsConstants::LOGIN_ATTEMPTS_EXCEEDED );
+				$mo2f_mo_wpns_utility->sendIpBlockedNotification( $ip_address, MoWpnsConstants::LOGIN_ATTEMPTS_EXCEEDED );
 			}
-
 		}
 
 		/**
@@ -107,8 +106,8 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 		 * @return boolean
 		 */
 		public function mo2f_is_whitelisted( $ip_address ) {
-			global $wpns_db_queries;
-			$count = $wpns_db_queries->mo2f_get_whitelisted_ip_count( $ip_address );
+			global $mo2f_wpns_db_queries;
+			$count = $mo2f_wpns_db_queries->mo2f_get_whitelisted_ip_count( $ip_address );
 
 			if ( empty( $ip_address ) ) {
 				return false;
@@ -129,7 +128,7 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_whitelist_ip( $ip_address ) {
-			global $wpns_db_queries;
+			global $mo2f_wpns_db_queries;
 
 			if ( empty( $ip_address ) ) {
 				return;
@@ -138,7 +137,7 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 				return;
 			}
 
-			$wpns_db_queries->mo2f_insert_whitelisted_ip( $ip_address );
+			$mo2f_wpns_db_queries->mo2f_insert_whitelisted_ip( $ip_address );
 		}
 
 		/**
@@ -148,8 +147,8 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 		 * @return void
 		 */
 		public function move_failed_transactions_to_past_failed( $ip_address ) {
-			global $wpns_db_queries;
-			$wpns_db_queries->mo2f_update_transaction_table(
+			global $mo2f_wpns_db_queries;
+			$mo2f_wpns_db_queries->mo2f_update_transaction_table(
 				array(
 					'status'     => MoWpnsConstants::FAILED,
 					'ip_address' => $ip_address,
@@ -215,7 +214,5 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 				return MoWpnsConstants::CLOUDLOCKOUT;
 			}
 		}
-
-
 	}
 }

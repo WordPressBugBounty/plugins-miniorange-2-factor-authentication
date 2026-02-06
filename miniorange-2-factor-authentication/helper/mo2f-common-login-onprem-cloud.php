@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @param array $current_roles array containing roles of user.
  * @return boolean
  */
-function miniorange_check_if_2fa_enabled_for_roles( $current_roles ) {
+function mo2f_miniorange_check_if_2fa_enabled_for_roles( $current_roles ) {
 	if ( empty( $current_roles ) ) {
 		return 0;
 	}
@@ -148,7 +148,6 @@ function mo2f_get_forgotphone_form( $login_status, $login_message, $redirect_to,
 function mo2f_customize_logo() {
 	$html = '<div style="float:right;"><img
 					alt="logo"
-					src="' . esc_url( plugins_url( 'includes/images/miniOrange2.png', dirname( __FILE__ ) ) ) . '"/></div>';
+					src="' . esc_url( plugins_url( 'includes/images/miniOrange2.png', __DIR__ ) ) . '"/></div>';
 					return $html;
-
 }

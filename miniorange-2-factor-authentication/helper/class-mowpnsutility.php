@@ -12,7 +12,7 @@ use TwoFA\Helper\MoWpnsHandler;
 use TwoFA\Handler\Twofa\Miniorange_Authentication;
 use WP_Session_Tokens;
 
-require_once dirname( dirname( __FILE__ ) ) . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
+require_once dirname( __DIR__ ) . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -59,13 +59,7 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		 * @return string
 		 */
 		public static function rand() {
-			$length        = wp_rand( 0, 15 );
-			$characters    = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-			$random_string = '';
-			for ( $i = 0; $i < $length; $i++ ) {
-				$random_string .= $characters[ wp_rand( 0, strlen( $characters ) - 1 ) ];
-			}
-			return $random_string;
+			return wp_generate_password( 32, false, false );
 		}
 		/**
 		 * To check if the curl extension in installed.
@@ -137,7 +131,7 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		 * @return string
 		 */
 		public static function get_current_url() {
-			$protocol = ( ! empty( $_SERVER['HTTPS'] ) && 'off' !== sanitize_text_field( sanitize_text_field( wp_unslash( $_SERVER['HTTPS'] ) ) ) || isset( $_SERVER['SERVER_PORT'] ) && 443 === sanitize_text_field( wp_unslash( $_SERVER['SERVER_PORT'] ) ) ) ? 'https://' : 'http://';
+			$protocol = ( ( ! empty( $_SERVER['HTTPS'] ) && 'off' !== sanitize_text_field( sanitize_text_field( wp_unslash( $_SERVER['HTTPS'] ) ) ) ) || ( isset( $_SERVER['SERVER_PORT'] ) && 443 === sanitize_text_field( wp_unslash( $_SERVER['SERVER_PORT'] ) ) ) ) ? 'https://' : 'http://';
 			$url      = $protocol . ( isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '' ) . ( isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '' );
 			return $url;
 		}
@@ -149,10 +143,18 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		 * @return string
 		 */
 		public static function get_mo2f_db_option( $value, $type ) {
+			// Check for both the original key and the prefixed version.
+			$prefixed_key  = 'mo2f_' . $value;
+			$default_value = null;
+			if ( isset( $GLOBALS[ $value ] ) ) {
+				$default_value = $GLOBALS[ $value ];
+			} elseif ( isset( $GLOBALS[ $prefixed_key ] ) ) {
+				$default_value = $GLOBALS[ $prefixed_key ];
+			}
 			if ( 'site_option' === $type ) {
-				$db_value = get_site_option( $value, $GLOBALS[ $value ] );
+				$db_value = get_site_option( $value, $default_value );
 			} else {
-				$db_value = get_option( $value, $GLOBALS[ $value ] );
+				$db_value = get_option( $value, $default_value );
 			}
 			return $db_value;
 		}
@@ -369,7 +371,7 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		public function mo2f_show_upgrade_message( $action ) {
 			$show_message = new MoWpnsMessages();
 			if ( ! has_action( $action ) ) {
-				$show_message->mo2f_show_message( MoWpnsMessages::lang_translate( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ), 'ERROR' );
+				$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ), 'ERROR' );
 			}
 		}
 
@@ -381,6 +383,14 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		public function mo2f_check_remaining_transactions() {
 			$email_transactions = apply_filters( 'mo2f_is_lv_needed', false ) ? 'Unlimited' : get_site_option( 'cmVtYWluaW5nT1RQ', 30 );
 			$sms_transactions   = get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', 0 );
+			if ( 'Unlimited' !== $email_transactions && ( ! is_numeric( $email_transactions ) || empty( $email_transactions ) || $email_transactions < 0 ) ) {
+				$email_transactions = 0;
+			}
+
+			if ( ! is_numeric( $sms_transactions ) || empty( $sms_transactions ) || $sms_transactions < 0 ) {
+				$sms_transactions = 0;
+			}
+
 			return array(
 				'email_transactions' => $email_transactions,
 				'sms_transactions'   => $sms_transactions,
@@ -397,10 +407,10 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		public function mo2f_handle_attempt_validation( $error_type, $session_id_encrypt ) {
 			$attempts = get_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect' );
 			if ( is_numeric( $attempts ) && $attempts > 1 ) {
-				set_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect', $attempts-1, 300 );
+				set_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect', $attempts - 1, 300 );
 				wp_send_json_error( $error_type );
 			} else {
-                delete_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect' );
+				delete_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect' );
 				wp_send_json_error( 'LIMIT_EXCEEDED' );
 			}
 		}

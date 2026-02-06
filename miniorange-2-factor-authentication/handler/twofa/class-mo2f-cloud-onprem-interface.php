@@ -29,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-require_once dirname( dirname( dirname( __FILE__ ) ) ) . DIRECTORY_SEPARATOR . 'helper' . DIRECTORY_SEPARATOR . 'class-mo2f-api.php';
+require_once dirname( dirname( __DIR__ ) ) . DIRECTORY_SEPARATOR . 'helper' . DIRECTORY_SEPARATOR . 'class-mo2f-api.php';
 
 
 if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
@@ -100,7 +100,7 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		 * @param string $phone Phone.
 		 * @param string $email Email ID.
 		 * @param string $auth_type Authentication method of the user.
-		 * @param object $current_user Contains details of current user.  
+		 * @param object $current_user Contains details of current user.
 		 * @param string $session_id Session id.
 		 * @return array
 		 */
@@ -171,7 +171,6 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 			$response = $this->class_object->mo2f_cloud_register_kba( $email, $kba_ques_ans, $user_id );
 
 			return $response;
-
 		}
 
 		/**
@@ -263,7 +262,6 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		 */
 		public function mo2f_email_verification_call( $current_user ) {
 			$this->class_object->mo2f_email_verification_call( $current_user );
-
 		}
 		/**
 		 * Set email verification for user.
@@ -360,7 +358,6 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		public function mo2f_get_user_2ndfactor( $user ) {
 			return $this->class_object->mo2f_get_user_2ndfactor( $user );
 		}
-
 	}
 	new MO2f_Cloud_Onprem_Interface();
 }

@@ -6,17 +6,16 @@
  */
 
 /**
- * Plugin Name: miniOrange 2 Factor Authentication
+ * Plugin Name: miniOrange 2-factor Authentication (2FA with SMS, Email, Google Authenticator)
  * Plugin URI: https://miniorange.com
  * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. We Support Google/Authy/LastPass/Microsoft Authenticator, QR Code, Push Notification, Soft Token and Security Questions(KBA) for 3 User in the free version of the plugin.
- * Version: 6.1.4
+ * Version: 6.2.2
  * Author: miniOrange
  * Author URI: https://miniorange.com
  * Text Domain: miniorange-2-factor-authentication
  * License: Expat
  * License URI: https://plugins.miniorange.com/mit-license
  */
-
 namespace TwoFA;
 
 use TwoFA\Helper\MoWpnsConstants;
@@ -38,21 +37,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-require_once dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'mo2f-db-options.php';
-require dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'new-release-email.php';
-require_once dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'mo2f-db-options.php';
+require __DIR__ . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'new-release-email.php';
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
 define( 'MO_HOST_NAME', 'https://login.xecurify.com' );
-define( 'MO2F_VERSION', '6.1.4' );
+define( 'MO2F_VERSION', '6.2.2' );
 define( 'MO2F_PLUGIN_URL', ( plugin_dir_url( __FILE__ ) ) );
 define( 'MO2F_TEST_MODE', false );
 define( 'MO2F_IS_ONPREM', get_option( 'is_onprem', 1 ) );
 define( 'MO2F_PREMIUM_PLAN', false );
 define( 'DEFAULT_GOOGLE_APPNAME', preg_replace( '#^https?://#i', '', home_url() ) );
 
-global $main_dir, $image_path;
-$main_dir   = plugin_dir_url( __FILE__ );
-$image_path = plugin_dir_url( __FILE__ );
+global $mo2f_main_dir, $mo2f_image_path;
+$mo2f_main_dir   = plugin_dir_url( __FILE__ );
+$mo2f_image_path = plugin_dir_url( __FILE__ );
 
 if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 	/**
@@ -79,9 +78,9 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			add_action( 'admin_notices', array( $this, 'mo2f_notices' ) );
 			$actions = add_filter( 'user_row_actions', array( $this, 'miniorange_reset_users' ), 10, 2 );
 			add_action( 'admin_footer', array( $this, 'feedback_request' ) );
-			add_action( 'plugins_loaded', array( $this, 'mo2fa_load_textdomain' ) );
+			add_action( 'init', array( $this, 'mo2fa_maybe_load_textdomain' ) );
 			if ( ! defined( 'DISALLOW_FILE_EDIT' ) && get_option( 'mo2f_disable_file_editing' ) ) {
-				define( 'DISALLOW_FILE_EDIT', true );
+				define( 'DISALLOW_FILE_EDIT', true ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core constant.
 			}
 			$notify = new Miniorange_Security_Notification();
 			add_action( 'wp_dashboard_setup', array( $notify, 'my_custom_dashboard_widgets' ) );
@@ -136,11 +135,11 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		 * @return void
 		 */
 		public function mo2fa_login_elementor_note() {
-			global $main_dir;
+			global $mo2f_main_dir;
 
 			if ( ! is_user_logged_in() ) {
 				wp_enqueue_script( 'jquery' );
-				wp_enqueue_script( 'mo2fa_elementor_script', $main_dir . 'includes/js/mo2fa_elementor.min.js', array(), MO2F_VERSION, false );
+				wp_enqueue_script( 'mo2fa_elementor_script', $mo2f_main_dir . 'includes/js/mo2fa_elementor.min.js', array(), MO2F_VERSION, false );
 
 				wp_localize_script(
 					'mo2fa_elementor_script',
@@ -177,11 +176,25 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 
 			include $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . 'feedback-form.php';
 		}
+
 		/**
-		 * Function tells where to look for translations.
+		 * Load bundled translations if WordPress has not already done so.
+		 *
+		 * @return void
 		 */
-		public function mo2fa_load_textdomain() {
-			load_plugin_textdomain( 'miniorange-2-factor-authentication', false, dirname( plugin_basename( __FILE__ ) ) . '/lang/' );
+		public function mo2fa_maybe_load_textdomain() {
+			if ( is_textdomain_loaded( 'miniorange-2-factor-authentication' ) ) {
+				return;
+			}
+
+			$locale = function_exists( 'determine_locale' ) ? determine_locale() : get_locale();
+			$locale = apply_filters( 'plugin_locale', $locale, 'miniorange-2-factor-authentication' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
+
+			$mofile = plugin_dir_path( __FILE__ ) . 'languages/miniorange-2-factor-authentication-' . $locale . '.mo';
+
+			if ( is_readable( $mofile ) ) {
+				load_textdomain( 'miniorange-2-factor-authentication', $mofile );
+			}
 		}
 		/**
 		 * Including setup wiard actions.
@@ -189,10 +202,9 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		 * @return void
 		 */
 		public function mo2f_add_wizard_actions() {
-			global $mo2f_dir_name;
-			if ( file_exists( $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . 'class-mo2f-setup-wizard.php' ) ) {
+			if ( file_exists( __DIR__ . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'class-mo2f-setup-wizard.php' ) ) {
 				$object = new Mo2f_Setup_Wizard();
-				if ( function_exists( 'wp_get_current_user' ) && current_user_can( 'administrator' ) ) {
+				if ( function_exists( 'wp_get_current_user' ) && current_user_can( 'manage_options' ) ) {
 					add_action( 'admin_init', array( $object, 'mo2f_setup_page' ), 11 );
 				}
 			}
@@ -221,10 +233,10 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 
 			$count = $mo2fdb_queries->mo2f_get_specific_method_users_count( MoWpnsConstants::OTP_OVER_SMS );
 			if ( ! apply_filters( 'mo2f_is_lv_needed', false ) && MoWpnsConstants::OTP_OVER_EMAIL === $mo2f_configured_2_f_a_method && ( $day_email >= 1 ) && ! get_site_option( 'mo2f_wpns_donot_show_low_email_notice' ) && ( get_site_option( 'cmVtYWluaW5nT1RQ' ) <= 5 ) ) {
-				echo wp_kses_post( MoWpnsMessages::show_message( 'LOW_EMAIL_TRANSACTIONS' ) );
+				echo wp_kses_post( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::LOW_EMAIL_TRANSACTIONS ) );
 			}
 			if ( ! get_site_option( 'mo2f_wpns_donot_show_low_sms_notice' ) && ( get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' ) <= 4 ) && ( $day_sms >= 1 ) && 0 !== $count ) {
-				echo wp_kses_post( MoWpnsMessages::show_message( 'LOW_SMS_TRANSACTIONS' ) );
+				echo wp_kses_post( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::LOW_SMS_TRANSACTIONS ) );
 			}
 		}
 
@@ -243,9 +255,9 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		 * @return void
 		 */
 		public function mo_wpns_activate() {
-			global $wpns_db_queries, $mo2fdb_queries;
+			global $mo2f_wpns_db_queries, $mo2fdb_queries;
 			$userid = wp_get_current_user()->ID;
-			$wpns_db_queries->mo_plugin_activate();
+			$mo2f_wpns_db_queries->mo_plugin_activate();
 			$mo2fdb_queries->mo_plugin_activate();
 			add_option( 'mo2f_is_NC', 1 );
 			add_option( 'mo2f_is_NNC', 1 );
@@ -318,6 +330,11 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 				if ( file_exists( $mo2f_dir_name . 'includes' . DIRECTORY_SEPARATOR . 'css' . DIRECTORY_SEPARATOR . 'all-inclusive-plan.min.css' ) ) {
 					wp_enqueue_style( 'mo_2f_all_inclusive_plan_style', plugins_url( 'includes/css/all-inclusive-plan.min.css', __FILE__ ), array(), MO2F_VERSION );
 				}
+				$page_protection_settings = get_site_option( 'mo2f_page_protection_addon_settings' );
+				$pp_addon_installed       = isset( $page_protection_settings['addon_installed'] ) ? true : false;
+				if ( ! $pp_addon_installed ) {
+					wp_enqueue_style( 'mo_2f_all_inclusive_plan_div_style', plugins_url( 'includes/css/mo2f-disable-div.css', __FILE__ ), array(), MO2F_VERSION );
+				}
 			}
 		}
 		/**
@@ -356,6 +373,11 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 				if ( file_exists( $mo2f_dir_name . 'includes' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'all-inclusive-plan.min.js' ) ) {
 					wp_enqueue_script( 'mo_2fa_all_inclusive_plan_script', plugins_url( '/includes/js/all-inclusive-plan.min.js', __FILE__ ), array(), MO2F_VERSION, false );
 				}
+				$page_protection_settings = get_site_option( 'mo2f_page_protection_addon_settings' );
+				$pp_addon_installed       = isset( $page_protection_settings['addon_installed'] ) ? true : false;
+				if ( ! $pp_addon_installed ) {
+					wp_enqueue_script( 'mo_2fa_all_inclusive_plan_div_script', plugins_url( '/includes/js/mo2f-disable-div.js', __FILE__ ), array(), MO2F_VERSION, false );
+				}
 			}
 		}
 
@@ -373,7 +395,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 				if ( get_current_user_id() !== $user_object->ID ) {
 					$actions['miniorange_reset_users'] = "<a class='miniorange_reset_users' href='" . wp_nonce_url( "users.php?page=reset&action=reset_edit&amp;user_id=$user_object->ID", 'reset_edit', 'mo2f_reset-2fa' ) . "'>" . __( 'Reset 2 Factor', 'miniorange-2-factor-authentication' ) . '</a>';
 				}
-			} elseif ( miniorange_check_if_2fa_enabled_for_roles( $user_object->roles ) ) {
+			} elseif ( mo2f_miniorange_check_if_2fa_enabled_for_roles( $user_object->roles ) ) {
 				$edit_link                         = esc_url(
 					add_query_arg(
 						'wp_http_referer',
@@ -408,7 +430,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 								'utm_medium'   => 'wp',
 								'utm_source'   => 'wpf_plugin',
 							),
-							MoWpnsConstants::MO2F_PLUGINS_PAGE_URL . '/2-factor-authentication-for-wordpress-wp-2fa#pricing'
+							MoWpnsConstants::MO2F_UPGRADE_PRICING_URL
 						)
 					),
 					esc_attr( 'Upgrade to Premium' ),
@@ -576,7 +598,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		 */
 		public function mo2f_email_send() {
 			$subject  = 'miniOrange 2FA V' . MO2F_VERSION . ' | What\'s New?';
-			$messages = mail_tem();
+			$messages = mo2f_mail_tem();
 			$headers  = array( 'Content-Type: text/html; charset=UTF-8' );
 			$email    = get_site_option( 'admin_email' );
 
@@ -602,12 +624,12 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		 */
 		public function mo2f_migrate_whitelisted_ips_table() {
 			global $wpdb;
-			global $wpns_db_queries;
+			global $mo2f_wpns_db_queries;
 			global $mo2fdb_queries;
 			if ( get_site_option( 'mo2f_whitelisted_ips_migrated' ) ) {
 				return;
 			}
-			$old_network_whitelisted_ips_data = $wpns_db_queries->mo2f_get_old_table_data( 'mo2f_network_whitelisted_ips' );
+			$old_network_whitelisted_ips_data = $mo2f_wpns_db_queries->mo2f_get_old_table_data( 'mo2f_network_whitelisted_ips' );
 			if ( ! empty( $old_network_whitelisted_ips_data ) ) {
 				$whitelisted_ips = array();
 				foreach ( $old_network_whitelisted_ips_data as $row ) {
@@ -641,12 +663,12 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		 * @return void
 		 */
 		public function mo2f_migrate_network_blocked_ips_table() {
-			global $wpns_db_queries;
+			global $mo2f_wpns_db_queries;
 			global $mo2fdb_queries;
 			if ( get_site_option( 'mo2f_blocked_ips_migrated' ) ) {
 				return;
 			}
-			$old_network_blocked_ips_data = $wpns_db_queries->mo2f_get_old_table_data( 'mo2f_network_blocked_ips' );
+			$old_network_blocked_ips_data = $mo2f_wpns_db_queries->mo2f_get_old_table_data( 'mo2f_network_blocked_ips' );
 			if ( ! empty( $old_network_blocked_ips_data ) ) {
 				$blocked_ips = array();
 				foreach ( $old_network_blocked_ips_data as $row ) {
@@ -679,12 +701,12 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		public function mo2f_migrate_user_details() {
 			global $wpdb;
 			global $mo2fdb_queries;
-			global $wpns_db_queries;
+			global $mo2f_wpns_db_queries;
 			if ( get_site_option( 'mo2f_user_details_migrated' ) ) {
 				return;
 			}
 
-			$old_user_details_data = $wpns_db_queries->mo2f_get_old_table_data( 'mo2f_user_details' );
+			$old_user_details_data = $mo2f_wpns_db_queries->mo2f_get_old_table_data( 'mo2f_user_details' );
 
 			if ( ! empty( $old_user_details_data ) ) {
 				foreach ( $old_user_details_data as $row ) {
@@ -701,26 +723,26 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 					}
 					$user_data = array_filter(
 						array(
-							'mo2f_OTPOverSMS_config_status'                     => $row['mo2f_OTPOverSMS_config_status'] ?? null,
-							'mo2f_miniOrangePushNotification_config_status'     => $row['mo2f_miniOrangePushNotification_config_status'] ?? null,
+							'mo2f_OTPOverSMS_config_status' => $row['mo2f_OTPOverSMS_config_status'] ?? null,
+							'mo2f_miniOrangePushNotification_config_status' => $row['mo2f_miniOrangePushNotification_config_status'] ?? null,
 							'mo2f_miniOrangeQRCodeAuthentication_config_status' => $row['mo2f_miniOrangeQRCodeAuthentication_config_status'] ?? null,
-							'mo2f_miniOrangeSoftToken_config_status'            => $row['mo2f_miniOrangeSoftToken_config_status'] ?? null,
-							'mo2f_AuthyAuthenticator_config_status'             => $row['mo2f_AuthyAuthenticator_config_status'] ?? null,
-							'mo2f_EmailVerification_config_status'              => $row['mo2f_EmailVerification_config_status'] ?? null,
-							'mo2f_SecurityQuestions_config_status'              => $row['mo2f_SecurityQuestions_config_status'] ?? null,
-							'mo2f_GoogleAuthenticator_config_status'            => $row['mo2f_GoogleAuthenticator_config_status'] ?? null,
-							'mo2f_OTPOverEmail_config_status'                   => $row['mo2f_OTPOverEmail_config_status'] ?? null,
-							'mo2f_OTPOverTelegram_config_status'                => $row['mo2f_OTPOverTelegram_config_status'] ?? null,
-							'mo2f_OTPOverWhatsapp_config_status'                => $row['mo2f_OTPOverWhatsapp_config_status'] ?? null,
-							'mo2f_DuoAuthenticator_config_status'               => $row['mo2f_DuoAuthenticator_config_status'] ?? null,
-							'mobile_registration_status'                        => $row['mobile_registration_status'] ?? null,
-							'mo2f_2factor_enable_2fa_byusers'                   => $row['mo2f_2factor_enable_2fa_byusers'] ?? null,
-							'mo2f_configured_2FA_method'                        => $configured_2fa_method,
-							'mo2f_user_phone'                                   => $row['mo2f_user_phone'] ?? null,
-							'mo2f_user_whatsapp'                                => $row['mo2f_user_whatsapp'] ?? null,
-							'mo2f_user_email'                                   => $row['mo2f_user_email'] ?? null,
-							'user_registration_with_miniorange'                 => $row['user_registration_with_miniorange'] ?? null,
-							'mo_2factor_user_registration_status'               => $row['mo_2factor_user_registration_status'] ?? null,
+							'mo2f_miniOrangeSoftToken_config_status' => $row['mo2f_miniOrangeSoftToken_config_status'] ?? null,
+							'mo2f_AuthyAuthenticator_config_status' => $row['mo2f_AuthyAuthenticator_config_status'] ?? null,
+							'mo2f_EmailVerification_config_status' => $row['mo2f_EmailVerification_config_status'] ?? null,
+							'mo2f_SecurityQuestions_config_status' => $row['mo2f_SecurityQuestions_config_status'] ?? null,
+							'mo2f_GoogleAuthenticator_config_status' => $row['mo2f_GoogleAuthenticator_config_status'] ?? null,
+							'mo2f_OTPOverEmail_config_status' => $row['mo2f_OTPOverEmail_config_status'] ?? null,
+							'mo2f_OTPOverTelegram_config_status' => $row['mo2f_OTPOverTelegram_config_status'] ?? null,
+							'mo2f_OTPOverWhatsapp_config_status' => $row['mo2f_OTPOverWhatsapp_config_status'] ?? null,
+							'mo2f_DuoAuthenticator_config_status' => $row['mo2f_DuoAuthenticator_config_status'] ?? null,
+							'mobile_registration_status' => $row['mobile_registration_status'] ?? null,
+							'mo2f_2factor_enable_2fa_byusers' => $row['mo2f_2factor_enable_2fa_byusers'] ?? null,
+							'mo2f_configured_2FA_method' => $configured_2fa_method,
+							'mo2f_user_phone'            => $row['mo2f_user_phone'] ?? null,
+							'mo2f_user_whatsapp'         => $row['mo2f_user_whatsapp'] ?? null,
+							'mo2f_user_email'            => $row['mo2f_user_email'] ?? null,
+							'user_registration_with_miniorange' => $row['user_registration_with_miniorange'] ?? null,
+							'mo_2factor_user_registration_status' => $row['mo_2factor_user_registration_status'] ?? null,
 						),
 						function ( $value ) {
 							return null !== $value;
@@ -748,8 +770,8 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 	}
 }
 require_once 'class-mo2f-classloader.php';
-$class_loader = new Mo2f_Classloader( 'TwoFA', realpath( __DIR__ . DIRECTORY_SEPARATOR . '..' ) );
-$class_loader->mo2f_autoload();
+$mo2f_class_loader = new Mo2f_Classloader( 'TwoFA', realpath( __DIR__ . DIRECTORY_SEPARATOR . '..' ) );
+$mo2f_class_loader->mo2f_autoload();
 new Miniorange_TwoFactor();
 Mo2fInit::instance();
 

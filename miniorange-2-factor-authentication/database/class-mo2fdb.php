@@ -381,7 +381,7 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		public function save_user_login_details( $session_id, $user_values ) {
 			global $wpdb;
 			$count = count( $user_values );
-			$sql   = 'UPDATE ' . $this->user_login_info_table . ' SET ';
+			$sql   = 'UPDATE ' . esc_sql( $this->user_login_info_table ) . ' SET ';
 			$i     = 1;
 			foreach ( $user_values as $key => $value ) {
 				if ( 'session_id' === $key || 'ts_created' === $key ) {
@@ -392,10 +392,12 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 				if ( $i < $count ) {
 					$sql .= ' , ';
 				}
-				$i++;
+				++$i;
 			}
 
-			$wpdb->query( $sql .= $wpdb->prepare( ' WHERE session_id=%s;', array( $session_id ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Ignoring complex placeholder warning and DB Direct Query is necessary here.
+			$sql .= $wpdb->prepare( ' WHERE session_id=%s;', array( $session_id ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Complex dynamic query with prepared WHERE clause, table name escaped with esc_sql(), and DB Direct Query is necessary here.
+			$wpdb->query( $sql );
 		}
 
 		/**
@@ -407,7 +409,14 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		public function execute_add_column( $query ) {
 			global $wpdb;
 
-			$wpdb->query( $query ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Ignoring complex placeholder warning and DB Direct Query is necessary here.
+			// Validate that the query only contains the expected table name for security.
+			$escaped_table_name = esc_sql( $this->user_login_info_table );
+			if ( strpos( $query, $escaped_table_name ) === false && strpos( $query, $this->user_login_info_table ) === false ) {
+				return;
+			}
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- DDL statements cannot use prepared statements, query is validated above, and DB Direct Query is necessary here.
+			$wpdb->query( $query );
 		}
 
 		/**
@@ -543,7 +552,8 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		public function mo2f_drop_table( $table_name ) {
 			global $wpdb;
 			$table_name = esc_sql( $wpdb->base_prefix . $table_name );
-			$wpdb->query( "DROP TABLE IF EXISTS `{$table_name}`" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- DB Direct Query is necessary here.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- DDL statements cannot use prepared statements, and table name is escaped with esc_sql().
+			$wpdb->query( "DROP TABLE IF EXISTS `{$table_name}`" );
 		}
 	}
 }

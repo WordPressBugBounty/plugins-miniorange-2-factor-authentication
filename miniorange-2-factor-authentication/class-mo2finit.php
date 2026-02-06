@@ -22,7 +22,6 @@ use TwoFA\Handler\Mo2f_VLS;
 use TwoFA\Handler\Mo2f_Main_Handler;
 use TwoFA\Handler\Mo2f_Whitelabelling;
 use TwoFA\Handler\Twofa\Miniorange_Authentication;
-use TwoFA\Helper\Mo2f_Setupwizard;
 use TwoFA\Helper\MocURL;
 use TwoFA\Helper\MoWpnsHandler;
 use TwoFA\Helper\Mo2f_Premium_Common_Helper;
@@ -33,6 +32,7 @@ use TwoFA\Traits\Instance;
 use TwoFA\Handler\LoginHandler;
 use TwoFA\Controllers\Twofa\Mo_2f_Ajax;
 use TwoFA\Handler\Mo2f_Reconfigure_Link;
+use TwoFA\Handler\Twofa\Mo2fCustomRegFormShortcode;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -78,6 +78,7 @@ if ( ! class_exists( 'Mo2fInit' ) ) {
 			}
 			if ( file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-basic-premium-settings.php' ) ) {
 				Mo2f_Basic_Premium_Settings::instance();
+				Mo2fCustomRegFormShortcode::instance();
 			}
 			if ( file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-vls.php' ) ) {
 				Mo2f_VLS::instance();
@@ -97,7 +98,6 @@ if ( ! class_exists( 'Mo2fInit' ) ) {
 		 */
 		private function mo2f_initialize_helpers() {
 			global $mo2f_dir_name;
-			Mo2f_Setupwizard::instance();
 			if ( file_exists( $mo2f_dir_name . 'helper' . DIRECTORY_SEPARATOR . 'class-mo2f-premium-common-helper.php' ) ) {
 				Mo2f_Premium_Common_Helper::instance();
 			}
@@ -121,10 +121,9 @@ if ( ! class_exists( 'Mo2fInit' ) ) {
 		 * Initialize globals
 		 */
 		private function mo2f_initialize_globals() {
-			global $mo2fdb_queries,$wpns_db_queries;
-			$mo2fdb_queries  = Mo2fDB::instance();
-			$wpns_db_queries = MoWpnsDB::instance();
+			global $mo2fdb_queries, $mo2f_wpns_db_queries;
+			$mo2fdb_queries       = Mo2fDB::instance();
+			$mo2f_wpns_db_queries = MoWpnsDB::instance();
 		}
-
 	}
 }

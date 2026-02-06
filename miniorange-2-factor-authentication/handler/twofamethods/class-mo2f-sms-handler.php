@@ -115,12 +115,12 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 					if ( $mo2f_sms > 0 ) {
 						update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', $mo2f_sms - 1 );
 					}
-					wp_send_json_success( $message . ' ' . $phone . '. ' . MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::lang_translate( MoWpnsMessages::VERIFY_YOURSELF ) );
+					wp_send_json_success( $message . ' ' . $phone . '. ' . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::VERIFY_YOURSELF ) );
 				} else {
-					wp_send_json_error( MoWpnsMessages::lang_translate( $this->mo2f_get_error_message( $user ) ) );
+					wp_send_json_error( $this->mo2f_get_error_message( $user ) );
 				}
 			} else {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_REQ ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_REQ ) );
 			}
 		}
 
@@ -136,9 +136,9 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 		 */
 		public function mo2f_validate_otp( $otp_token, $session_id_encrypt, $user_details, $prev_input, $post ) {
 			global $mo2f_onprem_cloud_obj;
-			$user_id = isset( $user_details['user_id'] ) ? $user_details['user_id'] : null;
-			$user    = get_user_by( 'id', $user_id );
-			$user_phone       = get_transient( $session_id_encrypt . 'user_phone_temp' );
+			$user_id    = isset( $user_details['user_id'] ) ? $user_details['user_id'] : null;
+			$user       = get_user_by( 'id', $user_id );
+			$user_phone = get_transient( $session_id_encrypt . 'user_phone_temp' );
 			$this->mo2f_mismatch_input_check( $user_phone, $prev_input );
 			$mo2f_transaction_id = get_transient( $session_id_encrypt . 'mo2f_transactionId' );
 			$content             = json_decode( $mo2f_onprem_cloud_obj->validate_otp_token( $this->mo2f_current_method, null, $mo2f_transaction_id, $otp_token, $user, $session_id_encrypt ), true );
@@ -156,7 +156,13 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 		 */
 		public function mo2f_process_validate_otp_content( $content, $user_details, $user_phone, $session_id_encrypt ) {
 			if ( 'ERROR' === $content['status'] ) {
-				wp_send_json_error( MoWpnsMessages::lang_translate( $content['message'] ) );
+				wp_send_json_error(
+					sprintf(
+					/* translators: %s: error message */
+						__( 'Error: %s', 'miniorange-2-factor-authentication' ),
+						esc_html( $content['message'] )
+					)
+				);
 			} elseif ( strcasecmp( $content['status'], 'SUCCESS' ) === 0 ) {
 				$user_id  = isset( $user_details['user_id'] ) ? $user_details['user_id'] : null;
 				$user     = get_user_by( 'id', $user_id );
@@ -164,7 +170,7 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 				$response = $this->mo2f_update_user_details( $user, $email, $user_phone );
 				$this->mo2f_process_update_details_response( $response, $user_details, $session_id_encrypt );
 			} else {  // OTP Validation failed.
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_OTP ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_OTP ) );
 			}
 		}
 
@@ -173,7 +179,7 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 		 *
 		 * @param array  $response Response.
 		 * @param array  $user_details User details.
-		 * @param string $session_id_encrypt Session id.
+		 * @param string $session_id Session id.
 		 * @return void
 		 */
 		public function mo2f_process_update_details_response( $response, $user_details, $session_id ) {
@@ -186,10 +192,10 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 					$common_helper->mo2f_update_current_user_status( $session_id );
 					wp_send_json_success( 'Your 2FA method has been set successfully.' );
 				} else {
-					wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::ERROR_DURING_PROCESS ) );
+					wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS ) );
 				}
 			} else {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::INVALID_REQ ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_REQ ) );
 			}
 		}
 
@@ -202,7 +208,7 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 		 */
 		public function mo2f_mismatch_input_check( $temp_phone, $prev_input ) {
 			if ( $temp_phone !== $prev_input ) {
-				wp_send_json_error( MoWpnsMessages::lang_translate( MoWpnsMessages::PHONE_NUMBER_MISMATCH ) );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::PHONE_NUMBER_MISMATCH ) );
 			}
 		}
 
@@ -228,10 +234,10 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 		 * @return string
 		 */
 		public function mo2f_get_error_message( $currentuser ) {
-			if ( user_can( $currentuser->ID, 'administrator' ) ) {
-				return MoWpnsMessages::GET_FREE_TRANSACTIONS;
+			if ( user_can( $currentuser->ID, 'manage_options' ) ) {
+				return MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_FREE_TRANSACTIONS );
 			} else {
-				return MoWpnsMessages::ERROR_DURING_PROCESS;
+				return MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
 			}
 		}
 
@@ -267,21 +273,21 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 
 		/**
 		 * Show SMS Testing prompt on dashboard.
-		 * 
+		 *
 		 * @param string $session_id_encrypt Session id.
 		 * @return mixed
 		 */
 		public function mo2f_prompt_2fa_test_dashboard( $session_id_encrypt ) {
-			global $mo2fdb_queries, $mo2f_onprem_cloud_obj, $mo_wpns_utility;
+			global $mo2fdb_queries, $mo2f_onprem_cloud_obj, $mo2f_mo_wpns_utility;
 			$current_user    = wp_get_current_user();
 			$mo2f_user_phone = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_phone', $current_user->ID );
 			$response        = json_decode( $mo2f_onprem_cloud_obj->send_otp_token( $mo2f_user_phone, null, $this->mo2f_current_method, $current_user, $session_id_encrypt ), true );
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'SUCCESS' === $response['status'] ) {
 					ob_start();
-					MO2f_Utility::mo2f_debug_file( 'OTP has been sent successfully over phone. User_IP-' . $mo_wpns_utility->get_client_ip() . ' User_Id-' . $current_user->ID . ' Email-' . $current_user->user_email );
+					MO2f_Utility::mo2f_debug_file( 'OTP has been sent successfully over phone. User_IP-' . $mo2f_mo_wpns_utility->get_client_ip() . ' User_Id-' . $current_user->ID . ' Email-' . $current_user->user_email );
 					$mo2f_hidden_phone   = MO2f_Utility::get_hidden_phone( $mo2f_user_phone );
-					$mo2fa_login_message = MoWpnsMessages::lang_translate( MoWpnsMessages::OTP_SENT ) . ' ' . $mo2f_hidden_phone . '. ' . MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::lang_translate( MoWpnsMessages::VERIFY_YOURSELF );
+					$mo2fa_login_message = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::OTP_SENT ) . ' ' . $mo2f_hidden_phone . '. ' . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::VERIFY_YOURSELF );
 					$mo2fa_login_status  = MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OTP_OVER_SMS;
 					$common_helper       = new Mo2f_Common_Helper();
 					set_transient( $session_id_encrypt . 'mo2f_transactionId', $response['txId'], 300 );
@@ -306,15 +312,15 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_prompt_2fa_login( $currentuser, $session_id_encrypt, $redirect_to ) {
-			global $mo2fdb_queries, $mo2f_onprem_cloud_obj, $mo_wpns_utility;	
+			global $mo2fdb_queries, $mo2f_onprem_cloud_obj, $mo2f_mo_wpns_utility;
 			$mo2f_user_phone = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_phone', $currentuser->ID );
 			$content         = json_decode( $mo2f_onprem_cloud_obj->send_otp_token( $mo2f_user_phone, null, $this->mo2f_current_method, $currentuser, $session_id_encrypt ), true );
-			if ( json_last_error() === JSON_ERROR_NONE && MoWpnsConstants::SUCCESS_RESPONSE === $content['status']) {		
+			if ( json_last_error() === JSON_ERROR_NONE && MoWpnsConstants::SUCCESS_RESPONSE === $content['status'] ) {
 				$mo2f_hidden_phone   = MO2f_Utility::get_hidden_phone( $mo2f_user_phone );
-				$mo2fa_login_message = MoWpnsMessages::lang_translate( MoWpnsMessages::OTP_SENT ) . ' ' . $mo2f_hidden_phone . '. ' . MoWpnsMessages::lang_translate( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::lang_translate( MoWpnsMessages::VERIFY_YOURSELF );
+				$mo2fa_login_message = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::OTP_SENT ) . ' ' . $mo2f_hidden_phone . '. ' . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::VERIFY_YOURSELF );
 				$mo2fa_login_status  = MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OTP_OVER_SMS;
 				set_transient( $session_id_encrypt . 'mo2f_transactionId', $content['txId'], 300 );
-				MO2f_Utility::mo2f_debug_file( $mo2fa_login_status . ' User_IP-' . $mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );				
+				MO2f_Utility::mo2f_debug_file( $mo2fa_login_status . ' User_IP-' . $mo2f_mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );
 			} else {
 				$mo2fa_login_status  = MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT;
 				$mo2fa_login_message = $this->mo2f_get_error_message( $currentuser );
@@ -348,7 +354,7 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_login_validate( $otp_token, $redirect_to, $session_id_encrypt ) {
-			global $mo2f_onprem_cloud_obj, $mo2fdb_queries, $mo_wpns_utility;
+			global $mo2f_onprem_cloud_obj, $mo2fdb_queries, $mo2f_mo_wpns_utility;
 			$common_helper = new Mo2f_Common_Helper();
 			$user_id       = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 			if ( ! $user_id && is_user_logged_in() ) {
@@ -363,7 +369,7 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 				$common_helper->mo2f_update_current_user_status( $session_id_encrypt );
 				wp_send_json_success( 'VALIDATED_SUCCESS' );
 			} else {
-				$mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $session_id_encrypt );
+				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $session_id_encrypt );
 			}
 		}
 
@@ -376,6 +382,5 @@ if ( ! class_exists( 'Mo2f_SMS_Handler' ) ) {
 		public function mo2f_get_hidden_forms_dashboard( $common_helper ) {
 			return $common_helper->mo2f_get_dashboard_hidden_forms();
 		}
-
 	}
 }
