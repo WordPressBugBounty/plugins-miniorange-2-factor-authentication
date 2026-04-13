@@ -1846,8 +1846,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$html .= '<h4 class="mo2f-section-heading">' . esc_html__( '2. Scan the QR code from the Authenticator App.', 'miniorange-2-factor-authentication' ) . '</h4>';
 
 			$html .= '<div class="mo2f-qr-section"><ol>
-				<div class="mo2f_gauth" id="mo2f_google_auth_qr_code" data-qrcode="' . $data . '"></div>
-				<div class="mo2f_gauth_microsoft" id="mo2f_microsoft_auth_qr_code" data-qrcode="' . esc_html( $microsoft_url ) . '"></div>
+				<div class="mo2f_gauth" id="mo2f_google_auth_qr_code" data-qrcode="' . esc_attr( $data ) . '"></div>
+				<div class="mo2f_gauth_microsoft" id="mo2f_microsoft_auth_qr_code" data-qrcode="' . esc_attr( $microsoft_url ) . '"></div>
 			</ol></div>';
 
 			$html .= '<div class="mo2f-gauth-otp-container">

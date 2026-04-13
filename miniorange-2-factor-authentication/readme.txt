@@ -6,7 +6,7 @@ Donate link: https://miniorange.com/
 Requires at least: 3.0.1
 Tested up to: 6.9
 Requires PHP: 5.3.0
-Stable tag: 6.2.3
+Stable tag: 6.2.4
 License: Expat
 License URI: https://plugins.miniorange.com/mit-license
 miniOrange WP 2FA plugin adds an extra layer of security to your WordPress website by protecting user logins from unauthorized access, brute-force attacks, and password theft. This powerful 2FA – Two-factor authentication for WordPress solution is easy to configure using a step-by-step setup wizard that supports multiple authentication methods such as Google Authenticator, Microsoft Authenticator, OTP via Email, SMS, WhatsApp, Telegram, and more.
@@ -206,6 +206,9 @@ For customized solutions and support, contact:
 
 == Changelog ==
 
+= 6.2.4 =
+ * Authenticator apps invalid one time passcode issue fix.
+
 = 6.2.3 =
  * Readme Updates
 
@@ -384,6 +387,9 @@ For customized solutions and support, contact:
 
  == Upgrade Notice ==
 
+ = 6.2.4 =
+ * Authenticator apps invalid one time passcode issue fix.
+ 
  = 6.2.3 =
  * Readme Updates
 
