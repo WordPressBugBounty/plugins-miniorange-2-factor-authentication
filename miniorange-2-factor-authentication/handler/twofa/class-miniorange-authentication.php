@@ -389,38 +389,25 @@ if ( ! class_exists( 'Miniorange_Authentication' ) ) {
 					$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::AUTHENTICATION_FAILED ), 'ERROR' );
 				}
 			} elseif ( isset( $_POST['option'] ) && sanitize_text_field( wp_unslash( $_POST['option'] ) ) === 'mo_auth_setting_configuration' ) {
-				$mo2fdb_queries->mo2f_update_user_details( $user->ID, array( 'mo_2factor_user_registration_status' => MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS ) );
-			} elseif ( isset( $_POST['option'] ) && sanitize_text_field( wp_unslash( $_POST['option'] ) ) === 'mo_2factor_backto_user_registration' ) { // back to registration page for additional admin and non-admin.
-				delete_user_meta( $user->ID, 'user_email' );
-				$mo2fdb_queries->mo2f_delete_user_details( $user->ID );
-				MO2f_Utility::unset_session_variables( 'mo2f_transactionId' );
-				delete_site_option( 'mo2f_transactionId' );
-			} elseif ( isset( $_POST['option'] ) && sanitize_text_field( wp_unslash( $_POST['option'] ) ) === 'mo2f_validate_otp_over_Telegram' ) { // validate otp over Telegram.
-				$nonce = isset( $_POST['mo2f_test_validate_otp_nonce'] ) ? sanitize_key( wp_unslash( $_POST['mo2f_test_validate_otp_nonce'] ) ) : null;
-
-				if ( ! wp_verify_nonce( $nonce, 'mo2f-validate-otp-over-Telegram-nonce' ) ) {
-					$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ), 'ERROR' );
-					return;
+				$nonce = isset( $_POST['mo_auth_setting_configuration_nonce'] ) ? sanitize_key( wp_unslash( $_POST['mo_auth_setting_configuration_nonce'] ) ) : null;
+				if ( ! wp_verify_nonce( $nonce, 'mo-auth-setting-configuration-nonce' ) ) {
+					$error = new WP_Error();
+					$error->add( 'empty_username', '<strong>' . esc_html__( 'ERROR', 'miniorange-2-factor-authentication' ) . '</strong>: ' . esc_html__( 'Invalid Request.', 'miniorange-2-factor-authentication' ) );
+					return $error;
 				} else {
-					$otp       = isset( $_POST['otp_token'] ) ? sanitize_text_field( wp_unslash( $_POST['otp_token'] ) ) : '';
-					$otp_token = get_user_meta( $user->ID, 'mo2f_otp_token', true );
-
-					$time          = get_user_meta( $user->ID, 'mo2f_telegram_time', true );
-					$accepted_time = time() - 300;
-					$time          = (int) $time;
-					global $mo2fdb_queries;
-					if ( (int) ( $otp_token ) === (int) $otp ) {
-						if ( $accepted_time < $time ) {
-							delete_user_meta( $user->ID, 'test_2FA' );
-							delete_user_meta( $user->ID, 'mo2f_telegram_time' );
-							$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::COMPLETED_TEST ), 'SUCCESS' );
-						} else {
-							delete_user_meta( $user->ID, 'test_2FA' );
-							$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::OTP_EXPIRED ), 'ERROR' );
-						}
-					} else {
-						$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_OTP ), 'ERROR' );
-					}
+					$mo2fdb_queries->mo2f_update_user_details( $user->ID, array( 'mo_2factor_user_registration_status' => MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS ) );
+				}
+			} elseif ( isset( $_POST['option'] ) && sanitize_text_field( wp_unslash( $_POST['option'] ) ) === 'mo_2factor_backto_user_registration' ) { // back to registration page for additional admin and non-admin.
+				$nonce = isset( $_POST['mo_2factor_backto_user_registration_nonce'] ) ? sanitize_key( wp_unslash( $_POST['mo_2factor_backto_user_registration_nonce'] ) ) : null;
+				if ( ! wp_verify_nonce( $nonce, 'mo-2factor-backto-user-registration-nonce' ) ) {
+					$error = new WP_Error();
+					$error->add( 'empty_username', '<strong>' . esc_html__( 'ERROR', 'miniorange-2-factor-authentication' ) . '</strong>: ' . esc_html__( 'Invalid Request.', 'miniorange-2-factor-authentication' ) );
+					return $error;
+				} else {
+					delete_user_meta( $user->ID, 'user_email' );
+					$mo2fdb_queries->mo2f_delete_user_details( $user->ID );
+					MO2f_Utility::unset_session_variables( 'mo2f_transactionId' );
+					delete_site_option( 'mo2f_transactionId' );
 				}
 			} elseif ( isset( $_POST['option'] ) && sanitize_text_field( wp_unslash( $_POST['option'] ) ) === 'mo2f_validate_otp_over_sms' ) { // validate otp over sms and phone call during test for all users.
 				$nonce = isset( $_POST['mo2f_test_validate_otp_nonce'] ) ? sanitize_key( wp_unslash( $_POST['mo2f_test_validate_otp_nonce'] ) ) : null;
@@ -640,10 +627,10 @@ if ( ! class_exists( 'Miniorange_Authentication' ) ) {
 						$user                   = wp_get_current_user();
 						$email                  = ( empty( $email ) ) ? $user->user_email : $email;
 						$twofactor_transactions = new Mo2fDB();
-						$exceeded               = $twofactor_transactions->check_alluser_limit_exceeded( $user_id );
+						$exceeded               = apply_filters( 'mo2f_basic_plan_settings_filter', $twofactor_transactions->check_alluser_limit_exceeded( $user_id ), 'is_user_limit_exceeded', array() );
 
 						if ( $exceeded ) {
-							$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_LIMIT_EXCEEDED ), 'ERROR' );
+							$show_message->mo2f_show_message( MoWpnsMessages::mo2f_user_limit_exceeded_message_html(), 'ERROR' );
 							return;
 						}
 						$google_response = json_decode( $this->mo2f_onprem_cloud_obj->mo2f_validate_google_auth( $email, $otp_token, $ga_secret ), true );
@@ -761,9 +748,9 @@ if ( ! class_exists( 'Miniorange_Authentication' ) ) {
 					return;
 				}
 				$twofactor_transactions = new Mo2fDB();
-				$exceeded               = $twofactor_transactions->check_alluser_limit_exceeded( $user_id );
+				$exceeded               = apply_filters( 'mo2f_basic_plan_settings_filter', $twofactor_transactions->check_alluser_limit_exceeded( $user_id ), 'is_user_limit_exceeded', array() );
 				if ( $exceeded ) {
-					$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_LIMIT_EXCEEDED ), 'ERROR' );
+					$show_message->mo2f_show_message( MoWpnsMessages::mo2f_user_limit_exceeded_message_html(), 'ERROR' );
 					return;
 				}
 				$kba_ques_ans_obj = new Mo2f_KBA_Handler();
@@ -968,7 +955,7 @@ if ( ! class_exists( 'Miniorange_Authentication' ) ) {
 						// limit exceed check.
 						$exceeded = apply_filters( 'mo2f_basic_plan_settings_filter', $mo2fdb_queries->check_alluser_limit_exceeded( $user->ID ), 'is_user_limit_exceeded', array() );
 						if ( $exceeded ) {
-							$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_LIMIT_EXCEEDED ), 'ERROR' );
+							$show_message->mo2f_show_message( MoWpnsMessages::mo2f_user_limit_exceeded_message_html(), 'ERROR' );
 							return;
 						}
 						$mo2f_cloud = new Customer_Cloud_Setup();
@@ -1029,34 +1016,6 @@ if ( ! class_exists( 'Miniorange_Authentication' ) ) {
 						} else {
 							$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_FETCHING_QUESTIONS ), 'ERROR' );
 						}
-					} elseif ( MoWpnsConstants::OTP_OVER_TELEGRAM === $selected_2_f_a_method ) {
-						$user      = wp_get_current_user();
-						$chat_i_d  = get_user_meta( $user->ID, 'mo2f_chat_id', true );
-						$otp_token = '';
-						for ( $i = 1; $i < 7; $i++ ) {
-							$otp_token .= wp_rand( 0, 9 );
-						}
-						update_user_meta( $user->ID, 'mo2f_otp_token', $otp_token );
-						update_user_meta( $user->ID, 'mo2f_telegram_time', time() );
-						$url      = esc_url( MoWpnsConstants::TELEGRAM_OTP_LINK );
-						$postdata = array(
-							'mo2f_otp_token' => $otp_token,
-							'mo2f_chatid'    => $chat_i_d,
-						);
-						$args     = array(
-							'method'    => 'POST',
-							'timeout'   => 10,
-							'sslverify' => false,
-							'headers'   => array(),
-							'body'      => $postdata,
-						);
-						$mo2f_api = new Mo2f_Api();
-						$data     = $mo2f_api->mo2f_wp_remote_post( $url, $args );
-						if ( MoWpnsConstants::SUCCESS_RESPONSE === $data ) {
-							$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::OTP_SENT ) . 'your telegram number.' . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_OTP ), 'SUCCESS' );
-						} else {
-							$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::VERIFY_CHAT_ID ), 'ERROR' );
-						}
 					} elseif ( MoWpnsConstants::OTP_OVER_SMS === $selected_2_f_a_method || MoWpnsConstants::OTP_OVER_EMAIL === $selected_2_f_a_method ) {
 						$phone = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_phone', $user->ID );
 						$check = 1;
@@ -1075,17 +1034,6 @@ if ( ! class_exists( 'Miniorange_Authentication' ) ) {
 							$response['status'] = 'FAILED';
 						}
 						if ( strcasecmp( $response['status'], 'SUCCESS' ) === 0 ) {
-							if ( MoWpnsConstants::OTP_OVER_EMAIL === $selected_2_f_a_method || MoWpnsConstants::OUT_OF_BAND_EMAIL === $selected_2_f_a_method ) {
-								$cm_vt_y_wlua_w5n_t1_r_q = MoWpnsUtility::get_mo2f_db_option( 'cmVtYWluaW5nT1RQ', 'site_option' );
-								if ( $cm_vt_y_wlua_w5n_t1_r_q > 0 ) {
-									update_site_option( 'cmVtYWluaW5nT1RQ', $cm_vt_y_wlua_w5n_t1_r_q - 1 );
-								}
-							} elseif ( MoWpnsConstants::OTP_OVER_SMS === $selected_2_f_a_method ) {
-								$mo2f_sms = get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' );
-								if ( $mo2f_sms > 0 ) {
-									update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', $mo2f_sms - 1 );
-								}
-							}
 							update_site_option( 'mo2f_number_of_transactions', MoWpnsUtility::get_mo2f_db_option( 'mo2f_number_of_transactions', 'site_option' ) - 1 );
 							update_user_meta( $user->ID, 'mo2f_transactionId', $response['txId'] );
 							update_site_option( 'mo2f_transactionId', $response['txId'] );

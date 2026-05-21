@@ -8,6 +8,7 @@
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\Mo2f_Common_Helper;
+use TwoFA\Helper\MoWpnsMessages;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -15,6 +16,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( current_user_can( 'manage_options' ) ) {
 	?>
 	<div id="wpns_nav_message"></div>
+	<?php if ( ! empty( $mo2f_free_plan_seats_full ) ) : ?>
+		<div class="notice notice-warning inline mo2f-free-plan-limit-notice" style="margin:0 0 16px;padding:12px 14px;">
+			<p style="margin:0;"><?php echo wp_kses_post( MoWpnsMessages::mo2f_user_limit_exceeded_message_html() ); ?></p>
+		</div>
+	<?php endif; ?>
+	<p class="mo2f-plugin-value-hint"><?php esc_html_e( 'Core two-factor authentication is included in this free plugin. A Crown icon marks optional paid add-ons. Everything else on this page applies to the free version.', 'miniorange-2-factor-authentication' ); ?></p>
 	<div class="mo2f-settings-div">
 	<div class="mo2f-settings-head">
 		<?php $mo2f_enable_2fa = MoWpnsUtility::get_mo2f_db_option( 'mo2f_activate_plugin', 'site_option' ); ?>
@@ -26,7 +33,7 @@ if ( current_user_can( 'manage_options' ) ) {
 	</div>
 	<div class="mo2f-sub-settings-div flex" id="mo2f_enable2FA_settings">
 		<div class="mb-mo-3">
-			<div class="my-mo-3"><?php esc_html_e( 'Turn on 2FA and choose which roles are in scope.', 'miniorange-2-factor-authentication' ); ?></div>
+			<div class="my-mo-3"><?php esc_html_e( 'Please select the user roles for which you would like to enable Two-Factor Authentication (2FA)', 'miniorange-2-factor-authentication' ); ?></div>
 			<div class="mb-mo-3">
 				<label for="mo2f_role_search" class="mo2f-role-search-label"><?php esc_html_e( 'Role Filter', 'miniorange-2-factor-authentication' ); ?></label>
 				<input type="text" id="mo2f_role_search" class="mo2f-role-search-input" placeholder="<?php esc_attr_e( 'Search roles...', 'miniorange-2-factor-authentication' ); ?>" />
@@ -70,6 +77,16 @@ if ( current_user_can( 'manage_options' ) ) {
 				</tr>
 				</table>
 			</div>
+			<?php
+			$mo2f_admin_bypass_2fa = (int) get_site_option( 'mo2f_admin_login_bypass_2fa' );
+			?>
+			<div class="mo2f-quicksetup-bypass">
+				<div class="mo2f-enable-2fa-roles mo2f-quicksetup-bypass__pill<?php echo $mo2f_admin_bypass_2fa ? ' mo2f-active-2' : ''; ?>">
+					<input type="checkbox" class="role-checkbox" id="mo2f_admin_bypass_2fa_login" onchange="this.closest('.mo2f-quicksetup-bypass__pill').classList.toggle('mo2f-active-2', this.checked);" <?php checked( $mo2f_admin_bypass_2fa ); ?> />
+					<label for="mo2f_admin_bypass_2fa_login"><?php esc_html_e( 'Allow administrators to skip 2FA from the login screen if needed', 'miniorange-2-factor-authentication' ); ?></label>
+				</div>
+				<p class="mo2f-quicksetup-bypass__hint"><?php esc_html_e( 'When enabled, administrators still complete the usual 2FA step, but the login screen adds a recovery link to finish without 2FA if they have trouble.', 'miniorange-2-factor-authentication' ); ?></p>
+			</div>
 		</div>
 		<div class="relative mb-mo-3 mo2f-basic-plan mo2f_reduce_margin">
 			<div class="my-mo-3">
@@ -87,7 +104,7 @@ if ( current_user_can( 'manage_options' ) ) {
 	
 	<div class="justify-start flex" id="mo2f_enable2FA_save">
 		<div class="mo2f_enable2FA_save_button">
-			<button id="mo2f_enable2FA_save_button" class="mo2f-save-settings-button">
+			<button type="button" id="mo2f_enable2FA_save_button" class="mo2f-save-settings-button">
 			<?php esc_html_e( 'Save Settings', 'miniorange-2-factor-authentication' ); ?>
 			</button>
 		</div>
@@ -99,13 +116,13 @@ if ( current_user_can( 'manage_options' ) ) {
 			<span><?php esc_html_e( 'Select 2FA Methods for Users', 'miniorange-2-factor-authentication' ); ?></span>
 		</div>
 		<div class="mo2f-sub-settings-div mo2f-basic-plan" id="mo2f_select_methods_for_users_settings" <?php echo $mo2fa_enable_method_selection ? 'flex' : 'hidden'; ?> >
-		<div class="my-mo-3">
+		<div class="my-mo-3 mo2f-basic-plan">
 			<input type="radio" name="mo2f_methods_for_users" value="1" id="2fa_methods_for_all" <?php checked( $mo2f_selected_type ); ?> ><?php esc_html_e( 'Use 2FA methods for All Users', 'miniorange-2-factor-authentication' ); ?>
 			<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'basic', MoWpnsConstants::MO2F_PREMIUM_3PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
 
 		</div>
 		<div class="mo2f-sub-settings-div mo2f-settings-items <?php echo ( esc_attr( $mo2f_lv_needed ) ? ( $mo2f_selected_type ? 'flex' : 'mo2f-hide-div' ) : 'flex' ); ?>" id="mo2f_all_2fa_methods_div">
-			<div class="mo2f-method-tiles">
+			<div class="mo2f-method-tiles<?php echo ! empty( $mo2f_method_tiles_readonly ) ? ' mo2f-method-tiles--readonly' : ''; ?>">
 				<?php
 				foreach ( $mo2f_methods_on_dashboard as $mo2f_method ) {
 					$mo2f_is_checked = in_array( $mo2f_method, $mo2f_selected_methods, true ) || ( ! $mo2f_lv_needed );
@@ -131,10 +148,13 @@ if ( current_user_can( 'manage_options' ) ) {
 								<?php endif; ?>
 							</div>
 							<p class="mo2f-method-hint"><?php echo esc_html( isset( $mo2f_method_hints[ $mo2f_method ] ) ? $mo2f_method_hints[ $mo2f_method ] : '' ); ?></p>
+							<?php if ( ! empty( $mo2f_show_sms_login_notice ) && MoWpnsConstants::OTP_OVER_SMS === $mo2f_method ) : ?>
+								<p class="mo2f-method-login-notice"><?php esc_html_e( 'You need to log in to your miniOrange account first to use OTP Over SMS.', 'miniorange-2-factor-authentication' ); ?></p>
+							<?php endif; ?>
 						</div>
 						<div class="mo2f-method-toggle">
 							<label class="switch_2fa_methods">
-								<input type="checkbox" name="mo2f_methods[]" id="<?php echo 'mo2fa_forall_' . esc_attr( $mo2f_method ); ?>" value="<?php echo esc_attr( $mo2f_method ); ?>" <?php checked( $mo2f_is_checked ); ?>>
+								<input type="checkbox" name="mo2f_methods[]" id="<?php echo 'mo2fa_forall_' . esc_attr( $mo2f_method ); ?>" value="<?php echo esc_attr( $mo2f_method ); ?>" <?php checked( $mo2f_is_checked ); ?> <?php disabled( ! empty( $mo2f_method_tiles_readonly ) ); ?> aria-disabled="<?php echo ! empty( $mo2f_method_tiles_readonly ) ? 'true' : 'false'; ?>">
 								<span class="slider_2fa_methods"></span>
 							</label>
 						</div>
@@ -144,7 +164,7 @@ if ( current_user_can( 'manage_options' ) ) {
 				?>
 			</div>
 		</div>
-		<div class="my-mo-3">
+		<div class="my-mo-3 mo2f-basic-plan">
 			<input type="radio" name="mo2f_methods_for_users" value="0" id="2fa_methods_for_roles"  <?php checked( ! $mo2f_selected_type ); ?>><?php esc_html_e( 'Use 2FA methods for Specific Roles', 'miniorange-2-factor-authentication' ); ?>
 			<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'basic', MoWpnsConstants::MO2F_PREMIUM_3PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
 
@@ -156,7 +176,7 @@ if ( current_user_can( 'manage_options' ) ) {
 				?>
 				<div class="my-mo-3"><input type="checkbox" name="mo2f_user_role[]" value="<?php echo esc_attr( $mo2f_role_id ); ?>" onclick="mo2f_show_specific_twofa_settings(this)" id="<?php echo 'mo2fa_' . esc_attr( $mo2f_role_id ); ?>" <?php checked( in_array( $mo2f_role_id, $mo2f_selected_roles, true ) ); ?> <?php echo ( esc_attr( ! $mo2f_lv_needed ) && 'administrator' === $mo2f_role_id ? 'checked' : '' ); ?>/><?php echo esc_html( $mo2f_role_name ); ?></div>
 				<div class="mo2f-sub-settings-items <?php echo ( in_array( $mo2f_role_id, $mo2f_selected_roles, true ) || ( ! $mo2f_lv_needed && 'administrator' === $mo2f_role_id ) ) ? 'flex' : 'hidden'; ?>"  id="<?php echo 'mo2fa_' . esc_attr( $mo2f_role_id ) . '_settings'; ?>" data-role="<?php echo esc_attr( $mo2f_role_id ); ?>">
-					<div class="mo2f-method-tiles">
+					<div class="mo2f-method-tiles<?php echo ! empty( $mo2f_method_tiles_readonly ) ? ' mo2f-method-tiles--readonly' : ''; ?>">
 						<?php
 						foreach ( $mo2f_methods_on_dashboard as $mo2f_method ) {
 							$mo2f_role_methods = (array) get_site_option( 'mo2f_auth_methods_for_' . $mo2f_role_id );
@@ -182,10 +202,13 @@ if ( current_user_can( 'manage_options' ) ) {
 										<?php endif; ?>
 									</div>
 									<p class="mo2f-method-hint"><?php echo esc_html( isset( $mo2f_method_hints[ $mo2f_method ] ) ? $mo2f_method_hints[ $mo2f_method ] : '' ); ?></p>
+									<?php if ( ! empty( $mo2f_show_sms_login_notice ) && MoWpnsConstants::OTP_OVER_SMS === $mo2f_method ) : ?>
+										<p class="mo2f-method-login-notice"><?php esc_html_e( 'You need to log in to your miniOrange account first to use OTP Over SMS.', 'miniorange-2-factor-authentication' ); ?></p>
+									<?php endif; ?>
 								</div>
 								<div class="mo2f-method-toggle">
 									<label class="switch_2fa_methods">
-										<input type="checkbox" name="<?php echo 'mo2fa_' . esc_attr( $mo2f_role_id ) . '_[]'; ?>" id="<?php echo 'mo2fa_' . esc_attr( $mo2f_method ) . '_' . esc_attr( $mo2f_role_id ); ?>" value="<?php echo esc_attr( $mo2f_method ); ?>" <?php checked( $mo2f_is_checked ); ?>>
+										<input type="checkbox" name="<?php echo 'mo2fa_' . esc_attr( $mo2f_role_id ) . '_[]'; ?>" id="<?php echo 'mo2fa_' . esc_attr( $mo2f_method ) . '_' . esc_attr( $mo2f_role_id ); ?>" value="<?php echo esc_attr( $mo2f_method ); ?>" <?php checked( $mo2f_is_checked ); ?> <?php disabled( ! empty( $mo2f_method_tiles_readonly ) ); ?> aria-disabled="<?php echo ! empty( $mo2f_method_tiles_readonly ) ? 'true' : 'false'; ?>">
 										<span class="slider_2fa_methods"></span>
 									</label>
 								</div>
@@ -244,8 +267,8 @@ if ( current_user_can( 'manage_options' ) ) {
 				<div class="mb-mo-3">
 				<div class="my-mo-3"><?php esc_html_e( 'Action after grace period is expired', 'miniorange-2-factor-authentication' ); ?></div>
 				<div class="mo2f-settings-items">	
-				<div class="mr-mo-4"><input type="radio" name="mo2f_grace_period_action" id="mo2f_enforce_2fa" value="enforce_2fa" <?php checked( get_site_option( 'mo2f_graceperiod_action' ) === 'enforce_2fa' ); ?>><?php esc_html_e( 'Enforce 2FA', 'miniorange-2-factor-authentication' ); ?></div>
-				<div class="mr-mo-4"><input type="radio" name="mo2f_grace_period_action" id="mo2f_block_users" value="block_user_login" <?php checked( get_site_option( 'mo2f_graceperiod_action' ) === 'block_user_login' ); ?>><?php esc_html_e( 'Block users from login', 'miniorange-2-factor-authentication' ); ?></div>
+				<div class="mr-mo-4"><input type="radio" name="mo2f_graceperiod_action" id="mo2f_enforce_2fa" value="enforce_2fa" <?php checked( get_site_option( 'mo2f_graceperiod_action' ) === 'enforce_2fa' ); ?>><?php esc_html_e( 'Enforce 2FA', 'miniorange-2-factor-authentication' ); ?></div>
+				<div class="mr-mo-4"><input type="radio" name="mo2f_graceperiod_action" id="mo2f_block_users" value="block_user_login" <?php checked( get_site_option( 'mo2f_graceperiod_action' ) === 'block_user_login' ); ?>><?php esc_html_e( 'Block users from login', 'miniorange-2-factor-authentication' ); ?></div>
 				</div>
 			</div>
 		</div>
@@ -257,13 +280,19 @@ if ( current_user_can( 'manage_options' ) ) {
 </script>
 	<?php
 	global $mo2f_main_dir;
-	wp_enqueue_script( 'login-settings-script', $mo2f_main_dir . '/includes/js/login-settings.min.js', array(), MO2F_VERSION, false );
+	wp_enqueue_script( 'login-settings-script', $mo2f_main_dir . '/includes/js/login-settings.min.js', array( 'jquery' ), MO2F_VERSION, false );
 	wp_localize_script(
 		'login-settings-script',
 		'loginSettings',
 		array(
 			'nonce' => esc_js( wp_create_nonce( 'mo2f-login-settings-ajax-nonce' ) ),
 		)
+	);
+	// Ensures mo2f_admin_login_bypass_2fa is always sent (cached login-settings.min.js may omit it).
+	wp_add_inline_script(
+		'login-settings-script',
+		'jQuery.ajaxPrefilter(function(o){var d=o.data;if(!d||typeof d!=="object"||d instanceof window.FormData||Array.isArray(d)||d.option!=="mo2f_enable2FA_save_option"||Object.prototype.hasOwnProperty.call(d,"mo2f_admin_login_bypass_2fa"))return;var e=document.getElementById("mo2f_admin_bypass_2fa_login");d.mo2f_admin_login_bypass_2fa=e&&e.checked?"true":"false";});',
+		'after'
 	);
 }
 ?>

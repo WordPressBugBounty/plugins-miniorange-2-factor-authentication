@@ -136,9 +136,9 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 					}
 					$email                  = ( empty( $email ) ) ? $mo2f_user->user_email : $email;
 					$twofactor_transactions = new Mo2fDB();
-					$exceeded               = $twofactor_transactions->check_alluser_limit_exceeded( $mo2f_user->ID );
+					$exceeded               = apply_filters( 'mo2f_basic_plan_settings_filter', $twofactor_transactions->check_alluser_limit_exceeded( $mo2f_user->ID ), 'is_user_limit_exceeded', array() );
 					if ( $exceeded ) {
-						wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_LIMIT_EXCEEDED ) );
+						wp_send_json_error( MoWpnsMessages::mo2f_user_limit_exceeded_plain_message() );
 					}
 					if ( ! $ga_secret ) {
 						$ga_secret = get_user_meta( $mo2f_user->ID, 'mo2f_secret_ga', true );

@@ -16,33 +16,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( 'plugins.php' !== basename( isset( $_SERVER['PHP_SELF'] ) ? sanitize_text_field( wp_unslash( $_SERVER['PHP_SELF'] ) ) : '' ) ) {
 	return;
 }
-global $mo2fdb_queries;
-$mo2f_configured_2_f_a_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', get_current_user_id() );
-$mo2f_no_of_2fa_users         = $mo2fdb_queries->mo2f_get_no_of_2fa_users();
-$mo2f_deactivate_reasons      = array(
-	'Conflicts with other plugins',
-	'Redirecting back to login page after Authentication',
+$mo2f_deactivate_reasons = array(
+	'Conflicts with theme or other plugins',
+	'Issues during login / authentication not working as expected',
+	'Too complex to set up or configure',
+	'Many features are missing',
+	'Needed only for testing / temporary use',
+	'Switching to another 2FA solution',
+	'Other Reasons:',
 );
-$mo2f_message                 = (
+$mo2f_message            = (
 	'We are sad to see you go!  Help us to improve our plugin by giving your opinion.'
 );
-if ( strlen( $mo2f_configured_2_f_a_method ) ) {
-	array_push( $mo2f_deactivate_reasons, "Couldn't understand how to make it work" );
-} elseif ( strpos( $mo2f_configured_2_f_a_method, MoWpnsConstants::GOOGLE_AUTHENTICATOR ) !== false ) {
-	array_push( $mo2f_deactivate_reasons, 'Unable to verify Google Authenticator' );
-} elseif ( strpos( $mo2f_configured_2_f_a_method, MoWpnsConstants::OTP_OVER_SMS ) !== false || strpos( $mo2f_configured_2_f_a_method, MoWpnsConstants::OTP_OVER_EMAIL ) !== false ) {
-	array_push( $mo2f_deactivate_reasons, 'Exhausted Email or SMS transactions' );
-}
-if ( 'MO_2_FACTOR_CUSTOMER_REGISTERED_SUCCESS' !== get_site_option( 'mo_2factor_admin_registration_status' ) ) {
-	array_push( $mo2f_deactivate_reasons, 'Did not want to create an account' );
-}
-if ( get_site_option( 'mo2fa_visit' ) ) {
-	array_push( $mo2f_deactivate_reasons, 'Plans are expensive' );
-}
-if ( 3 === $mo2f_no_of_2fa_users ) {
-	array_push( $mo2f_deactivate_reasons, 'User Limit' );
-}
-array_push( $mo2f_deactivate_reasons, 'Other Reasons:' );
+
+$mo2f_feedback_too_complex_html = '<p>' . esc_html__( 'See the step-by-step guide:', 'miniorange-2-factor-authentication' ) . ' <a href="' . esc_url( MoWpnsConstants::MO2F_PLUGINS_PAGE_URL . '/step-by-step-guide-for-wordpress-2-factor-authentication' ) . '" target="_blank" rel="noopener noreferrer"><b>' . esc_html__( 'Setup guide', 'miniorange-2-factor-authentication' ) . '</b></a></p>';
 ?>
 </head>
 
@@ -74,7 +61,7 @@ array_push( $mo2f_deactivate_reasons, 'Other Reasons:' );
 							<label for="<?php echo esc_attr( $mo2f_deactivate_reason ); ?>">
 								<input type="radio" name="mo_wpns_deactivate_plugin" value="<?php echo esc_attr( $mo2f_deactivate_reason ); ?>" required>
 								<?php echo esc_attr( $mo2f_deactivate_reason ); ?>
-								<?php if ( 'Conflicts with other plugins' === $mo2f_deactivate_reason ) { ?>
+								<?php if ( 'Conflicts with theme or other plugins' === $mo2f_deactivate_reason ) { ?>
 									<div id="mo_wpns_other_plugins_installed">
 										<?php
 											MO2f_Utility::get_all_plugins_installed();
@@ -125,31 +112,29 @@ array_push( $mo2f_deactivate_reasons, 'Other Reasons:' );
 			jQuery('input:radio[name="mo_wpns_deactivate_plugin"]').click(function() {
 				var reason = jQuery(this).val();
 				jQuery('#wpns_query_feedback').removeAttr('required');
-				if (reason == "Did not want to create an account") {
+				if (reason == "Too complex to set up or configure") {
 					jQuery('#mo_wpns_other_plugins_installed').hide();
-					jQuery('#wpns_query_feedback').attr("placeholder", "Write your query here.");
-					jQuery('#mo2f_link_id').html('<p>We suggest you to create an account for only those methods which require miniOrange cloud for working purpose.</p>');
+					jQuery('#wpns_query_feedback').attr("placeholder", "What step was confusing? (optional but helps us improve)");
+					jQuery('#mo2f_link_id').html(<?php echo wp_json_encode( $mo2f_feedback_too_complex_html ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON-encoded for jQuery. ?>);
 					jQuery('#mo2f_link_id').show();
-				} else if (reason == "Upgrading to Premium") {
+				} else if (reason == "Switching to another 2FA solution") {
 					jQuery('#mo_wpns_other_plugins_installed').hide();
-					jQuery('#wpns_query_feedback').attr("placeholder", "Write your query here.");
-					jQuery('#mo2f_link_id').html('<p>Thanks for upgrading. For setup instructions, please follow this guide' +
-						', <a href="<?php echo esc_url( MoWpnsConstants::SETUPGUIDE ); ?>" target="_blank"><b>VIDEO GUIDE.</b></a></p>');
-					jQuery('#mo2f_link_id').show();
-				} else if (reason == "User Limit") {
+					jQuery('#wpns_query_feedback').attr("placeholder", "Which 2FA solution are you switching to? (optional)");
+					jQuery('#mo2f_link_id').hide();
+				} else if (reason == "Issues during login / authentication not working as expected") {
 					jQuery('#mo_wpns_other_plugins_installed').hide();
-					jQuery('#wpns_query_feedback').attr("placeholder", "Write your query here.");
-					jQuery('#mo2f_link_id').html('<p>You can download our <a href="https://wordpress.org/plugins/miniorange-login-security/" target="_blank"><b>Multi Factor Authentication</b></a> plugin to setup 2FA for unlimited admin users.</p>');
-					jQuery('#mo2f_link_id').show();
-
-				} else if (reason == "Exhausted Email or SMS") {
+					jQuery('#wpns_query_feedback').attr("placeholder", "What login or authentication issue did you face? (optional)");
+					jQuery('#mo2f_link_id').hide();
+				} else if (reason == "Many features are missing") {
 					jQuery('#mo_wpns_other_plugins_installed').hide();
-					jQuery('#wpns_query_feedback').attr("placeholder", "Write your query here.");
-					jQuery('#mo2f_link_id').html('<p>You can recharge your SMS and Email transactions using this link' +
-						', <a href="<?php echo esc_url( MoWpnsConstants::RECHARGELINK ); ?>" target="_blank"><b>Recharge Link.</b></a> Otherwise, you can configure your own gateway <a href="<?php echo esc_url( MoWpnsConstants::CUSTOMSMSGATEWAY ); ?>" target="_blank"><b>here.</b></a></p>');
-					jQuery('#mo2f_link_id').show();
-				} else if (reason == "Conflicts with other plugins") {
-					jQuery('#wpns_query_feedback').attr("placeholder", "Can you please mention the plugin name, and the issue?");
+					jQuery('#wpns_query_feedback').attr("placeholder", "Which feature were you looking for? (optional)");
+					jQuery('#mo2f_link_id').hide();
+				} else if (reason == "Needed only for testing / temporary use") {
+					jQuery('#mo_wpns_other_plugins_installed').hide();
+					jQuery('#wpns_query_feedback').attr("placeholder", "What were you testing? (optional)");
+					jQuery('#mo2f_link_id').hide();
+				} else if (reason == "Conflicts with theme or other plugins") {
+					jQuery('#wpns_query_feedback').attr("placeholder", "Please mention the theme/plugin name and the issue.");
 					jQuery('#mo_wpns_other_plugins_installed').show();
 					jQuery('#mo2f_link_id').hide();
 				} else if (reason == "Other Reasons:") {

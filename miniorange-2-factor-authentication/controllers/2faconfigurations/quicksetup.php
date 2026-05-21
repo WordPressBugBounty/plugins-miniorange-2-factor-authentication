@@ -6,6 +6,9 @@
  */
 
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Helper\Mo2f_Common_Helper;
+use TwoFA\Helper\MoWpnsMessages;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -15,7 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 global $mo2f_addon_dir;
 
 global $wp_roles, $mo2f_onprem_cloud_obj;
-$mo2f_lv_needed = apply_filters( 'mo2f_is_lv_needed', false );
+$mo2f_lv_needed             = apply_filters( 'mo2f_is_lv_needed', false );
+$mo2f_method_tiles_readonly = ( '' !== Mo2f_Common_Helper::mo2f_check_plan( 'basic', MoWpnsConstants::MO2F_PREMIUM_3PLAN_NAME ) );
 if ( is_multisite() ) {
 	$mo2f_first_role      = array( 'superadmin' => 'Superadmin' );
 	$wp_roles->role_names = array_merge( $mo2f_first_role, $wp_roles->role_names );
@@ -26,7 +30,7 @@ $mo2f_method_names               = MoWpnsConstants::$mo2f_cap_to_small;
 $mo2f_method_icons               = MoWpnsConstants::$mo2f_method_icons;
 $mo2f_method_hints               = MoWpnsConstants::$mo2f_method_hints;
 $mo2fa_enable_method_selection   = get_site_option( 'mo2f_select_methods_for_users', 1 );
-$mo2f_selected_methods           = (array) get_site_option( 'mo2f_auth_methods_for_users', array( MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::OTP_OVER_SMS, MoWpnsConstants::OTP_OVER_TELEGRAM, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OTP_OVER_WHATSAPP, MoWpnsConstants::OUT_OF_BAND_EMAIL, MoWpnsConstants::SECURITY_QUESTIONS ) );
+$mo2f_selected_methods           = (array) get_site_option( 'mo2f_auth_methods_for_users', array( MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::OTP_OVER_SMS, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OTP_OVER_WHATSAPP, MoWpnsConstants::OUT_OF_BAND_EMAIL, MoWpnsConstants::SECURITY_QUESTIONS ) );
 $mo2f_selected_roles             = (array) get_site_option( 'mo2f_auth_methods_roles' );
 $mo2f_selected_type              = get_site_option( 'mo2f_all_users_method', 1 );
 $mo2f_pages                      = get_pages();
@@ -40,6 +44,10 @@ $mo2f_enabled_pages              = isset( $mo2f_page_protection_settings['enable
 $mo2f_session_time               = isset( $mo2f_page_protection_settings['session_time'] ) ? $mo2f_page_protection_settings['session_time'] : 24;
 $mo2f_pp_addon_installed         = isset( $mo2f_page_protection_settings['addon_installed'] ) ? true : false;
 $mo2f_page_protection_addon_css  = $mo2f_pp_addon_installed ? '' : 'mo2f-disable-div';
+// Same "logged in to plugin" signal as My Account (mo2f_customerKey) and SMS setup popup (admin registration status).
+$mo2f_show_sms_login_notice      = empty( get_site_option( 'mo2f_customerKey' ) )
+	|| 'MO_2_FACTOR_CUSTOMER_REGISTERED_SUCCESS' !== get_site_option( 'mo_2factor_admin_registration_status' );
+$mo2f_free_plan_seats_full       = MoWpnsMessages::mo2f_is_free_plan_seat_limit_reached();
 ?>
 <div>
 	<?php

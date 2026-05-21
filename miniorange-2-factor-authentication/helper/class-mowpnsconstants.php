@@ -70,14 +70,11 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const TWO_FACTOR_SETTINGS         = 'miniorange-2-factor-authentication/miniorange-2-factor-settings.php';
 		const OTP_VERIFICATION_SETTINGS   = 'miniorange-otp-verification/miniorange_validation_settings.php';
 		const SOCIAL_LOGIN_SETTINGS       = 'miniorange-login-openid/miniorange_openid_sso_settings.php';
-		const TELEGRAM_OTP_LINK           = 'https://telegramotp.xecurify.com/teleTest/index.php';
-		const OTP_OVER_WHATSAPP_PAGE_LINK = 'https://bit.ly/3iWKyH7';
 
 		// Constants for method names.
 		const OTP_OVER_EMAIL         = 'EMAIL';
 		const OTP_OVER_SMS           = 'SMS';
 		const OTP_OVER_SMS_AND_EMAIL = 'SMS AND EMAIL';
-		const OTP_OVER_TELEGRAM      = 'TELEGRAM';
 		const OTP_OVER_WHATSAPP      = 'WHATSAPP';
 		const GOOGLE_AUTHENTICATOR   = 'GOOGLE AUTHENTICATOR';
 		const AUTHY_AUTHENTICATOR    = 'AUTHY AUTHENTICATOR';
@@ -100,7 +97,6 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const MO2F_REMEMBER_IP_GET_USER_CONSENT           = 'MO2F_REMEMBER_IP_GET_USER_CONSENT';
 		const MO_2_FACTOR_SHOW_CONFIRMATION_BLOCK         = 'MO_2_FACTOR_SHOW_CONFIRMATION_BLOCK';
 		const MO_2_FACTOR_CHALLENGE_OTP_OVER_EMAIL        = 'MO_2_FACTOR_CHALLENGE_OTP_OVER_EMAIL';
-		const MO_2_FACTOR_CHALLENGE_OTP_OVER_TELEGRAM     = 'MO_2_FACTOR_CHALLENGE_OTP_OVER_TELEGRAM';
 		const MO_2_FACTOR_CHALLENGE_GOOGLE_AUTHENTICATION = 'MO_2_FACTOR_CHALLENGE_GOOGLE_AUTHENTICATION';
 		const MO_2_FACTOR_CHALLENGE_OTP_OVER_SMS          = 'MO_2_FACTOR_CHALLENGE_OTP_OVER_SMS';
 		const MO_2_FACTOR_CHALLENGE_OOB_EMAIL             = 'MO_2_FACTOR_CHALLENGE_OOB_EMAIL';
@@ -126,7 +122,7 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const MO2F_PREMIUM_3PLAN_NAME                     = 'Starter, Enterprise and All Inclusive Plan Feature';
 		const MO2F_PREMIUM_2PLAN_NAME                     = 'Enterprise and All Inclusive Plan Feature';
 		const MO2F_PREMIUM_1PLAN_NAME                     = 'All Inclusive Plan Feature';
-		const MO2F_PREMIUM_PLAN_DESCRIPTION               = 'Please upgrade your plan to unlock this feature';
+		const MO2F_PREMIUM_PLAN_DESCRIPTION               = 'Please upgrade your plan to unlock this feature.';
 		const EMAIL_PATTERN                               = '[^@\s]+@[^@\s]+\.[^@\s]+';
 		const PHONE_PATTERN                               = '[\+]?[0-9]{1,4}\s?[0-9]{7,12}';
 		const MO2F_SVG_ARROW_ICON                         = '<svg class="mo2f-gauth-link-icon" xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" focusable="false"><path d="M432 320h-32a16 16 0 0 0-16 16v112H80V128h112a16 16 0 0 0 16-16V80a16 16 0 0 0-16-16H64A64 64 0 0 0 0 128v320a64 64 0 0 0 64 64h320a64 64 0 0 0 64-64V336a16 16 0 0 0-16-16zm56-320H336a24 24 0 0 0-17 41l35 35L176 309a24 24 0 0 0 0 34l22 22a24 24 0 0 0 34 0l178-178 35 35a24 24 0 0 0 41-17V32a32 32 0 0 0-32-32z"/>
@@ -151,6 +147,12 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const LOGGED_IN_FROM_NEW_IP             = 'Logged in from new IP.';
 		const USER_DEATIL_META_KEY              = 'mo2f_user_2fa_data';
 
+		/**
+		 * Maximum number of users who can complete 2FA setup on the free plan.
+		 * Premium builds may override behavior via filters.
+		 */
+		const MO2F_FREE_PLAN_USER_LIMIT = 5;
+
 		// code of url use .
 		const DATABASE                          = 'db';
 		const CLOUDLOCKOUT                      = 'https://faq.miniorange.com/knowledgebase/how-to-gain-access-to-my-website-if-i-get-locked-out/';
@@ -169,7 +171,6 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const OTP_OVER_SMS_DOCUMENT_LINK        = self::DOCUMENT_LINK . '/step-by-setup-guide-to-set-up-otp-over-sms';
 		const OTP_OVER_EMAIL_DOCUMENT_LINK      = self::DOCUMENT_LINK . '/otp_over_email';
 		const OTP_OVER_WA_DOCUMENT_LINK         = self::DOCUMENT_LINK . '/otp-over-whatsapp';
-		const OTP_OVER_TELEGRAM_DOCUMENT_LINK   = self::DOCUMENT_LINK . '/otp-over-telegram';
 		const KBA_YOUTUBE                       = self::YOUTUBE . '/watch?v=pXPqQ047o-0';
 		const GA_YOUTUBE                        = self::YOUTUBE . '/watch?v=6je2iARqrcs';
 		const MO_AUTHENTICATOR_YOUTUBE          = self::YOUTUBE . '/watch?v=oRaGtKxouiI';
@@ -179,7 +180,6 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const AUTHY_AUTHENTICATOR_YOUTUBE       = self::YOUTUBE . '/watch?v=fV-VnC_5Q5c';
 		const OTP_OVER_SMS_YOUTUBE              = self::YOUTUBE . '/watch?v=ag_E1Bmen-c';
 		const DUO_AUTHENTICATOR_YOUTUBE         = self::YOUTUBE . '/watch?v=AZnBjf_E2cA';
-		const OTP_OVER_TELEGRAM_YOUTUBE         = self::YOUTUBE . '/watch?v=3yVs67LnYts';
 		const CHOOSE_SELECTORS_YOUTUBE          = self::YOUTUBE . '/watch?v=OwUJxkHjVlY';
 
 		// Google auth app links.
@@ -199,12 +199,6 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 				'test_method_instructions' => 'one time passcode sent to your registered mobile number.',
 				'option_name'              => 'mo2f_validate_otp_over_sms',
 				'nonce_name'               => 'mo2f-validate-otp-over-sms-nonce',
-			),
-			self::OTP_OVER_TELEGRAM    => array(
-				'selected_2fa_method'      => self::OTP_OVER_TELEGRAM,
-				'test_method_instructions' => 'one time passcode sent to your registered mobile number of Telegram.',
-				'option_name'              => 'mo2f_validate_otp_over_Telegram',
-				'nonce_name'               => 'mo2f-validate-otp-over-Telegram-nonce',
 			),
 			self::OTP_OVER_EMAIL       => array(
 				'selected_2fa_method'      => self::OTP_OVER_EMAIL,
@@ -243,7 +237,6 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			self::OUT_OF_BAND_EMAIL      => 'Email Verification',
 			self::OTP_OVER_SMS           => 'OTP Over SMS',
 			self::OTP_OVER_EMAIL         => 'OTP Over Email',
-			self::OTP_OVER_TELEGRAM      => 'OTP Over Telegram',
 			self::AUTHY_AUTHENTICATOR    => 'Authy Authenticator',
 			self::MSFT_AUTHENTICATOR     => 'Microsoft Authenticator',
 			self::FREEOTP_AUTHENTICATOR  => 'Freeotp Authenticator',
@@ -267,7 +260,6 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			'OTPOverSMS'          => self::OTP_OVER_SMS,
 			'OTPOverEmail'        => self::OTP_OVER_EMAIL,
 			'DuoAuthenticator'    => self::DUO_AUTHENTICATOR,
-			'OTPOverTelegram'     => self::OTP_OVER_TELEGRAM,
 			'OTPOverWhatsapp'     => self::OTP_OVER_WHATSAPP,
 		);
 
@@ -283,7 +275,6 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			'Email Verification'   => self::OUT_OF_BAND_EMAIL,
 			'OTP Over SMS'         => self::OTP_OVER_SMS,
 			'OTP Over Email'       => self::OTP_OVER_EMAIL,
-			'OTP Over Telegram'    => self::OTP_OVER_TELEGRAM,
 			'OTP Over WhatsApp'    => self::OTP_OVER_WHATSAPP,
 		);
 
@@ -302,7 +293,6 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			self::OTP_OVER_SMS           => '📱',
 			self::OTP_OVER_EMAIL         => '✉️',
 			self::OTP_OVER_SMS_AND_EMAIL => '📱✉️',
-			self::OTP_OVER_TELEGRAM      => '🌐',
 			self::OTP_OVER_WHATSAPP      => 'whatsapp_image',
 			self::SECURITY_QUESTIONS     => '❓',
 			self::OUT_OF_BAND_EMAIL      => '✉️',
@@ -324,7 +314,6 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			self::OTP_OVER_SMS           => 'Carrier text message',
 			self::OTP_OVER_EMAIL         => 'Email code',
 			self::OTP_OVER_SMS_AND_EMAIL => 'SMS and Email',
-			self::OTP_OVER_TELEGRAM      => 'Telegram bot',
 			self::OTP_OVER_WHATSAPP      => 'WhatsApp message',
 			self::SECURITY_QUESTIONS     => 'Backup questions',
 			self::OUT_OF_BAND_EMAIL      => 'Email verification',

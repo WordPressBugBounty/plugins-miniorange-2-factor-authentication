@@ -44,15 +44,15 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 		 * @return void
 		 */
 		public function mo2f_send_reconfig_link( $post ) {
-			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( $post['session_id'] ) : null;
-			$redirect_to        = isset( $post['redirect_to'] ) ? esc_url_raw( $post['redirect_to'] ) : null;
+			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : null;
+			$redirect_to        = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : null;
 			$twofa_method       = isset( $post['mo2f_login_method'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_login_method'] ) ) : null;
 			$common_helper      = new Mo2f_Common_Helper();
 			$user_id            = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 			$currentuser        = get_user_by( 'id', $user_id );
 			$email_delivered    = $this->mo2f_send_reconfig_link_on_email( $currentuser, $currentuser->user_email );
-			$mo2f_title         = $email_delivered ? 'Account Recovery Email Sent' : 'Account Recovery Email Counldn\'t Send';
-			$mo2f_message       = $this->mo2f_get_message( $email_delivered, $user_id );
+			$mo2f_title          = $email_delivered ? __( 'Account Recovery Email Sent', 'miniorange-2-factor-authentication' ) : __( 'Account recovery could not be sent', 'miniorange-2-factor-authentication' );
+			$mo2f_message        = $this->mo2f_get_message( $email_delivered, $user_id );
 			$mo2fa_login_status = MoWpnsConstants::MO_2_FACTOR_RECONFIGURATION_LINK_SENT;
 			$this->mo2f_show_login_prompt( $mo2f_message, $mo2fa_login_status, $currentuser, $redirect_to, $session_id_encrypt, $mo2f_title, $twofa_method );
 		}
@@ -90,10 +90,11 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 			$skeleton_values = $login_popup->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, null, null, $current_user->ID, 'login_2fa', $mo2f_title, $session_id );
 			$html            = $login_popup->mo2f_twofa_authentication_login_prompt( $mo2fa_login_status, $mo2fa_login_message, $redirect_to, $session_id, $skeleton_values, $twofa_method );
 			$html           .= $common_helper->mo2f_get_hidden_forms_login( $redirect_to, $session_id, $mo2fa_login_status, $mo2fa_login_message, $twofa_method, $current_user->ID );
-			$html           .= $common_helper->mo2f_get_hidden_script_login();
+			$html .= $common_helper->mo2f_get_hidden_script_login();
 			echo $html;// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped the necessary in the definition.
 			exit;
 		}
+
 		/**
 		 * Sends 2fa-reconfiguration link email.
 		 *
@@ -106,8 +107,7 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 			$subject     = MoWpnsUtility::get_mo2f_db_option( 'mo2f_2fa_reconfig_email_subject', 'site_option' );
 			$headers     = array( 'Content-Type: text/html; charset=UTF-8' );
 			$message     = $this->mo2f_2fa_reconfiguration_email_template( $reset_token, $current_user, $email );
-			$result      = wp_mail( $email, $subject, $message, $headers );
-			return $result;
+			return wp_mail( $email, $subject, $message, $headers );
 		}
 
 		/**
@@ -206,7 +206,21 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 		 * @return void
 		 */
 		public function mo2f_reset_users_2fa_for_reconfiguration( $user_id ) {
+			self::mo2f_reset_2fa_after_verified_recovery( $user_id );
+		}
+
+		/**
+		 * Clear 2FA for a user after verified recovery (e.g. email link).
+		 *
+		 * @param int $user_id User ID.
+		 * @return void
+		 */
+		public static function mo2f_reset_2fa_after_verified_recovery( $user_id ) {
 			global $mo2fdb_queries;
+			$user_id = (int) $user_id;
+			if ( $user_id <= 0 ) {
+				return;
+			}
 			delete_user_meta( $user_id, 'mo2f_kba_challenge' );
 			delete_user_meta( $user_id, 'mo2f_2FA_method_to_configure' );
 			delete_user_meta( $user_id, 'Security Questions' );
@@ -228,5 +242,5 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 			}
 		}
 	}
-	new Mo2f_Reconfigure_Link();
+	Mo2f_Reconfigure_Link::instance();
 }

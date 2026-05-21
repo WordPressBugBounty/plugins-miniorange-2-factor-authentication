@@ -112,11 +112,6 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 					'video' => MoWpnsConstants::EMAIL_VERIFICATION_YOUTUBE,
 					'desc'  => 'Accept the verification link sent to your email address',
 				),
-				MoWpnsConstants::OTP_OVER_TELEGRAM    => array(
-					'doc'   => MoWpnsConstants::OTP_OVER_TELEGRAM_DOCUMENT_LINK,
-					'video' => MoWpnsConstants::OTP_OVER_TELEGRAM_YOUTUBE,
-					'desc'  => 'Enter the One Time Passcode sent to your Telegram account',
-				),
 				MoWpnsConstants::SECURITY_QUESTIONS   => array(
 					'doc'   => MoWpnsConstants::KBA_DOCUMENT_LINK,
 					'video' => MoWpnsConstants::KBA_YOUTUBE,
@@ -129,6 +124,13 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 					'crown' => false,
 				),
 			);
+			if ( ! apply_filters( 'mo2f_is_lv_needed', false ) ) {
+				global $mo2f_dir_name;
+				$mo2f_all_inclusive_premium = file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-all-inclusive-premium-settings.php' );
+				if ( ! $mo2f_all_inclusive_premium ) {
+					$two_factor_methods_details[ MoWpnsConstants::OTP_OVER_WHATSAPP ]['crown'] = true;
+				}
+			}
 			return $two_factor_methods_details;
 		}
 
@@ -618,27 +620,21 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 		 */
 		public function mo2f_get_user_2ndfactor( $user ) {
 			global $mo2fdb_queries;
-			$mo2f_user_email        = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
-			$auth_type              = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
-			$is_telegram_configured = MoWpnsConstants::OTP_OVER_TELEGRAM === $auth_type;
-			if ( $is_telegram_configured ) {
-				$mo2f_second_factor = $auth_type;
-			} else {
-				$enduser  = new MocURL();
-				$userinfo = json_decode( $enduser->mo2f_get_userinfo( $mo2f_user_email ), true );
-				if ( json_last_error() === JSON_ERROR_NONE ) {
-					if ( 'ERROR' === $userinfo['status'] ) {
-						$mo2f_second_factor = 'NONE';
-					} elseif ( 'SUCCESS' === $userinfo['status'] ) {
-						$mo2f_second_factor = $userinfo['authType'];
-					} elseif ( 'FAILED' === $userinfo['status'] ) {
-						$mo2f_second_factor = 'USER_NOT_FOUND';
-					} else {
-						$mo2f_second_factor = 'NONE';
-					}
+			$mo2f_user_email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
+			$enduser         = new MocURL();
+			$userinfo        = json_decode( $enduser->mo2f_get_userinfo( $mo2f_user_email ), true );
+			if ( json_last_error() === JSON_ERROR_NONE ) {
+				if ( 'ERROR' === $userinfo['status'] ) {
+					$mo2f_second_factor = 'NONE';
+				} elseif ( 'SUCCESS' === $userinfo['status'] ) {
+					$mo2f_second_factor = $userinfo['authType'];
+				} elseif ( 'FAILED' === $userinfo['status'] ) {
+					$mo2f_second_factor = 'USER_NOT_FOUND';
 				} else {
 					$mo2f_second_factor = 'NONE';
 				}
+			} else {
+				$mo2f_second_factor = 'NONE';
 			}
 
 			return $mo2f_second_factor;

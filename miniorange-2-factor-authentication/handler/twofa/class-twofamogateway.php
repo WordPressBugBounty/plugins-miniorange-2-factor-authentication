@@ -73,17 +73,8 @@ if ( ! class_exists( 'TwoFAMOGateway' ) ) {
 				TwoFAMoSessions::add_session_var( 'sent_on', time() );
 
 				if ( MoWpnsConstants::OTP_OVER_EMAIL === $auth_type ) {
-					$cmvtywluaw5nt1rq = MoWpnsUtility::get_mo2f_db_option( 'cmVtYWluaW5nT1RQ', 'site_option' );
-					if ( $cmvtywluaw5nt1rq > 0 ) {
-						update_site_option( 'cmVtYWluaW5nT1RQ', $cmvtywluaw5nt1rq - 1 );
-					}
 					$content = ( new MO2f_Cloud_Onprem_Interface() )->send_otp_token( null, $email, $auth_type, null );
 				} else {
-					$mo2f_sms = get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' );
-					if ( $mo2f_sms > 0 ) {
-						update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', $mo2f_sms - 1 );
-					}
-
 					$content = ( new MO2f_Cloud_Onprem_Interface() )->send_otp_token( $phone, null, $auth_type, null );
 				}
 				return json_decode( $content, true );

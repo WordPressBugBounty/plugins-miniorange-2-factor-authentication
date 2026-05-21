@@ -206,20 +206,6 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 											</label>
 											<br>
 								</span>
-								<span class="
-								<?php
-								if ( ! ( in_array( MoWpnsConstants::OTP_OVER_TELEGRAM, $selected_methods, true ) ) ) {
-									echo 'mo2f_td_hide';
-								} else {
-									echo 'mo2f_td_show'; }
-								?>
-								" >
-										<label title="<?php esc_attr_e( 'You will get an OTP on your Telegram app from miniOrange Bot.', 'miniorange-2-factor-authentication' ); ?>" >
-											<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::OTP_OVER_TELEGRAM ); ?>"  />
-									<?php echo esc_html( MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OTP_OVER_TELEGRAM, 'cap_to_small' ) ); ?>
-										</label>
-									<br>
-								</span>
 								</div>
 								</div>
 								<?php

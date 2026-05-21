@@ -216,6 +216,15 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 					update_site_option( $option_to_be_updated, $value );
 				}
 			}
+			$bypass_on = false;
+			if ( isset( $post['mo2f_admin_login_bypass_2fa'] ) ) {
+				$raw_bypass = wp_unslash( $post['mo2f_admin_login_bypass_2fa'] );
+				if ( is_scalar( $raw_bypass ) ) {
+					$bypass_str = strtolower( sanitize_text_field( (string) $raw_bypass ) );
+					$bypass_on  = in_array( $bypass_str, array( 'true', '1', 'yes', 'on' ), true );
+				}
+			}
+			update_site_option( 'mo2f_admin_login_bypass_2fa', $bypass_on ? 1 : 0 );
 			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 		}
 

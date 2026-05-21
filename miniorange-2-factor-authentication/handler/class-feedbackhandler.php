@@ -59,6 +59,38 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 		}
 
 		/**
+		 * Increment anonymized local counters for deactivation paths (site option, no PII).
+		 *
+		 * @param string $feedback_option mo_wpns_feedback or mo_wpns_skip_feedback.
+		 * @param array  $postdata      POST payload.
+		 * @return void
+		 */
+		private function mo2f_record_deactivate_feedback_local_stat( $feedback_option, $postdata ) {
+			if ( ! current_user_can( 'manage_options' ) ) {
+				return;
+			}
+			$stats = get_site_option( 'mo2f_deactivate_feedback_counts', array() );
+			if ( ! is_array( $stats ) ) {
+				$stats = array();
+			}
+			$bucket = 'skipped_no_feedback';
+			if ( 'mo_wpns_feedback' === $feedback_option ) {
+				$reason = isset( $postdata['mo_wpns_deactivate_plugin'] ) ? sanitize_text_field( wp_unslash( $postdata['mo_wpns_deactivate_plugin'] ) ) : '';
+				if ( '' === $reason ) {
+					$bucket = 'submitted_no_reason_selected';
+				} else {
+					$slug   = preg_replace( '/[^a-z0-9]+/i', '_', strtolower( $reason ) );
+					$slug   = trim( $slug, '_' );
+					$bucket = 'r_' . ( '' !== $slug ? substr( $slug, 0, 80 ) : 'unknown' );
+				}
+			}
+			$stats[ $bucket ]  = isset( $stats[ $bucket ] ) ? (int) $stats[ $bucket ] + 1 : 1;
+			$stats['_events']  = isset( $stats['_events'] ) ? (int) $stats['_events'] + 1 : 1;
+			$stats['_updated'] = time();
+			update_site_option( 'mo2f_deactivate_feedback_counts', $stats );
+		}
+
+		/**
 		 * Sends the users feedback to miniOrange 2fa support when users deactivate the plugin.
 		 *
 		 * @param array $postdata The information received in the post request.
@@ -74,7 +106,7 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 			$message           = 'Plugin Deactivated : ';
 			$deactivate_plugin = isset( $postdata['mo_wpns_deactivate_plugin'] ) ? sanitize_text_field( wp_unslash( $postdata['mo_wpns_deactivate_plugin'] ) ) : '';
 			$message          .= $deactivate_plugin;
-			if ( 'Conflicts with other plugins' === $deactivate_plugin ) {
+			if ( 'Conflicts with theme or other plugins' === $deactivate_plugin ) {
 				$plugin_selected = isset( $postdata['mo2f_plugin_selected'] ) ? sanitize_text_field( wp_unslash( $postdata['mo2f_plugin_selected'] ) ) : '';
 				$plugin          = MO2f_Utility::get_plugin_name_by_identifier( $plugin_selected );
 				$message        .= ', Plugin selected - ' . $plugin . '.';
@@ -127,6 +159,9 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 			}
 			if ( ! is_null( $feedback_reasons ) ) {
 				if ( ! $mo2f_mo_wpns_utility->is_curl_installed() ) {
+					if ( 'mo_wpns_feedback' === $feedback_option || 'mo_wpns_skip_feedback' === $feedback_option ) {
+						$this->mo2f_record_deactivate_feedback_local_stat( $feedback_option, $postdata );
+					}
 					deactivate_plugins( dirname( __DIR__ ) . '\\miniorange_2_factor_settings.php' );
 
 				} else {
@@ -147,6 +182,7 @@ if ( ! class_exists( 'FeedbackHandler' ) ) {
 					}
 
 					if ( 'mo_wpns_feedback' === $feedback_option || 'mo_wpns_skip_feedback' === $feedback_option ) {
+						$this->mo2f_record_deactivate_feedback_local_stat( $feedback_option, $postdata );
 						echo '<script>
 							localStorage.removeItem("ip_last_tab");
 							localStorage.removeItem("last_tab");

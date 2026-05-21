@@ -58,7 +58,6 @@ $GLOBALS['mo2f_show_loginwith_phone']              = '1';
 $GLOBALS['mo2f_action_rba_limit_exceed']           = '1';
 $GLOBALS['mo2f_sesssion_restriction']              = '1';
 $GLOBALS['mo2f_session_logout_time_enable']        = '1';
-$GLOBALS['mo2f_login_option']                      = '0';
 $GLOBALS['mo2f_email_ver_subject']                 = '2FA - Email Verification Via Link';
 $GLOBALS['mo2f_email_subject']                     = '2FA - Email Verification Via OTP';
 $GLOBALS['mo2f_2fa_reconfig_email_subject']        = '2FA - Account Recovery Link';

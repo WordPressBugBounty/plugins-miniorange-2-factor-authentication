@@ -134,16 +134,66 @@ if ( ! class_exists( 'Mo2f_Whitelabelling' ) ) {
 		}
 
 		/**
+		 * Checks whether enterprise premium settings are available.
+		 *
+		 * @return bool
+		 */
+		private function mo2f_is_enterprise_plan_active() {
+			$premium_file = dirname( __DIR__ ) . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-enterprise-premium-settings.php';
+			return file_exists( $premium_file );
+		}
+
+		/**
 		 * Saves custom email templates.
 		 *
 		 * @param array $post Post data.
 		 * @return void
 		 */
 		public function mo2f_save_custom_email_template( $post ) {
-			$show_message = new MoWpnsMessages();
-			update_site_option( $post['subject_name'], stripslashes( $post['mo2f_email_subject'] ) );
-			update_site_option( $post['option'], stripslashes( $post[ $post['option'] . '_config_message' ] ) );
+			$show_message      = new MoWpnsMessages();
+			$subject_name      = isset( $post['subject_name'] ) ? sanitize_text_field( wp_unslash( $post['subject_name'] ) ) : '';
+			$template_option   = isset( $post['option'] ) ? sanitize_text_field( wp_unslash( $post['option'] ) ) : '';
+			$subject_value     = isset( $post['mo2f_email_subject'] ) ? stripslashes( wp_unslash( $post['mo2f_email_subject'] ) ) : '';
+			$template_raw_key  = $template_option . '_config_message';
+			$template_content  = isset( $post[ $template_raw_key ] ) ? stripslashes( wp_unslash( $post[ $template_raw_key ] ) ) : '';
+			$existing_template = (string) MoWpnsUtility::get_mo2f_db_option( $template_option, 'site_option' );
+
+			if ( ! $this->mo2f_is_enterprise_plan_active() ) {
+				$existing_images = $this->mo2f_get_template_image_sources( $existing_template );
+				$new_images      = $this->mo2f_get_template_image_sources( $template_content );
+				if ( $existing_images !== $new_images ) {
+					$show_message->mo2f_show_message(
+						esc_html__( 'Updating email template logo is available in the Enterprise plan.', 'miniorange-2-factor-authentication' ),
+						'ERROR'
+					);
+					return;
+				}
+			}
+
+			update_site_option( $subject_name, $subject_value );
+			update_site_option( $template_option, $template_content );
 			$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::EMAIL_TEMPLATE_SAVED ), 'SUCCESS' );
+		}
+
+		/**
+		 * Gets normalized image src values from a template.
+		 *
+		 * @param string $template_content Template HTML content.
+		 * @return array<int, string>
+		 */
+		private function mo2f_get_template_image_sources( $template_content ) {
+			$image_sources = array();
+			if ( empty( $template_content ) ) {
+				return $image_sources;
+			}
+
+			if ( preg_match_all( '/<img\b[^>]*\bsrc\s*=\s*(["\'])(.*?)\1/i', $template_content, $matches ) && ! empty( $matches[2] ) ) {
+				foreach ( $matches[2] as $src ) {
+					$image_sources[] = trim( html_entity_decode( wp_strip_all_tags( (string) $src ) ) );
+				}
+			}
+
+			return $image_sources;
 		}
 
 		/**

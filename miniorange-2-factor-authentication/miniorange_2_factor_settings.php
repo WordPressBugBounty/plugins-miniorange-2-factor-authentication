@@ -6,10 +6,10 @@
  */
 
 /**
- * Plugin Name: miniOrange 2FA – Two-Factor Authentication for WordPress (SMS, Email & Google Authenticator)
+ * Plugin Name: miniOrange 2FA – Two Factor Authentication for WordPress (OTP, SMS, Email, Google Authenticator)
  * Plugin URI: https://miniorange.com
- * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. We Support Google/Authy/LastPass/Microsoft Authenticator, QR Code, Push Notification, Soft Token and Security Questions(KBA) for 3 User in the free version of the plugin.
- * Version: 6.2.4
+ * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. Supports Google/Authy/LastPass/Microsoft Authenticator, QR Code, Push Notification, Soft Token, and Security Questions (KBA). Free plan: up to 5 users can complete 2FA setup; premium unlocks unlimited users and advanced policies.
+ * Version: 6.2.5
  * Author: miniOrange
  * Author URI: https://miniorange.com
  * Text Domain: miniorange-2-factor-authentication
@@ -42,7 +42,7 @@ require __DIR__ . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'new-
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
 define( 'MO_HOST_NAME', 'https://login.xecurify.com' );
-define( 'MO2F_VERSION', '6.2.1' );
+define( 'MO2F_VERSION', '6.2.5' );
 define( 'MO2F_PLUGIN_URL', ( plugin_dir_url( __FILE__ ) ) );
 define( 'MO2F_TEST_MODE', false );
 define( 'MO2F_IS_ONPREM', get_option( 'is_onprem', 1 ) );
@@ -96,6 +96,9 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			add_action( 'admin_init', array( $this, 'mo2f_migrate_network_blocked_ips_table' ) );
 			add_action( 'admin_init', array( $this, 'mo2f_migrate_user_details' ) );
 			add_action( 'admin_init', array( $this, 'mo2f_drop_wpns_attack_logs_and_network_email_sent_audit' ) );
+			add_action( 'admin_init', array( $this, 'mo2f_handle_first_setup_nudge_dismiss' ) );
+			add_action( 'admin_init', array( $this, 'mo2f_handle_user_limit_notice_dismiss' ) );
+			add_action( 'admin_init', array( $this, 'mo2f_remove_telegram_otp_method' ) );
 		}
 
 		/**
@@ -209,6 +212,51 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 				}
 			}
 		}
+
+		/**
+		 * Persist dismiss action for first-setup nudge.
+		 *
+		 * @return void
+		 */
+		public function mo2f_handle_first_setup_nudge_dismiss() {
+			if ( ! current_user_can( 'manage_options' ) ) {
+				return;
+			}
+			$should_dismiss = isset( $_GET['mo2f_dismiss_first_setup_nudge'] ) ? sanitize_text_field( wp_unslash( $_GET['mo2f_dismiss_first_setup_nudge'] ) ) : '';
+			if ( '1' !== $should_dismiss ) {
+				return;
+			}
+			$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+			if ( ! wp_verify_nonce( $nonce, 'mo2f-dismiss-first-setup-nudge' ) ) {
+				return;
+			}
+			update_site_option( 'mo2f_first_setup_nudge_dismissed_at', time() );
+			wp_safe_redirect( remove_query_arg( array( 'mo2f_dismiss_first_setup_nudge', '_wpnonce' ) ) );
+			exit;
+		}
+
+		/**
+		 * Persist dismiss action for free-plan seat limit admin notice.
+		 *
+		 * @return void
+		 */
+		public function mo2f_handle_user_limit_notice_dismiss() {
+			if ( ! current_user_can( 'manage_options' ) ) {
+				return;
+			}
+			$should_dismiss = isset( $_GET['mo2f_dismiss_user_limit_notice'] ) ? sanitize_text_field( wp_unslash( $_GET['mo2f_dismiss_user_limit_notice'] ) ) : '';
+			if ( '1' !== $should_dismiss ) {
+				return;
+			}
+			$nonce = isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+			if ( ! wp_verify_nonce( $nonce, 'mo2f-dismiss-user-limit-notice' ) ) {
+				return;
+			}
+			update_site_option( 'mo2f_user_limit_admin_notice_dismissed', 1 );
+			wp_safe_redirect( remove_query_arg( array( 'mo2f_dismiss_user_limit_notice', '_wpnonce' ) ) );
+			exit;
+		}
+
 		/**
 		 * Add notices to admin dashboard.
 		 *
@@ -238,6 +286,56 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			if ( ! get_site_option( 'mo2f_wpns_donot_show_low_sms_notice' ) && ( get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' ) <= 4 ) && ( $day_sms >= 1 ) && 0 !== $count ) {
 				echo wp_kses_post( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::LOW_SMS_TRANSACTIONS ) );
 			}
+
+			if ( ! current_user_can( 'manage_options' ) || apply_filters( 'mo2f_is_lv_needed', false ) ) {
+				return;
+			}
+
+			$configured_users_count = method_exists( $mo2fdb_queries, 'mo2f_get_configured_2fa_user_count' ) ? $mo2fdb_queries->mo2f_get_configured_2fa_user_count() : 0;
+
+			if ( ! MoWpnsMessages::mo2f_is_free_plan_seat_limit_reached() && get_site_option( 'mo2f_user_limit_admin_notice_dismissed' ) ) {
+				delete_site_option( 'mo2f_user_limit_admin_notice_dismissed' );
+			}
+
+			if ( MoWpnsMessages::mo2f_is_free_plan_seat_limit_reached() && ! get_site_option( 'mo2f_user_limit_admin_notice_dismissed' ) ) {
+				$mo2f_limit_dismiss_url = wp_nonce_url(
+					add_query_arg(
+						array(
+							'mo2f_dismiss_user_limit_notice' => 1,
+						)
+					),
+					'mo2f-dismiss-user-limit-notice'
+				);
+				echo '<div class="notice notice-warning"><p style="margin:0.75em 0;">';
+				echo wp_kses_post( MoWpnsMessages::mo2f_user_limit_exceeded_message_html() );
+				echo '</p><p><a class="button" href="' . esc_url( $mo2f_limit_dismiss_url ) . '">' . esc_html__( 'Dismiss', 'miniorange-2-factor-authentication' ) . '</a></p></div>';
+			}
+
+			// Nudge admins to finish initial 2FA setup when nobody has completed setup yet.
+			if ( $configured_users_count > 0 ) {
+				return;
+			}
+			$last_dismissed_at = (int) get_site_option( 'mo2f_first_setup_nudge_dismissed_at', 0 );
+			if ( $last_dismissed_at > 0 && ( time() - $last_dismissed_at ) < 7 * DAY_IN_SECONDS ) {
+				return;
+			}
+
+			$setup_url   = admin_url( 'admin.php?page=mo_2fa_my_account&subpage=setupyour2fa' );
+			$dismiss_url = wp_nonce_url(
+				add_query_arg(
+					array(
+						'mo2f_dismiss_first_setup_nudge' => 1,
+					)
+				),
+				'mo2f-dismiss-first-setup-nudge'
+			);
+
+			echo '<div class="notice notice-info is-dismissible">';
+			echo '<p><strong>' . esc_html__( 'Secure your site: complete your first 2FA setup', 'miniorange-2-factor-authentication' ) . '</strong></p>';
+			echo '<p>' . esc_html__( 'No users have completed 2FA setup yet. Configure 2FA now to protect WordPress logins from unauthorized access.', 'miniorange-2-factor-authentication' ) . '</p>';
+			echo '<p><a class="button button-primary" href="' . esc_url( $setup_url ) . '">' . esc_html__( 'Finish 2FA Setup', 'miniorange-2-factor-authentication' ) . '</a> ';
+			echo '<a class="button" href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss for 7 days', 'miniorange-2-factor-authentication' ) . '</a></p>';
+			echo '</div>';
 		}
 
 		/**
@@ -312,7 +410,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		public function mo_wpns_settings_style( $hook ) {
 			global $mo2f_dir_name;
 			if ( strpos( $hook, 'page_mo_2fa' ) ) {
-				wp_enqueue_style( 'mo_wpns_main_style', plugins_url( 'includes/css/mo2f-main.min.css', __FILE__ ), array(), MO2F_VERSION );
+				wp_enqueue_style( 'mo_wpns_main_style', plugins_url( 'includes/css/mo2f-main.min.css', __FILE__ ), array( 'dashicons' ), MO2F_VERSION );
 				wp_enqueue_style( 'mo_2fa_admin_settings_jquery_style', plugins_url( 'includes/css/jquery.ui.min.css', __FILE__ ), array(), MO2F_VERSION );
 				wp_enqueue_style( 'mo_2fa_admin_settings_phone_style', plugins_url( 'includes/css/phone.min.css', __FILE__ ), array(), MO2F_VERSION );
 				wp_enqueue_style( 'mo_wpns_admin_settings_style', plugins_url( 'includes/css/style_settings.min.css', __FILE__ ), array(), MO2F_VERSION );
@@ -377,6 +475,9 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 				$pp_addon_installed       = isset( $page_protection_settings['addon_installed'] ) ? true : false;
 				if ( ! $pp_addon_installed ) {
 					wp_enqueue_script( 'mo_2fa_all_inclusive_plan_div_script', plugins_url( '/includes/js/mo2f-disable-div.js', __FILE__ ), array(), MO2F_VERSION, false );
+				}
+				if ( ! MO2F_PREMIUM_PLAN ) {
+					wp_enqueue_script( 'mo2f_premium_lock_script', plugins_url( '/includes/js/premium-lock.min.js', __FILE__ ), array( 'jquery' ), MO2F_VERSION, false );
 				}
 			}
 		}
@@ -753,6 +854,63 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			$mo2fdb_queries->mo2f_drop_table( 'mo2f_user_details' );
 			update_site_option( 'mo2f_user_details_migrated', true );
 		}
+		/**
+		 * Remove OTP over Telegram from enabled methods and reset users who had it configured.
+		 *
+		 * @global wpdb $wpdb WordPress database abstraction object.
+		 * @return void
+		 */
+		public function mo2f_remove_telegram_otp_method() {
+			global $wpdb;
+
+			if ( get_site_option( 'mo2f_telegram_method_removed' ) ) {
+				return;
+			}
+
+			$enabled_methods = (array) get_site_option(
+				'mo2f_auth_methods_for_users',
+				array(
+					MoWpnsConstants::GOOGLE_AUTHENTICATOR,
+					MoWpnsConstants::OTP_OVER_SMS,
+					MoWpnsConstants::OTP_OVER_EMAIL,
+					MoWpnsConstants::OTP_OVER_WHATSAPP,
+					MoWpnsConstants::OUT_OF_BAND_EMAIL,
+					MoWpnsConstants::SECURITY_QUESTIONS,
+				)
+			);
+			$enabled_methods = array_values(
+				array_diff( $enabled_methods, array( 'TELEGRAM' ) )
+			);
+			update_site_option( 'mo2f_auth_methods_for_users', $enabled_methods );
+
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time admin migration; targets only Telegram users.
+			$user_ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value LIKE %s",
+					MoWpnsConstants::USER_DEATIL_META_KEY,
+					'%"mo2f_configured_2FA_method";s:8:"TELEGRAM"%'
+				)
+			);
+
+			if ( ! empty( $user_ids ) ) {
+				foreach ( $user_ids as $user_id ) {
+					$user_data = get_user_meta( (int) $user_id, MoWpnsConstants::USER_DEATIL_META_KEY, true );
+					if ( ! is_array( $user_data ) || ! isset( $user_data['mo2f_configured_2FA_method'] ) || 'TELEGRAM' !== $user_data['mo2f_configured_2FA_method'] ) {
+						continue;
+					}
+					$user_data['mo2f_configured_2FA_method']           = '';
+					$user_data['mo2f_OTPOverTelegram_config_status']   = false;
+					$user_data['mo_2factor_user_registration_status']  = MoWpnsConstants::MO_2_FACTOR_INITIALIZE_TWO_FACTOR;
+					update_user_meta( (int) $user_id, MoWpnsConstants::USER_DEATIL_META_KEY, $user_data );
+					delete_user_meta( (int) $user_id, 'mo2f_chat_id' );
+					delete_user_meta( (int) $user_id, 'mo2f_telegram_time' );
+					delete_user_meta( (int) $user_id, 'mo2f_otp_token' );
+				}
+			}
+
+			update_site_option( 'mo2f_telegram_method_removed', true );
+		}
+
 		/**
 		 * Drop table wpns_attack_logs and mo2f_network_email_sent_audit.
 		 *

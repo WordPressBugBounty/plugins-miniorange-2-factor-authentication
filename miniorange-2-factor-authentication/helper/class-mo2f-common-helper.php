@@ -68,12 +68,38 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return string
 		 */
 		public static function mo2f_get_premium_tooltip( $plan_name ) {
-			return '<span class="mo2f_premium_tooltip">' . MoWpnsConstants::PREMIUM_CROWN . '
-                                <span class="mo2f_premium_tooltiptext">
-                                    <span class="mo2f_premium_header" onclick="upgradeLink()">' . esc_html( $plan_name ) . '</span><br/>
-                                    <span class="mo2f_premium_body">' . esc_html( MoWpnsConstants::MO2F_PREMIUM_PLAN_DESCRIPTION ) . '</span>
-                                </span>
-                            </span>';
+			$crown_badge = self::mo2f_get_addon_crown_badge_html();
+			return '<span class="mo2f_premium_tooltip mo2f-premium-marker" role="note" tabindex="0">'
+				. $crown_badge
+				. '<span class="mo2f_premium_tooltiptext mo2f-premium-marker__tip">'
+				. '<span class="mo2f_premium_header" onclick="upgradeLink()">' . esc_html( $plan_name ) . '</span>'
+				. '<span class="mo2f_premium_body">' . esc_html( MoWpnsConstants::MO2F_PREMIUM_PLAN_DESCRIPTION ) . '</span>'
+				. '</span></span>';
+		}
+
+		/**
+		 * Small badge for paid-plan add-ons (crown mark).
+		 *
+		 * @return string
+		 */
+		public static function mo2f_get_addon_crown_badge_html() {
+			$label = esc_attr__( 'Paid plan add-on', 'miniorange-2-factor-authentication' );
+			return '<span class="mo2f-addon-crown-badge" role="img" aria-label="' . $label . '" title="' . $label . '">'
+				. '<span class="mo2f-addon-crown-badge__icon" aria-hidden="true">&#x1F451;</span>'
+				. '</span>';
+		}
+
+		/**
+		 * Inline info icon with hover tooltip for settings fields.
+		 *
+		 * @param string $message Tooltip message.
+		 * @return string
+		 */
+		public static function mo2f_get_info_tooltip_html( $message ) {
+			return '<span class="mo2f_tooltip mo2f-field-info-tooltip" role="note" tabindex="0">'
+				. '<span class="dashicons dashicons-info mo2f_info_tab" aria-hidden="true"></span>'
+				. '<span class="mo2f_tooltiptext">' . esc_html( $message ) . '</span>'
+				. '</span>';
 		}
 
 		/**
@@ -537,6 +563,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$html .= $this->mo2f_backto_login_form();
 			$html .= $this->mo2f_backto_2fa_validation_screen_form( $session_id_encrypt, $redirect_to, $twofa_method );
 			$html .= $this->mo2f_get_reconfiguration_link_hidden_forms( $redirect_to, $session_id_encrypt, $twofa_method );
+			$html .= $this->mo2f_get_admin_bypass_recovery_hidden_form( $redirect_to, $session_id_encrypt );
 			$html .= apply_filters(
 				'mo2f_premium_common_helper',
 				'',
@@ -612,6 +639,25 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		}
 
 		/**
+		 * Hidden form for administrator “complete login without 2FA” recovery (when site option is enabled).
+		 *
+		 * @param string $redirect_to        Redirect URL after login.
+		 * @param string $session_id_encrypt Session id.
+		 * @return string
+		 */
+		public function mo2f_get_admin_bypass_recovery_hidden_form( $redirect_to, $session_id_encrypt ) {
+			if ( ! (int) get_site_option( 'mo2f_admin_login_bypass_2fa' ) ) {
+				return '';
+			}
+			return '<form name="f" id="mo2f_admin_bypass_recovery_form" method="post" action="" style="display:none;">
+			<input type="hidden" name="miniorange_inline_save_2factor_method_nonce" value="' . esc_attr( wp_create_nonce( 'miniorange-2-factor-inline-save-2factor-method-nonce' ) ) . '" />
+			<input type="hidden" name="option" value="mo2f_admin_recovery_login_bypass" />
+			<input type="hidden" name="redirect_to" value="' . esc_url( $redirect_to ) . '" />
+			<input type="hidden" name="session_id" value="' . esc_attr( $session_id_encrypt ) . '" />
+		</form>';
+		}
+
+		/**
 		 * Gets hidden script for login.
 		 *
 		 * @return string
@@ -626,6 +672,11 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			});
 			jQuery("a[href=\'#mo2f_send_reconfig_link\']").click(function() {
 				jQuery("#mo2f_send_reconfig_link").submit();
+			});
+			jQuery("a[href=\'#mo2f_admin_bypass_recovery\']").click(function() {
+				if (jQuery("#mo2f_admin_bypass_recovery_form").length) {
+					jQuery("#mo2f_admin_bypass_recovery_form").submit();
+				}
 			});
 			jQuery("a[href=\'#kba_backup_method_link\']").click(function() {
 				jQuery("#mo2f_backup_method_form").submit();
@@ -767,26 +818,6 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
                                     <input type ="text" class="mo2f_phone_field" pattern="' . esc_attr( MoWpnsConstants::EMAIL_PATTERN ) . '" name="mo2f_phone_email_telegram"  size="30" required value="' . esc_attr( $email ) . '"/><br>
                                     </div>',
 				'##instructions##' => '',
-			);
-			return $skeleton;
-		}
-
-		/**
-		 * Returns skeleton values for OTP Over Telegram.
-		 *
-		 * @param int $user_id User ID.
-		 * @return array
-		 */
-		public function mo2f_telegram_common_skeleton( $user_id ) {
-			$chat_id  = get_user_meta( $user_id, 'mo2f_chat_id', true );
-			$chat_id  = $chat_id ? $chat_id : '';
-			$skeleton = array(
-				'##input_field##'  => '<input class="mo2f_phone_field" type="text" name="mo2f_phone_email_telegram" id="mo2f_telegram"
-                                    value="' . esc_attr( $chat_id ) . '" pattern="[0-9]+" 
-                                    title="' . esc_attr__( 'Enter Chat ID recieved on your Telegram without any space or dashes', 'miniorange-2-factor-authentication' ) . '"/><br></h4>',
-				'##instructions##' => '<h4 class="mo_wpns_not_bold">' . esc_html__( '1. Open the telegram app and search for \'miniorange2fa\'. Click on start button or send \'/start\' message.', 'miniorange-2-factor-authentication' ) . '</h4>
-                                    <h4 class="mo_wpns_not_bold">' . esc_html__( '2. Enter the recieved chat id in the below box.', 'miniorange-2-factor-authentication' ) . '</h4>',
-
 			);
 			return $skeleton;
 		}
@@ -1705,8 +1736,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					} else{
 						jQuery("#mo2fa_softtoken").val("");
 						attemptleft = attemptleft - 1;
-						var span =   document.getElementById("mo2f_attempt_span");
-						span.textContent = attemptleft;
+						var span = document.getElementById("mo2f_attempt_span");
+						if (span) { span.textContent = attemptleft; }
 						if(response.data == "ALREADY_USED"){
 							mo2f_show_message("' . __( 'The OTP has already been used. Please enter new OTP.', 'miniorange-2-factor-authentication' ) . '");
 						} else{
@@ -2090,12 +2121,12 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 */
 		public function fetch_methods( $current_user = null ) {
 
-			$methods = array( MoWpnsConstants::OTP_OVER_SMS, MoWpnsConstants::OUT_OF_BAND_EMAIL, MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SECURITY_QUESTIONS, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OTP_OVER_TELEGRAM );
+			$methods = array( MoWpnsConstants::OTP_OVER_SMS, MoWpnsConstants::OUT_OF_BAND_EMAIL, MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SECURITY_QUESTIONS, MoWpnsConstants::OTP_OVER_EMAIL );
 			if ( apply_filters( 'mo2f_is_lv_needed', false ) ) {
 				array_push( $methods, MoWpnsConstants::OTP_OVER_WHATSAPP );
 			}
 			if ( ( ! is_null( $current_user ) && ( 'administrator' !== $current_user->roles[0] ) && ! get_site_option( 'mo2f_email' ) ) || ! get_site_option( 'mo2f_customerKey' ) ) {
-				$methods = array( MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SECURITY_QUESTIONS, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OTP_OVER_TELEGRAM, MoWpnsConstants::OUT_OF_BAND_EMAIL );
+				$methods = array( MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SECURITY_QUESTIONS, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OUT_OF_BAND_EMAIL );
 			}
 			if ( get_site_option( 'duo_credentials_save_successfully' ) ) {
 				array_push( $methods, 'DUO' );
@@ -2253,7 +2284,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				$wp_user                       = get_user_by( 'id', $user->ID );
 				$mo2f_user_registration_status = $mo2fdb_queries->mo2f_get_user_detail( 'mo_2factor_user_registration_status', $user->ID );
 				$mo2f_method_selected          = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
-				if ( 'MO_2_FACTOR_PLUGIN_SETTINGS' !== $mo2f_user_registration_status ) {
+				if ( MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS !== $mo2f_user_registration_status ) {
 					$entries = true;
 					echo '<tr><td>' . esc_html( $wp_user->user_login ) .
 					'</td><td>' . esc_html( $user->user_email ) .
@@ -2299,7 +2330,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				$user_role                     = $user->roles[0];
 				$wp_user                       = get_user_by( 'id', $user->ID );
 				$mo2f_user_registration_status = $mo2fdb_queries->mo2f_get_user_detail( 'mo_2factor_user_registration_status', $user->ID );
-				if ( 'MO_2_FACTOR_PLUGIN_SETTINGS' === $mo2f_user_registration_status ) {
+				if ( MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $mo2f_user_registration_status ) {
 						$mo2f_method_selected = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
 						echo '<tr class="mo2f-registered-row" ><td>' . esc_html( $wp_user->user_login ) .
 						'</td><td>' . esc_html( $user->user_email ) .

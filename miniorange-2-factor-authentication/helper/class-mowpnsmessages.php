@@ -416,7 +416,7 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 						self::SENT_OTP                    => __( 'The OTP has been sent to', 'miniorange-2-factor-authentication' ),
 						self::SOMETHING_WENT_WRONG        => __( 'Something went wrong', 'miniorange-2-factor-authentication' ),
 						self::ENTER_SENT_OTP              => __( '. Please enter the OTP you received to Validate.', 'miniorange-2-factor-authentication' ),
-						self::USER_LIMIT_EXCEEDED         => __( 'Your limit of 3 users has exceeded. Please upgrade to premium plans for more users.', 'miniorange-2-factor-authentication' ),
+						self::USER_LIMIT_EXCEEDED         => '', // Resolved in mo2f_get_message() via mo2f_user_limit_exceeded_plain_message().
 						self::USER_PROFILE_SETUP_SMTP     => __( 'Please setup SMTP on your site in order to set the 2FA for your users.', 'miniorange-2-factor-authentication' ),
 						self::SESSION_LIMIT_REACHED       => __( 'You have reached the limit for maximum concurrent session allowed. Please logout from another session or wait for it to expire.', 'miniorange-2-factor-authentication' ),
 						self::EMAIL_LABEL                 => __( 'Username or Email', 'miniorange-2-factor-authentication' ),
@@ -424,7 +424,7 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 						self::TWOFA_NOT_ENABLED           => __( 'Two Factor is not enabled for you. Please login with username and password.', 'miniorange-2-factor-authentication' ),
 						self::TWOFA_NOT_CONFIGURED        => __( 'Two Factor is not configured for you. Please login with password first to setup 2FA.', 'miniorange-2-factor-authentication' ),
 						self::PASSWORDLESS_LOGIN_CANNOT_BE_ENABLED_ERROR => __( 'Please disable the Remember Device and Remember IP features first in order to enable this feature.', 'miniorange-2-factor-authentication' ),
-						self::GET_YOUR_PLAN_UPGRADED      => __( 'Please upgrade you plan in order to use this feature.', 'miniorange-2-factor-authentication' ),
+						self::GET_YOUR_PLAN_UPGRADED      => __( 'Please upgrade your plan to use this feature.', 'miniorange-2-factor-authentication' ),
 						self::REMEMBER_IP_CONSENT_MESSAGE => __( 'Do you want to remember this IP? Remembering this IP enables you to avoid the Two-Factor Authentication (2FA) the next time you login using this IP.', 'miniorange-2-factor-authentication' ),
 						self::INVALID_SESSION             => __( 'Invalid session. Please try again.', 'miniorange-2-factor-authentication' ),
 					);
@@ -443,8 +443,80 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 		 * @return string
 		 */
 		public static function mo2f_get_message( $key ) {
+			if ( self::USER_LIMIT_EXCEEDED === $key ) {
+				return self::mo2f_user_limit_exceeded_plain_message();
+			}
 			$messages = self::get_messages();
 			return isset( $messages[ $key ] ) ? $messages[ $key ] : '';
+		}
+
+		/**
+		 * Whether the free-plan 2FA seat cap (5 configured users) is reached.
+		 *
+		 * @return bool
+		 */
+		public static function mo2f_is_free_plan_seat_limit_reached() {
+			if ( apply_filters( 'mo2f_is_lv_needed', false ) ) {
+				return false;
+			}
+			global $mo2fdb_queries;
+			if ( ! isset( $mo2fdb_queries ) || ! is_object( $mo2fdb_queries ) || ! method_exists( $mo2fdb_queries, 'mo2f_get_configured_2fa_user_count' ) ) {
+				return false;
+			}
+			return $mo2fdb_queries->mo2f_get_configured_2fa_user_count() >= (int) MoWpnsConstants::MO2F_FREE_PLAN_USER_LIMIT;
+		}
+
+		/**
+		 * Plain-text limit message (e.g. AJAX). Includes URLs for support docs and upgrade tracking (?ref=seat_limit).
+		 *
+		 * @return string
+		 */
+		public static function mo2f_user_limit_exceeded_plain_message() {
+			global $mo2fdb_queries;
+			$used = 0;
+			if ( isset( $mo2fdb_queries ) && is_object( $mo2fdb_queries ) && method_exists( $mo2fdb_queries, 'mo2f_get_configured_2fa_user_count' ) ) {
+				$used = $mo2fdb_queries->mo2f_get_configured_2fa_user_count();
+			}
+			$limit       = (int) MoWpnsConstants::MO2F_FREE_PLAN_USER_LIMIT;
+			$status_url  = admin_url( 'admin.php?page=mo_2fa_reports&subpage=users2fastatus' );
+			$upgrade_url = MoWpnsConstants::MO2F_UPGRADE_PRICING_URL . '?ref=seat_limit';
+			return sprintf(
+				/* translators: 1: seats in use, 2: free plan limit, 3: admin URL to Users' 2FA Status, 4: upgrade URL */
+				__( 'Free-plan 2FA seats are full (%1$d / %2$d). Each seat is a user who completed 2FA setup. Open Users\' 2FA Status in the plugin to reset a user and free a seat: %3$s Upgrade for unlimited users: %4$s', 'miniorange-2-factor-authentication' ),
+				$used,
+				$limit,
+				$status_url,
+				$upgrade_url
+			);
+		}
+
+		/**
+		 * Rich HTML for admin notices and popups (allowed tags: wp_kses_post).
+		 *
+		 * @return string
+		 */
+		public static function mo2f_user_limit_exceeded_message_html() {
+			global $mo2fdb_queries;
+			$used = 0;
+			if ( isset( $mo2fdb_queries ) && is_object( $mo2fdb_queries ) && method_exists( $mo2fdb_queries, 'mo2f_get_configured_2fa_user_count' ) ) {
+				$used = $mo2fdb_queries->mo2f_get_configured_2fa_user_count();
+			}
+			$limit       = (int) MoWpnsConstants::MO2F_FREE_PLAN_USER_LIMIT;
+			$status_url  = admin_url( 'admin.php?page=mo_2fa_reports&subpage=users2fastatus' );
+			$upgrade_url = MoWpnsConstants::MO2F_UPGRADE_PRICING_URL . '?ref=seat_limit';
+
+			$title = esc_html__( '2FA user limit reached', 'miniorange-2-factor-authentication' );
+			$line1 = sprintf(
+				/* translators: 1: seats in use, 2: free plan limit */
+				esc_html__( 'All free-plan seats are in use (%1$d / %2$d). A seat is used when a user completes 2FA setup.', 'miniorange-2-factor-authentication' ),
+				$used,
+				$limit
+			);
+			$line2 = esc_html__( 'Reset 2FA for a user on Users\' 2FA Status to free a seat, or upgrade for unlimited users.', 'miniorange-2-factor-authentication' );
+			$link1 = '<a href="' . esc_url( $status_url ) . '">' . esc_html__( 'View Users\' 2FA Status', 'miniorange-2-factor-authentication' ) . '</a>';
+			$link2 = '<a href="' . esc_url( $upgrade_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Upgrade for unlimited users', 'miniorange-2-factor-authentication' ) . '</a>';
+
+			return '<strong>' . $title . '</strong><br>' . $line1 . '<br>' . $line2 . '<br>' . $link1 . ' <span style="color:#787c82;">|</span> ' . $link2;
 		}
 
 		/**

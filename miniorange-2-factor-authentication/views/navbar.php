@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-global $mo2f_dir_name;
+global $mo2f_dir_name, $mo2fdb_queries;
 $mo2f_security_features_nonce = wp_create_nonce( 'mo_2fa_security_features_nonce' );
 
 	$mo2f_current_user  = wp_get_current_user();
@@ -70,12 +70,12 @@ if ( $mo2f_current_date_timestamp <= $mo2f_banner_start_timestamp && ( $mo2f_use
 
 					</div><br><br>';
 }
-				echo ' <div class="mo2f-admin-options"> <div class="mx-mo-3"> <img width="30" height="30" src="' . esc_url( $mo2f_logo_url ) . '"></div>';
+				echo ' <div class="mo2f-header-main-col" style="display:flex;flex-direction:column;flex:1;min-width:0;row-gap:10px;align-self:stretch;"><div class="mo2f-admin-options" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%;min-width:0;"> <div class="mx-mo-3" style="flex:0 0 auto;"> <img width="30" height="30" src="' . esc_url( $mo2f_logo_url ) . '"></div>';
 
-	echo '<span class="mo2f-plugin-name">Two-Factor Authentication</span>';
+	echo '<span class="mo2f-plugin-name" style="flex:1 1 240px;min-width:220px;">Two-Factor Authentication</span>';
 if ( current_user_can( 'manage_options' ) ) {
 	echo '
-		<div class="flex mo2f-text-xs-white">
+		<div class="mo2f-header-actions" style="display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:0 1 auto;flex-wrap:wrap;margin-left:auto;min-width:0;">
     		<div id="mo2f_check_transactions" class="mo2f-transaction-show">
 				<div id="mo2f_remaining_transactions_sms_email">
         			SMS: ' . esc_attr( $mo2f_remaining_transaction['sms_transactions'] ) . '  |  Email: ' . esc_attr( $mo2f_remaining_transaction['email_transactions'] ) . '   
@@ -90,10 +90,42 @@ if ( current_user_can( 'manage_options' ) ) {
             		<span id="mo2f_transaction_loader" class="mo2f_transaction_loader mo2f-full-size hidden"></span>
         		</div>
     		</div>
-    		<div> 
-        		<a href=' . esc_url( MoWpnsConstants::RECHARGELINK ) . ' target="_blank" class="mo2f-button">' . esc_html__( 'Recharge', 'miniorange-2-factor-authentication' ) . '</a>
+    		<div style="flex:0 0 auto;"> 
+        		<a href=' . esc_url( MoWpnsConstants::RECHARGELINK ) . ' target="_blank" class="mo2f-button" style="width:auto;white-space:nowrap;">' . esc_html__( 'Recharge', 'miniorange-2-factor-authentication' ) . '</a>
     		</div>
 		</div>';
+}
+	echo '</div>';
+if ( current_user_can( 'manage_options' ) && ! apply_filters( 'mo2f_is_lv_needed', false ) && isset( $mo2fdb_queries ) && is_object( $mo2fdb_queries ) ) {
+	$mo2f_seats_used  = $mo2fdb_queries->mo2f_get_configured_2fa_user_count();
+	$mo2f_seats_limit = (int) MoWpnsConstants::MO2F_FREE_PLAN_USER_LIMIT;
+	$mo2f_status_url  = admin_url( 'admin.php?page=mo_2fa_reports&subpage=users2fastatus' );
+	$mo2f_upgrade_url = MoWpnsConstants::MO2F_UPGRADE_PRICING_URL;
+	$mo2f_seats_full  = $mo2f_seats_used >= $mo2f_seats_limit;
+	$mo2f_meter_style = $mo2f_seats_full
+		? 'box-sizing:border-box;width:100%;padding:8px 12px;background:#fcf9e8;border:1px solid #dba617;border-radius:4px;font-size:13px;line-height:1.45;color:#6d4c00;display:flex;flex-wrap:wrap;align-items:center;column-gap:12px;row-gap:6px;min-width:0;'
+		: 'box-sizing:border-box;width:100%;padding:8px 12px;background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;font-size:13px;line-height:1.45;color:#2c3338;display:flex;flex-wrap:wrap;align-items:center;column-gap:12px;row-gap:6px;min-width:0;';
+	echo '<div class="mo2f-free-plan-seat-meter' . ( $mo2f_seats_full ? ' mo2f-free-plan-seat-meter--full' : '' ) . '" role="status" style="' . esc_attr( $mo2f_meter_style ) . '">';
+	echo '<span style="margin:0;">';
+	if ( $mo2f_seats_full ) {
+		echo '<strong>' . esc_html__( '2FA user limit reached', 'miniorange-2-factor-authentication' ) . '</strong> &middot; ';
+	} else {
+		echo '<strong>' . esc_html__( 'Free plan', 'miniorange-2-factor-authentication' ) . '</strong> &middot; ';
+	}
+	echo esc_html__( '2FA seats', 'miniorange-2-factor-authentication' );
+	echo ' ';
+	printf(
+		/* translators: 1: number of users with 2FA configured, 2: maximum seats on free plan */
+		esc_html__( '(%1$s / %2$s used)', 'miniorange-2-factor-authentication' ),
+		esc_html( (string) absint( $mo2f_seats_used ) ),
+		esc_html( (string) absint( $mo2f_seats_limit ) )
+	);
+	echo '</span>';
+	echo '<span style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:10px;">';
+	echo '<a href="' . esc_url( $mo2f_status_url ) . '">' . esc_html__( 'View users', 'miniorange-2-factor-authentication' ) . '</a>';
+	echo '<span style="color:#c3c4c7;" aria-hidden="true">|</span>';
+	echo '<a href="' . esc_url( $mo2f_upgrade_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Upgrade for unlimited users', 'miniorange-2-factor-authentication' ) . '</a>';
+	echo '</span></div>';
 }
 	echo '</div>';
 if ( ( current_user_can( 'manage_options' ) && get_site_option( 'mo_wpns_2fa_with_network_security' ) ) || get_site_option( 'mo2f_is_old_customer' ) ) {

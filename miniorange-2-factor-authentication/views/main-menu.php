@@ -77,9 +77,10 @@ if ( isset( $mo2f_tab_details->tab_details ) ) {
 
 			$mo2f_icon_output = $mo2f_is_html_icon ? wp_kses_post( $mo2f_icon ) : esc_html( $mo2f_icon );
 
-			echo '<a href="' . esc_url( $mo2f_redirection_page ) . '" target="' . esc_attr( $mo2f_target ) . '" class="nav-item" id="' . esc_attr( $mo2f_side_tabs->menu_slug ) . '">' . $mo2f_icon_output . ' ' . esc_html( $mo2f_side_tabs->page_title ) . '</a>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $mo2f_icon_output is already escaped via wp_kses_post() or esc_html().
-
 			if ( 'My Account' === $mo2f_side_tabs->page_title ) {
+				$mo2f_myaccount_chevron = '<span class="nav-item__chevron" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>';
+				echo '<div class="mo2f-sidebar-nav-group mo2f-sidebar-nav-group--myaccount">';
+				echo '<a href="' . esc_url( $mo2f_redirection_page ) . '" target="' . esc_attr( $mo2f_target ) . '" class="nav-item nav-item--has-submenu" id="' . esc_attr( $mo2f_side_tabs->menu_slug ) . '" aria-haspopup="true" title="' . esc_attr__( 'Has more options — hover to open Account Details and Setup 2FA', 'miniorange-2-factor-authentication' ) . '">' . $mo2f_icon_output . ' <span class="nav-item__label">' . esc_html( $mo2f_side_tabs->page_title ) . '</span>' . $mo2f_myaccount_chevron . '</a>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $mo2f_icon_output is already escaped via wp_kses_post() or esc_html().
 				echo '<div id="mo2f-myaccount-submenu" class="mo2f_myaccount_submenu">
 					<ul>';
 				if ( current_user_can( 'manage_options' ) ) {
@@ -88,6 +89,9 @@ if ( isset( $mo2f_tab_details->tab_details ) ) {
 				echo '<li> <a href="' . esc_url( $mo2f_redirection_page ) . '&subpage=setupyour2fa" class="mo2f_myaccount_submenu-item" id="mo2f-myaccount-setup-2fa"> ' . esc_html__( 'Setup 2FA', 'miniorange-2-factor-authentication' ) . '</a></li>
 					</ul>
 				</div>';
+				echo '</div>';
+			} else {
+				echo '<a href="' . esc_url( $mo2f_redirection_page ) . '" target="' . esc_attr( $mo2f_target ) . '" class="nav-item" id="' . esc_attr( $mo2f_side_tabs->menu_slug ) . '">' . $mo2f_icon_output . ' ' . esc_html( $mo2f_side_tabs->page_title ) . '</a>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $mo2f_icon_output is already escaped via wp_kses_post() or esc_html().
 			}
 		}
 	}

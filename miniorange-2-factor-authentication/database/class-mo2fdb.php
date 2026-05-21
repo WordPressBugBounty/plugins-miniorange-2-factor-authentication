@@ -239,11 +239,13 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 			if ( ! empty( $users_meta ) ) {
 				foreach ( $users_meta as $user_meta ) {
 					$meta_value = maybe_unserialize( $user_meta->meta_value );
-					if ( is_array( $meta_value ) && isset( $meta_value['mo2f_configured_2FA_method'] ) ) {
-						$configured_method = $meta_value['mo2f_configured_2FA_method'];
-						if ( $configured_method === $method ) {
-							++$count;
-						}
+					if (
+						is_array( $meta_value )
+						&& isset( $meta_value['mo_2factor_user_registration_status'], $meta_value['mo2f_configured_2FA_method'] )
+						&& MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $meta_value['mo_2factor_user_registration_status']
+						&& $meta_value['mo2f_configured_2FA_method'] === $method
+					) {
+						++$count;
 					}
 				}
 			}
@@ -266,14 +268,17 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 * @return integer
 		 */
 		public function mo2f_get_no_of_2fa_users() {
-			global $wpdb;
-			$count = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-				$wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-					"SELECT COUNT(DISTINCT user_id) FROM {$wpdb->usermeta} WHERE meta_key = %s",
-					MoWpnsConstants::USER_DEATIL_META_KEY
-				)
-			);
-			return $count;
+			return $this->mo2f_get_configured_2fa_user_count();
+		}
+
+		/**
+		 * Whether the user has completed 2FA setup (same criteria as Users' 2FA Status registered list).
+		 *
+		 * @param int $user_id User ID.
+		 * @return bool
+		 */
+		public function mo2f_user_has_completed_2fa_setup( $user_id ) {
+			return MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $this->mo2f_get_user_detail( 'mo_2factor_user_registration_status', (int) $user_id );
 		}
 
 		/**
@@ -472,23 +477,46 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		}
 
 		/**
+		 * Counts users who have completed 2FA setup (registration status MO_2_FACTOR_PLUGIN_SETTINGS).
+		 *
+		 * @return int
+		 */
+		public function mo2f_get_configured_2fa_user_count() {
+			global $wpdb;
+			$users_meta = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
+					"SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s",
+					MoWpnsConstants::USER_DEATIL_META_KEY
+				)
+			);
+			$count      = 0;
+			if ( ! empty( $users_meta ) ) {
+				foreach ( $users_meta as $user_meta ) {
+					$meta_value = maybe_unserialize( $user_meta->meta_value );
+					if (
+						is_array( $meta_value )
+						&& isset( $meta_value['mo_2factor_user_registration_status'] )
+						&& MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $meta_value['mo_2factor_user_registration_status']
+					) {
+						++$count;
+					}
+				}
+			}
+			return $count;
+		}
+
+		/**
 		 * Checks if the user limit is exceeded.
 		 *
 		 * @param integer $user_id User Id to check if the corresponding user already configured the 2fa method.
 		 * @return bool
 		 */
 		public function check_alluser_limit_exceeded( $user_id ) {
-			global $wpdb;
-			$total_users_configured  = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-				$wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-					"SELECT COUNT(DISTINCT user_id) FROM {$wpdb->usermeta} WHERE meta_key = %s",
-					MoWpnsConstants::USER_DEATIL_META_KEY
-				)
-			);
-			$user_meta_data          = get_user_meta( $user_id, MoWpnsConstants::USER_DEATIL_META_KEY, true );
-			$user_already_configured = ! empty( $user_meta_data );
+			$total_users_configured  = $this->mo2f_get_configured_2fa_user_count();
+			$user_already_configured = $this->mo2f_user_has_completed_2fa_setup( $user_id );
 
-			if ( $total_users_configured < 3 || $user_already_configured ) {
+			$free_limit = MoWpnsConstants::MO2F_FREE_PLAN_USER_LIMIT;
+			if ( $total_users_configured < $free_limit || $user_already_configured ) {
 				return false;
 			} else {
 				return true;

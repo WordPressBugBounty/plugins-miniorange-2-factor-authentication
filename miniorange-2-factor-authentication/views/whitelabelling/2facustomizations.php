@@ -42,8 +42,8 @@ use TwoFA\Helper\Mo2f_Common_Helper;
 
 <div class="mo2f-settings-div">
 	<div class="mo2f-settings-head -ml-mo-9">
-		<span><?php esc_html_e( 'Customize Security Questions (KBA)', 'miniorange-2-factor-authentication' ); ?>
-		<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'enterprise', MoWpnsConstants::MO2F_PREMIUM_2PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+		<span><?php esc_html_e( 'Customize Security Questions (KBA)', 'miniorange-2-factor-authentication' ); ?></span>
+		<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'enterprise', MoWpnsConstants::MO2F_PREMIUM_2PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in helper. ?>
 	</div>
 	<form name="f" id="mo2f_custom_security_questions_settings">
 	<div class="mo2f-sub-settings-div mo2f-enterprise-plan">
@@ -79,6 +79,11 @@ use TwoFA\Helper\Mo2f_Common_Helper;
 				<tr >
 				<td>
 					<span><?php esc_html_e( 'No. of default questions to be selected from the above list during security question configuration : ', 'miniorange-2-factor-authentication' ); ?></span>
+					<?php
+					echo Mo2f_Common_Helper::mo2f_get_info_tooltip_html( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in helper.
+						__( 'How many questions from the list above each user must answer when configuring Security Questions (KBA). Maximum is 5.', 'miniorange-2-factor-authentication' )
+					);
+					?>
 				</td>
 				<td>
 					<input type="number" name="mo2f_default_kbaquestions_users" id="mo2f_default_kbaquestions_users" value="<?php echo esc_attr( $mo2f_default_question_count ); ?>" min="1" max="5" />
@@ -87,6 +92,11 @@ use TwoFA\Helper\Mo2f_Common_Helper;
 				<tr>
 				<td>
 					<span><?php esc_html_e( 'No. of custom questions user can add during security question configuration : ', 'miniorange-2-factor-authentication' ); ?></span>
+					<?php
+					echo Mo2f_Common_Helper::mo2f_get_info_tooltip_html( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in helper.
+						__( 'How many additional custom questions a user may create during KBA setup. Set to 0 to disallow custom questions.', 'miniorange-2-factor-authentication' )
+					);
+					?>
 				</td>
 				<td>
 					<input type="number" name="mo2f_custom_kbaquestions_users" id="mo2f_custom_kbaquestions_users" value="<?php echo esc_attr( $mo2f_custom_question_count ); ?>" min="0" max="5" />
@@ -109,6 +119,80 @@ use TwoFA\Helper\Mo2f_Common_Helper;
 	</form>
 </div>
 
+<style>
+.mo2f-settings-div,
+.mo2f-settings-div .mo2f-sub-settings-div,
+.mo2f-settings-div .mo2f_collapse {
+	overflow: visible;
+}
+.mo2f-settings-div .mo2f-settings-head {
+	position: relative;
+	overflow: visible;
+	z-index: 2;
+}
+.mo2f-settings-div:has(.mo2f-basic-plan):hover .mo2f-settings-head .mo2f_premium_tooltiptext,
+.mo2f-settings-div:has(.mo2f-enterprise-plan):hover .mo2f-settings-head .mo2f_premium_tooltiptext,
+.mo2f-settings-div:has(.mo2f-all-inclusive-plan):hover .mo2f-settings-head .mo2f_premium_tooltiptext,
+.mo2f-settings-div .mo2f-settings-head .mo2f_premium_tooltip:hover .mo2f_premium_tooltiptext,
+.mo2f-settings-div .mo2f-settings-head .mo2f_premium_tooltip:focus-within .mo2f_premium_tooltiptext {
+	visibility: visible !important;
+	opacity: 1 !important;
+	pointer-events: auto !important;
+}
+.mo2f-settings-div .mo2f-settings-head .mo2f_premium_tooltip .mo2f_premium_tooltiptext,
+.mo2f-settings-div .mo2f-settings-head .mo2f_premium_tooltip.mo2f-premium-marker .mo2f_premium_tooltiptext.mo2f-premium-marker__tip {
+	left: auto !important;
+	right: 0 !important;
+	top: calc(100% + 8px) !important;
+	transform: none !important;
+	margin: 0 !important;
+}
+.mo2f-settings-div .mo2f-settings-head .mo2f_premium_tooltip .mo2f_premium_tooltiptext::after {
+	top: auto !important;
+	bottom: 100% !important;
+	right: 14px !important;
+	left: auto !important;
+	margin: 0 !important;
+	transform: none !important;
+	border-color: transparent transparent #e0e7ff transparent !important;
+}
+.mo2f-sub-settings-div.mo2f-basic-plan .mo2f_tooltip,
+.mo2f-sub-settings-div.mo2f-enterprise-plan .mo2f_tooltip,
+.mo2f-sub-settings-div.mo2f-all-inclusive-plan .mo2f_tooltip,
+.mo2f-settings-div .mo2f-settings-head .mo2f_premium_tooltip {
+	pointer-events: auto !important;
+}
+.mo2f-sub-settings-div.mo2f-basic-plan .mo2f_tooltip .mo2f_info_tab,
+.mo2f-sub-settings-div.mo2f-enterprise-plan .mo2f_tooltip .mo2f_info_tab,
+.mo2f-settings-div .mo2f-settings-head .mo2f_premium_tooltip,
+.mo2f-settings-div .mo2f-settings-head .mo2f_premium_tooltip * {
+	cursor: help !important;
+}
+.mo2f-settings-div .mo2f_tooltip {
+	position: relative;
+	display: inline-block;
+	vertical-align: middle;
+	margin-left: 4px;
+}
+.mo2f-settings-div .mo2f_tooltip .mo2f_tooltiptext {
+	bottom: calc(100% + 8px);
+	top: auto !important;
+	left: 50% !important;
+	right: auto !important;
+	transform: translateX(-50%);
+	margin: 0 !important;
+	z-index: 10001;
+	width: min(280px, calc(100vw - 48px));
+	white-space: normal;
+	line-height: 1.45;
+	text-align: left;
+}
+.mo2f-settings-div .mo2f_tooltip:hover .mo2f_tooltiptext,
+.mo2f-settings-div .mo2f_tooltip:focus-within .mo2f_tooltiptext {
+	visibility: visible !important;
+	opacity: 1 !important;
+}
+</style>
 <script>
 	jQuery('#2facustomizations').addClass('mo2f-subtab-active');
 	jQuery("#mo_2fa_white_labelling").addClass("side-nav-active");

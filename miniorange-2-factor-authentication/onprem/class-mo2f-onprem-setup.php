@@ -82,12 +82,6 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 					'desc'  => 'Accept the verification link sent to your email address',
 					'crown' => false,
 				),
-				MoWpnsConstants::OTP_OVER_TELEGRAM    => array(
-					'doc'   => MoWpnsConstants::OTP_OVER_TELEGRAM_DOCUMENT_LINK,
-					'video' => MoWpnsConstants::OTP_OVER_TELEGRAM_YOUTUBE,
-					'desc'  => 'Enter the One Time Passcode sent to your Telegram account',
-					'crown' => false,
-				),
 				MoWpnsConstants::SECURITY_QUESTIONS   => array(
 					'doc'   => MoWpnsConstants::KBA_DOCUMENT_LINK,
 					'video' => MoWpnsConstants::KBA_YOUTUBE,
@@ -292,14 +286,8 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 		public function mo2f_send_verification_link( $user_email, $mo2f_second_factor, $current_user, $session_id_encrypt ) {
 			MO2f_Utility::mo2f_debug_file( 'Email verification link has been sent successfully for ' . $mo2f_second_factor . ' Email-' . $user_email );
 			$mo2f_on_prem_redirect = new Mo2f_OnPremRedirect();
-			if ( ! $mo2f_on_prem_redirect->mo2f_check_if_email_transactions_exists() ) {
-				$content = array(
-					'status'  => 'ERROR',
-					'message' => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ),
-				);
-			} else {
-				$content = $mo2f_on_prem_redirect->mo2f_pass2login_push_email_onpremise( $current_user, $user_email, false, $session_id_encrypt );
-			}
+
+			$content = $mo2f_on_prem_redirect->mo2f_pass2login_push_email_onpremise( $current_user, $user_email, false, $session_id_encrypt );
 			$content = is_array( $content ) ? wp_json_encode( $content ) : $content;
 			return $content;
 		}

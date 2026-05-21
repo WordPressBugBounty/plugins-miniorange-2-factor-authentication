@@ -67,28 +67,55 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 				$skeleton_blocks['send_reconfig_link'] = '';
 			}
 			$default_login_status_block = array(
-				'##mo2f_title##'        => $skeleton_blocks['login_prompt_title'],
-				'##login_message##'     => $skeleton_blocks['login_prompt_message'],
-				'##attemptleft##'       => '',
-				'##enterotp##'          => '',
-				'##enterbackupcode##'   => '',
-				'##enteranswers##'      => '',
-				'##resendotp##'         => '',
-				'##emailloader##'       => '',
-				'##backtologin##'       => $skeleton_blocks['backtologin'],
-				'##validatebutton##'    => '',
-				'##rbaconsent##'        => '',
-				'##remipconsent##'      => '',
-				'##usebackupcodes##'    => '',
-				'##sendbackupcodes##'   => '',
-				'##sendreconfiglink##'  => '',
-				'##customlogo##'        => $skeleton_blocks['custom_logo'],
-				'##backupmethod##'      => '',
-				'##confirmationblock##' => '',
+				'##mo2f_title##'          => $skeleton_blocks['login_prompt_title'],
+				'##login_message##'       => $skeleton_blocks['login_prompt_message'],
+				'##attemptleft##'         => '',
+				'##enterotp##'            => '',
+				'##enterbackupcode##'     => '',
+				'##enteranswers##'        => '',
+				'##resendotp##'           => '',
+				'##emailloader##'         => '',
+				'##backtologin##'         => $skeleton_blocks['backtologin'],
+				'##validatebutton##'      => '',
+				'##rbaconsent##'          => '',
+				'##remipconsent##'        => '',
+				'##usebackupcodes##'      => '',
+				'##sendbackupcodes##'     => '',
+				'##sendreconfiglink##'    => '',
+				'##customlogo##'          => $skeleton_blocks['custom_logo'],
+				'##backupmethod##'        => '',
+				'##confirmationblock##'   => '',
+				'##adminbypassrecovery##' => '',
 			);
 
-			$login_status_blocks = $this->mo2f_fetch_login_status_block_skeleton( $skeleton_blocks, $login_status );
-			return array_merge( $default_login_status_block, $login_status_blocks ?? array() );
+			$login_status_blocks               = $this->mo2f_fetch_login_status_block_skeleton( $skeleton_blocks, $login_status );
+			$merged                            = array_merge( $default_login_status_block, $login_status_blocks ?? array() );
+			$merged['##adminbypassrecovery##'] = $this->mo2f_get_admin_bypass_recovery_link_html( $user_id, $login_status );
+
+			return $merged;
+		}
+
+		/**
+		 * Footer link on 2FA challenge: admins may complete login without second factor when site option allows.
+		 *
+		 * @param int    $user_id       User ID.
+		 * @param string $login_status  Current login prompt status.
+		 * @return string
+		 */
+		public function mo2f_get_admin_bypass_recovery_link_html( $user_id, $login_status = '' ) {
+			if ( MoWpnsConstants::MO2F_USER_BLOCKED_PROMPT === $login_status ) {
+				return '';
+			}
+			if ( ! (int) get_site_option( 'mo2f_admin_login_bypass_2fa' ) ) {
+				return '';
+			}
+			if ( ! $user_id || ! user_can( (int) $user_id, 'manage_options' ) ) {
+				return '';
+			}
+			return '<div> <a href="#mo2f_admin_bypass_recovery" class="mo2f_text_decoration">' .
+				'<p class="mo2f_footer_text">' . esc_html__( 'Having trouble signing in? Click here to complete login without 2FA (administrators only)', 'miniorange-2-factor-authentication' ) . ' ' .
+				MoWpnsConstants::MO2F_SVG_ARROW_ICON .
+				'</p></a></div>';
 		}
 
 		/**
@@ -233,16 +260,6 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 				),
 				MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OOB_EMAIL => array(
 					'##emailloader##'      => $skeleton_blocks['email_loader'],
-					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
-					'##sendbackupcodes##'  => $skeleton_blocks['send_backup_codes'],
-					'##sendreconfiglink##' => $skeleton_blocks['send_reconfig_link'],
-					'##backupmethod##'     => $skeleton_blocks['kba_backup_method_link'],
-				),
-				MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OTP_OVER_TELEGRAM => array(
-					'##attemptleft##'      => $skeleton_blocks['attempt_left'],
-					'##enterotp##'         => $skeleton_blocks['enter_otp'],
-					'##resendotp##'        => $skeleton_blocks['resend_otp'],
-					'##validatebutton##'   => $skeleton_blocks['validate_button_catchy'],
 					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
 					'##sendbackupcodes##'  => $skeleton_blocks['send_backup_codes'],
 					'##sendreconfiglink##' => $skeleton_blocks['send_reconfig_link'],
@@ -753,6 +770,7 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 										'##usebackupcodes##',
 										'##sendreconfiglink##',
 										'##backupmethod##',
+										'##adminbypassrecovery##',
 									);
 									foreach ( $placeholders as $placeholder ) {
 										if ( isset( $skeleton_values[ $placeholder ] ) ) {
@@ -884,6 +902,38 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 											),
 										)
 									);
+									if ( (int) get_site_option( 'mo2f_admin_login_bypass_2fa' ) ) {
+										$mfa_uid = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
+										if ( $mfa_uid && user_can( (int) $mfa_uid, 'manage_options' ) ) {
+											echo wp_kses(
+												$this->mo2f_get_admin_bypass_recovery_link_html( (int) $mfa_uid ),
+												array(
+													'div'  => array(),
+													'a'    => array(
+														'href'  => array(),
+														'class' => array(),
+													),
+													'p'    => array(
+														'class' => array(),
+													),
+													'svg'  => array(
+														'class'       => array(),
+														'xmlns'       => array(),
+														'width'       => array(),
+														'height'      => array(),
+														'viewbox'     => array(),
+														'fill'        => array(),
+														'aria-hidden' => array(),
+														'focusable'   => array(),
+													),
+													'path' => array(
+														'd' => array(),
+													),
+												)
+											);
+											echo $common_helper->mo2f_get_admin_bypass_recovery_hidden_form( $redirect_to, $session_id_encrypt ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Hidden form HTML with escaped internals.
+										}
+									}
 									?>
 							</div>
 						</div>
@@ -918,6 +968,12 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					var selectedMethod = jQuery(this).val();
 					document.getElementById("mo2f_select_mfa_methods_form").elements[0].value = selectedMethod;
 					jQuery('#mo2f_select_mfa_methods_form').submit();
+				});
+				jQuery("a[href='#mo2f_admin_bypass_recovery']").click(function(e) {
+					e.preventDefault();
+					if (jQuery('#mo2f_admin_bypass_recovery_form').length) {
+						jQuery('#mo2f_admin_bypass_recovery_form').submit();
+					}
 				});				
 			</script>
 			</body>

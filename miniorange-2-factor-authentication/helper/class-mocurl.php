@@ -184,20 +184,17 @@ if ( ! class_exists( 'MocURL' ) ) {
 			$auth_header = $this->create_auth_header( $c_key, $api_key );
 			$response    = self::call_api( $url, $json, $auth_header );
 			$content     = json_decode( $response, true );
-			if ( 'SUCCESS' === $content['status'] ) {
-				$cmvtywluaw5nt1rqsms = get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' );
-				if ( $cmvtywluaw5nt1rqsms > 0 ) {
-					update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', $cmvtywluaw5nt1rqsms - 1 );
-				}
-				$cmvtywluaw5nt1rq = get_site_option( 'cmVtYWluaW5nT1RQ' );
-				if ( $cmvtywluaw5nt1rq > 0 ) {
-					update_site_option( 'cmVtYWluaW5nT1RQ', $cmvtywluaw5nt1rq - 1 );
-				}
-				if ( MoWpnsConstants::OTP_OVER_SMS === $auth_type && 5 === (int) get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' ) ) {
-					Miniorange_Authentication::mo2f_low_otp_alert( 'sms' );
-				}
-				if ( ! apply_filters( 'mo2f_is_lv_needed', false ) && ( MoWpnsConstants::OTP_OVER_EMAIL === $auth_type || MoWpnsConstants::OUT_OF_BAND_EMAIL === $auth_type ) && 5 === (int) get_site_option( 'cmVtYWluaW5nT1RQ' ) ) {
-					Miniorange_Authentication::mo2f_low_otp_alert( 'email' );
+			if ( 'SUCCESS' === ( $content['status'] ?? '' ) ) {
+				if ( MoWpnsConstants::OTP_OVER_SMS === $auth_type ) {
+					$cmvtywluaw5nt1rqsms = get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' );
+					if ( $cmvtywluaw5nt1rqsms > 0 ) {
+						update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', $cmvtywluaw5nt1rqsms - 1 );
+					}
+					if ( 5 === (int) get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z' ) ) {
+						Miniorange_Authentication::mo2f_low_otp_alert( 'sms' );
+					}
+				} elseif ( MoWpnsConstants::OTP_OVER_EMAIL === $auth_type || MoWpnsConstants::OUT_OF_BAND_EMAIL === $auth_type ) {
+					MoWpnsUtility::mo2f_decrement_email_transaction();
 				}
 			}
 			return $response;
@@ -243,7 +240,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 		 * @param mixed  $otp_token OTP token.
 		 * @param string $username Username.
 		 * @param string $auth_type Auth type.
-		 * @return array
+		 * @return string JSON response body from API.
 		 */
 		public function validate_otp_token( $transaction_id, $otp_token, $username, $auth_type ) {
 			$url          = MO_HOST_NAME . '/moas/api/auth/validate';
@@ -676,75 +673,5 @@ if ( ! class_exists( 'MocURL' ) ) {
 			return $content;
 		}
 
-		/**
-		 * Sends the OTP over Telegram.
-		 *
-		 * @param string $u_key Email.
-		 * @param string $session_id_encrypt Session id.
-		 * @return array
-		 */
-		public function mo2f_send_telegram_otp( $u_key, $session_id_encrypt ) {
-			$otp_token = '';
-			for ( $i = 1; $i < 7; $i++ ) {
-				$otp_token .= wp_rand( 0, 9 );
-			}
-			$transaction_id = MoWpnsUtility::rand();
-			set_transient( $session_id_encrypt . 'mo2f_otp_token', $transaction_id . $otp_token, 300 );
-			set_transient( $session_id_encrypt . 'mo2f_telegram_time', time(), 300 );
-			$url      = esc_url( MoWpnsConstants::TELEGRAM_OTP_LINK );
-			$postdata = array(
-				'mo2f_otp_token' => $otp_token,
-				'mo2f_chatid'    => $u_key,
-			);
-
-			$args = array(
-				'method'    => 'POST',
-				'timeout'   => 10,
-				'sslverify' => false,
-				'headers'   => array(),
-				'body'      => $postdata,
-			);
-
-			$mo2f_api = new Mo2f_Api();
-			$data     = $mo2f_api->mo2f_wp_remote_post( $url, $args );
-			$content  = array(
-				'status' => $data,
-				'txId'   => $transaction_id,
-			);
-
-			return $content;
-		}
-
-		/**
-		 * Validates OTP for Telegram.
-		 *
-		 * @param string $otp_token Otp token.
-		 * @param string $mo2f_transaction_id Transaction id.
-		 * @param string $session_id_encrypt Session id.
-		 * @return array
-		 */
-		public function mo2f_validate_telegram_code( $otp_token, $mo2f_transaction_id, $session_id_encrypt ) {
-			$valid_token   = get_transient( $session_id_encrypt . 'mo2f_otp_token' );
-			$time          = get_transient( $session_id_encrypt . 'mo2f_telegram_time' );
-			$accepted_time = time() - 300;
-			$time          = (int) $time;
-			if ( (string) ( $mo2f_transaction_id . $otp_token ) === (string) $valid_token ) {
-				if ( $accepted_time < $time ) {
-					$content = array( 'status' => 'SUCCESS' );
-
-				} else {
-					$content = array(
-						'status'  => 'ERROR',
-						'message' => 'OTP has been expired please reinitiate another transaction.',
-					);
-				}
-			} else {
-				$content = array(
-					'status'  => 'INVALID_OTP',
-					'message' => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_OTP ),
-				);
-			}
-			return $content;
-		}
 	}
 }

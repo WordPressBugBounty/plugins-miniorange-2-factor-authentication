@@ -78,7 +78,9 @@ if ( ! class_exists( 'Mo2f_MenuItems' ) ) {
 			$main_handler        = new Mo2f_Main_Handler();
 			$flag                = $main_handler->mo2f_check_if_twofa_is_enabled( $user );
 			$user_limit_exceeded = apply_filters( 'mo2f_basic_plan_settings_filter', $mo2fdb_queries->check_alluser_limit_exceeded( $user->ID ), 'is_user_limit_exceeded', array() );
-			if ( ( $flag || current_user_can( 'manage_options' ) ) && ! $user_limit_exceeded ) {
+			// Hide menu for end users when the free seat limit is full; admins must keep access to reset users / upgrade.
+			$mo2f_hide_menu_for_limit = $user_limit_exceeded && ! current_user_can( 'manage_options' );
+			if ( ( $flag || current_user_can( 'manage_options' ) ) && ! $mo2f_hide_menu_for_limit ) {
 				add_menu_page(
 					'miniOrange 2-Factor',
 					'miniOrange 2-Factor',

@@ -42,8 +42,11 @@ $mo2f_same_user = $user->ID === $mo2f_userid;
 global $mo2fdb_queries;
 $mo2f_current_method    = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
 $twofactor_transactions = new Mo2fDB();
-$mo2f_exceeded          = apply_filters( 'mo2f_basic_plan_settings_filter', $mo2fdb_queries->check_alluser_limit_exceeded( $user->ID ), 'is_user_limit_exceeded', array() );
+$mo2f_exceeded = apply_filters( 'mo2f_basic_plan_settings_filter', $mo2fdb_queries->check_alluser_limit_exceeded( $user->ID ), 'is_user_limit_exceeded', array() );
 if ( $mo2f_exceeded ) {
+	echo '<div class="notice notice-warning inline"><p>';
+	echo wp_kses_post( MoWpnsMessages::mo2f_user_limit_exceeded_message_html() );
+	echo '</p></div>';
 	return;
 }
 $mo2f_user_column_exists = $mo2fdb_queries->mo2f_check_if_user_exists( $user->ID );

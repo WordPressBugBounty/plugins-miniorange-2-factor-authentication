@@ -1439,10 +1439,10 @@ msgstr ""
 #. Description of the plugin
 msgid ""
 "This TFA plugin provides various two-factor authentication methods as an "
-"additional layer of security after the default WordPress login. We Support "
+"additional layer of security after the default WordPress login. Supports "
 "Google/Authy/LastPass/Microsoft Authenticator, QR Code, Push Notification, "
-"Soft Token and Security Questions(KBA) for 3 User in the free version of the "
-"plugin."
+"Soft Token, and Security Questions (KBA). Free plan: up to 5 users can "
+"complete 2FA setup; premium unlocks unlimited users and advanced policies."
 msgstr ""
 
 #: views/class-mo2f-setup-wizard.php:245

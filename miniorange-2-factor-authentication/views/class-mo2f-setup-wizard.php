@@ -105,7 +105,7 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 				<br>
 				<?php esc_html_e( 'You have successfully configured the two-factor authentication.', 'miniorange-2-factor-authentication' ); ?>
 				<br><br><br>
-				<input type="button" name="mo2f_next_step4" id="mo2f_next_step4" class="mo2f-modal__btn button button-primary" value="Advance Settings" />
+				<input type="button" name="mo2f_next_step4" id="mo2f_next_step4" class="mo2f-modal__btn button button-primary" value="<?php echo esc_attr__( 'Go to plugin dashboard', 'miniorange-2-factor-authentication' ); ?>" />
 			</div>
 			<script>
 				jQuery('#mo2f_next_step4').click(function(e) {
@@ -330,22 +330,15 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 		 */
 		public function mo2f_inline_registration() {
 			?>
-		<h3 id="mo2f_login_with_mfa_settings"><?php esc_html_e( 'Prompt users to setup 2FA after login? ', 'miniorange-2-factor-authentication' ); ?></h3>
+		<h3 id="mo2f_login_with_mfa_settings"><?php esc_html_e( 'Prompt users to set up 2FA after login?', 'miniorange-2-factor-authentication' ); ?></h3>
 		<p class="mo2f_description">
-			<?php esc_html_e( 'When you enable this, the users will be prompted to set up the 2FA method after entering username and password. Users can select from the list of all 2FA methods. Once selected, user will setup and will login to the site ', 'miniorange-2-factor-authentication' ); ?><a href="<?php echo esc_url( MoWpnsConstants::MO2F_PLUGINS_PAGE_URL ) . '/setup-login-with-any-configured-method-wordpress-2fa'; ?>" target="_blank" rel=noopener><?php esc_html_e( 'Learn more.', 'miniorange-2-factor-authentication' ); ?></a>
+			<?php esc_html_e( 'When you enable this, users are prompted to set up a 2FA method after entering their username and password. They choose from your allowed methods, complete setup, and then finish logging in.', 'miniorange-2-factor-authentication' ); ?> <a href="<?php echo esc_url( MoWpnsConstants::MO2F_PLUGINS_PAGE_URL ) . '/step-by-step-guide-for-wordpress-2-factor-authentication'; ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Learn more.', 'miniorange-2-factor-authentication' ); ?></a>
 		</p>
 		<fieldset class="mo2f-contains-hidden-inputs">
-			<label for="mo2f-use-inline-registration" style="margin-bottom: 10px; display: block;">
-				<input type="radio" name="mo2f_policy[mo2f_disable_inline_registration]" id="mo2f-use-inline-registration" value="0"
-				<?php checked( ! get_site_option( 'mo2f_disable_inline_registration' ) ); ?>
-				>
-			<span><?php esc_html_e( 'Users should setup 2FA after first login.', 'miniorange-2-factor-authentication' ); ?></span>
-			</label>
-			<label for="mo2f-no-inline-registration">
-				<input type="radio" name="mo2f_policy[mo2f_disable_inline_registration]" id="mo2f-no-inline-registration" value="1"
-				<?php checked( get_site_option( 'mo2f_disable_inline_registration' ) ); ?>
-				>
-				<span><?php esc_html_e( 'Users will setup 2FA in plugin dashboard', 'miniorange-2-factor-authentication' ); ?></span>
+			<label for="mo2f-wizard-enable-inline-registration" style="margin-bottom: 10px; display: block;">
+				<input type="hidden" name="mo2f_policy[mo2f_disable_inline_registration]" value="1" />
+				<input type="checkbox" name="mo2f_policy[mo2f_disable_inline_registration]" id="mo2f-wizard-enable-inline-registration" value="0" <?php checked( ! get_site_option( 'mo2f_disable_inline_registration' ) ); ?> />
+				<span><?php esc_html_e( 'Prompt users to set up 2FA after first login', 'miniorange-2-factor-authentication' ); ?></span>
 			</label>
 		</fieldset>
 			<?php
@@ -358,10 +351,7 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 		 */
 		public function mo2f_select_user_roles() {
 			?>
-		<h3 id="mo2f_enforcement_settings"><?php esc_html_e( 'Do you want to enable 2FA for some, or all the user roles? ', 'miniorange-2-factor-authentication' ); ?></h3>
-		<p class="mo2f_description">
-			<?php esc_html_e( 'When you enable 2FA, the users will be prompted to configure 2FA the next time they login. Users have a grace period for configuring 2FA. You can configure the grace period and also exclude role(s) in this settings page. ', 'miniorange-2-factor-authentication' ); ?>
-		</p>
+		<h3 id="mo2f_enforcement_settings"><?php esc_html_e( 'Please select the user roles for which you would like to enable Two-Factor Authentication (2FA)', 'miniorange-2-factor-authentication' ); ?></h3>
 		<fieldset class="mo2f-contains-hidden-inputs">
 			<div onclick="mo2f_toggle_select_roles_and_users()">
 				<label for="mo2f-all-users" style="margin:.35em 0 .5em !important; display: block;">
@@ -389,6 +379,22 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 				</fieldset>
 			</div>
 		</fieldset>
+			<div class="my-mo-3" style="margin-top:1em;">
+				<label for="mo2f_admin_bypass_2fa_login_wizard" style="display:block;">
+					<input type="checkbox" name="mo2f_policy[mo2f_admin_login_bypass_2fa]" id="mo2f_admin_bypass_2fa_login_wizard" value="1" <?php checked( (int) get_site_option( 'mo2f_admin_login_bypass_2fa' ) ); ?> />
+					<?php esc_html_e( 'Allow administrators to skip 2FA from the login screen if needed', 'miniorange-2-factor-authentication' ); ?>
+				</label>
+				<p class="mo2f_description">
+					<?php
+					printf(
+						/* translators: %1$s: opening bold tag, %2$s: closing bold tag */
+						esc_html__( '%1$sNote:%2$s When enabled, admins still see the normal second-factor step, with a link to complete login without 2FA only if they choose it. Leave off to remove that option.', 'miniorange-2-factor-authentication' ),
+						'<b>',
+						'</b>'
+					);
+					?>
+				</p>
+			</div>
 			<?php
 		}
 
@@ -403,21 +409,28 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 				$first_role           = array( 'superadmin' => 'Superadmin' );
 				$wp_roles->role_names = array_merge( $first_role, $wp_roles->role_names );
 			}
+			$mo2f_wizard_roles_all = true;
+			$mo2f_wizard_roles_any = false;
+			foreach ( $wp_roles->role_names as $id => $name ) {
+				if ( get_site_option( 'mo2fa_' . $id ) ) {
+					$mo2f_wizard_roles_any = true;
+				} else {
+					$mo2f_wizard_roles_all = false;
+				}
+			}
 			?>
-			<input type="button" class="button button-secondary" name="mo2f_select_all_roles" id="mo2f_select_all_roles" value="Select all"/>
+			<div class="mo2f-wizard-select-all-roles" style="margin:.35em 0 .75em;">
+				<label for="mo2f_select_all_roles" style="display:inline-flex;align-items:center;gap:.4em;font-weight:500;">
+					<input type="checkbox" id="mo2f_select_all_roles" <?php checked( $mo2f_wizard_roles_all ); ?> <?php echo ( $mo2f_wizard_roles_any && ! $mo2f_wizard_roles_all ) ? 'data-mo2f-indeterminate="1"' : ''; ?> />
+					<?php esc_html_e( 'Select all', 'miniorange-2-factor-authentication' ); ?>
+				</label>
+			</div>
 			<?php
 			foreach ( $wp_roles->role_names as $id => $name ) {
-				$setting = get_site_option( 'mo2fa_' . $id );
 				?>
 				<div>
 					<input type="checkbox" name="mo2f_policy[mo2f-enforce-roles][]" value="<?php echo 'mo2fa_' . esc_html( $id ); ?>"
-					<?php
-					if ( get_site_option( 'mo2fa_' . $id ) ) {
-						echo 'checked';
-					} else {
-						echo 'unchecked';
-					}
-					?>
+					<?php checked( (bool) get_site_option( 'mo2fa_' . $id ) ); ?>
 						/>
 					<?php
 					echo esc_html( $name );
@@ -434,8 +447,11 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 		private function mo2f_step_global_2fa_methods_save() {
 			// Check nonce.
 			check_admin_referer( 'mo2f-step-choose-method' );
-			$array                       = isset( $_POST['mo2f_policy'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['mo2f_policy'] ) ) : array();
-			$array['mo2f-enforce-roles'] = isset( $_POST['mo2f_policy']['mo2f-enforce-roles'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['mo2f_policy']['mo2f-enforce-roles'] ) ) : array();
+			$array                                     = isset( $_POST['mo2f_policy'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['mo2f_policy'] ) ) : array();
+			$array['mo2f-enforce-roles']               = isset( $_POST['mo2f_policy']['mo2f-enforce-roles'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['mo2f_policy']['mo2f-enforce-roles'] ) ) : array();
+			$array['mo2f_admin_login_bypass_2fa']      = ! empty( $_POST['mo2f_policy']['mo2f_admin_login_bypass_2fa'] ) ? '1' : '0';
+			$inline_reg_post                           = isset( $_POST['mo2f_policy']['mo2f_disable_inline_registration'] ) ? sanitize_text_field( wp_unslash( $_POST['mo2f_policy']['mo2f_disable_inline_registration'] ) ) : '1';
+			$array['mo2f_disable_inline_registration'] = ( '0' === $inline_reg_post ) ? '0' : '1';
 			$this->mo2f_update_plugin_settings( $array );
 			wp_safe_redirect( esc_url_raw( $this->mo2f_get_next_step() ) );
 			exit();
@@ -453,6 +469,9 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 				$value   = sanitize_text_field( $value );
 				if ( 'mo2f_grace_period_value' === $setting ) {
 					update_site_option( $setting, ( $value > 0 ) ? floor( $value ) : 1 );
+				} elseif ( 'mo2f_graceperiod_action' === $setting ) {
+					$allowed_actions = array( 'enforce_2fa', 'block_user_login' );
+					update_site_option( $setting, in_array( $value, $allowed_actions, true ) ? $value : 'enforce_2fa' );
 				} else {
 					update_site_option( $setting, $value );
 				}
@@ -482,19 +501,19 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 		 */
 		private function mo2f_grace_period() {
 			?>
-		<h3><?php esc_html_e( 'Should users be given a grace period or should they be directly enforced for 2FA setup?', 'miniorange-2-factor-authentication' ); ?></h3>
-			<p class="mo2f_description"><?php esc_html_e( 'When you configure the 2FA policies and require users to configure 2FA, they can either have a grace period to configure 2FA (users who don\'t have 2fa setup after grace period, will be enforced to setup 2FA ). Choose which method you\'d like to use:', 'miniorange-2-factor-authentication' ); ?></p>
+		<h3><?php esc_html_e( 'Please choose how you would like to enforce Two-Factor Authentication (2FA) setup for users:', 'miniorange-2-factor-authentication' ); ?></h3>
+			<p class="mo2f_description"><?php esc_html_e( 'When 2FA policies are configured, you can either enforce users to set up 2FA immediately or allow them a grace period to complete the setup.', 'miniorange-2-factor-authentication' ); ?></p>
 		<fieldset class="mo2f-contains-hidden-inputs">
 			<div >
 		<input type="radio" style="margin-bottom: 10px;" name="mo2f_policy[mo2f_grace_period]" id="mo2f-no-grace-period" value="0" <?php checked( MoWpnsUtility::get_mo2f_db_option( 'mo2f_grace_period', 'site_option' ), null ); ?>>
-			<?php esc_html_e( 'Users should be directly enforced for 2FA setup.', 'miniorange-2-factor-authentication' ); ?>
+			<?php esc_html_e( 'Enforce 2FA immediately.', 'miniorange-2-factor-authentication' ); ?>
 			</div>
 			<div style="display:inline-flex;">
 				<div>
 					<input type="radio" name="mo2f_policy[mo2f_grace_period]" id="mo2f-use-grace-period" value="1" <?php checked( (int) MoWpnsUtility::get_mo2f_db_option( 'mo2f_grace_period', 'site_option' ), 1 ); ?> data-unhide-when-checked=".mo2f-grace-period-inputs">
 				</div> 
 				<div class="mo2f_setupwizard_grace_period">
-					<p><?php esc_html_e( 'Give users a grace period to configure 2FA (Users will be enforced to setup 2FA after grace period expiry).', 'miniorange-2-factor-authentication' ); ?></p>
+					<p><?php esc_html_e( 'Allow a grace period.', 'miniorange-2-factor-authentication' ); ?></p>
 				</div>
 			</div>
 			<fieldset class="mo2f-grace-period-inputs" 
@@ -535,6 +554,26 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 					</label>
 					<?php
 				}
+				$mo2f_graceperiod_action = get_site_option( 'mo2f_graceperiod_action', 'enforce_2fa' );
+				if ( ! in_array( $mo2f_graceperiod_action, array( 'enforce_2fa', 'block_user_login' ), true ) ) {
+					$mo2f_graceperiod_action = 'enforce_2fa';
+				}
+				?>
+				<br/><br/>
+				<p class="mo2f_description"><?php esc_html_e( 'After the grace period ends:', 'miniorange-2-factor-authentication' ); ?></p>
+				<label class="radio-inline" style="display:block;margin:.35em 0;">
+					<input class="js-nested" type="radio" name="mo2f_policy[mo2f_graceperiod_action]" value="enforce_2fa"
+					<?php checked( 'enforce_2fa', $mo2f_graceperiod_action ); ?>
+					>
+					<?php esc_html_e( 'Enforce 2FA setup for users who have not configured it yet', 'miniorange-2-factor-authentication' ); ?>
+				</label>
+				<label class="radio-inline" style="display:block;margin:.35em 0;">
+					<input class="js-nested" type="radio" name="mo2f_policy[mo2f_graceperiod_action]" value="block_user_login"
+					<?php checked( 'block_user_login', $mo2f_graceperiod_action ); ?>
+					>
+					<?php esc_html_e( 'Block users from logging in until they complete 2FA setup', 'miniorange-2-factor-authentication' ); ?>
+				</label>
+				<?php
 				$user                         = wp_get_current_user();
 				$last_user_to_update_settings = $user->ID;
 				?>

@@ -25,12 +25,13 @@ echo ' <h2><b> Users\' 2FA Status </b></h2>
 if ( ! apply_filters( 'mo2f_is_lv_needed', false ) ) {
 	echo '<div class="text-mo-tertiary-txt ml-mo-8">';
 	printf(
-		/* Translators: %1$s: <b>, %2$s: </b>, %3$s: <a>, %4$s: </a> */
-		esc_html__( '%1$sNote:%2$s In the free version of the plugin, you can set up 2FA for only up to 3 users. If you wish to set it for more users, please upgrade to a %3$sPremium plan%4$s.', 'miniorange-2-factor-authentication' ),
+		/* translators: %1$s: <b>, %2$s: </b>, %3$s: <a>, %4$s: </a>, %5$d: max free-plan users */
+		esc_html__( '%1$sNote:%2$s In the free version, up to %5$d users can complete 2FA setup. To add more, upgrade to a %3$sPremium plan%4$s.', 'miniorange-2-factor-authentication' ),
 		'<b>',
 		'</b>',
 		'<a class="mo2f_report_no_underline" target="_blank" href=' . esc_attr( MoWpnsConstants::MO2F_UPGRADE_PRICING_URL ) . '>',
-		'</a>'
+		'</a>',
+		(int) MoWpnsConstants::MO2F_FREE_PLAN_USER_LIMIT
 	);
 	echo '</div>';
 	echo '<hr>';

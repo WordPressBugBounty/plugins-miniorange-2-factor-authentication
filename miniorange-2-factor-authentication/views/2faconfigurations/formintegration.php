@@ -62,16 +62,20 @@ $mo2f_registration_forms = array(
 </div>
 <div class="" id="mo2f_login_form_settings">
 	<div class="mo2f-settings-div">
-		<div class="mo2f-settings-head">
+		<div class="mo2f-settings-head" style="margin-left: -2rem;">
 			<span><?php esc_html_e( 'Login forms supported by miniOrange 2FA', 'miniorange-2-factor-authentication' ); ?></span>
 		</div>
-		<div class="flex">
+		<p class="mo2f-login-forms-intro">
+			<?php esc_html_e( 'These integrations usually work automatically with miniOrange 2FA.', 'miniorange-2-factor-authentication' ); ?>
+		</p>
+		<div class="flex mo2f-login-form-tiles-row">
 			<?php
 			foreach ( $mo2f_login_forms as $mo2f_key => $mo2f_value ) {
 				?>
-					<a href="<?php echo esc_url( $mo2f_value['form_guide'] ); ?>" target="_blank" rel="noopener noreferrer" class="mo2f_forms_advertise mo2f_login_forms_guide_links">
-						<div class="text-center "><img height=40 width=40 src="<?php echo esc_url( plugins_url( 'includes/images/' . esc_attr( $mo2f_value['form_logo'] ) . '.png', dirname( __DIR__ ) ) ); ?>"/></div><div class="text-center my-mo-2"><?php echo esc_html( $mo2f_key ); ?></div>
-					</a>
+					<div class="mo2f_forms_advertise mo2f_login_form_tile">
+						<div class="text-center"><img height="40" width="40" alt="" src="<?php echo esc_url( plugins_url( 'includes/images/' . esc_attr( $mo2f_value['form_logo'] ) . '.png', dirname( __DIR__ ) ) ); ?>"/></div>
+						<div class="text-center my-mo-2 mo2f_login_form_tile__title"><?php echo esc_html( $mo2f_key ); ?></div>
+					</div>
 				<?php
 			}
 			?>
@@ -87,7 +91,7 @@ $mo2f_registration_forms = array(
 				);
 				?>
 		</div>
-		<div class="mo2f-all-inclusive-plan">
+		<div class="mo2f-all-inclusive-plan" id="mo2f-custom-login-form-integration">
 			<div class="mo2f-settings-head">
 			<label class="mo2f_checkbox_container"><input type="checkbox" id="mo2f_enable_login_form" <?php echo checked( (int) get_site_option( 'mo2f_enable_custom_login_form' ) ); ?>/><span class="mo2f-settings-checkmark"></span></label>
 				<span><?php esc_html_e( 'Enable 2FA On Any Custom Login Form', 'miniorange-2-factor-authentication' ); ?></span>

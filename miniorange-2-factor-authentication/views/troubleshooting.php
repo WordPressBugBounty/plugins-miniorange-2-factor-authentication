@@ -174,7 +174,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 									<div class="mo_wpns_help_title">' . esc_html__( 'My Users are not being prompted for 2-factor authentication during login. Why?', 'miniorange-2-factor-authentication' ) . '</div>
 								</div>
 								<div id="mo_wpns_help_MFA_propmted_solution" class="mo_wpns_help_desc hidden">
-									' . esc_html__( 'If you are on Free plan, you can configure the 2FA upto only 3 users. Otherwise, please check the following settings.', 'miniorange-2-factor-authentication' ) . '
+									' . sprintf(
+										/* translators: %d: maximum users who can complete 2FA on the free plan */
+										esc_html__( 'On the free plan, up to %d users can complete 2FA setup. If you have reached that limit, upgrade to premium for more users. Otherwise, check the following settings.', 'miniorange-2-factor-authentication' ),
+										(int) MoWpnsConstants::MO2F_FREE_PLAN_USER_LIMIT
+									) . '
                                    <ol>
 								   <li>' . sprintf(
 										/* Translators: %s: bold tags */

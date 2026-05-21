@@ -265,10 +265,6 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 			}
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'SUCCESS' === $response['status'] ) {
-					$cmvtywluaw5nt1rq = get_site_option( 'cmVtYWluaW5nT1RQ' );
-					if ( $cmvtywluaw5nt1rq > 0 ) {
-						update_site_option( 'cmVtYWluaW5nT1RQ', $cmvtywluaw5nt1rq - 1 );
-					}
 					$mo2fa_login_message  = 'An OTP has been sent to ' . MO2f_Utility::mo2f_get_hidden_email( $email ) . '. Please verify to set the two-factor';
 					$mo2fa_login_status   = MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OTP_OVER_EMAIL;
 					$mo2fa_transaction_id = isset( $response['txId'] ) ? $response['txId'] : null;

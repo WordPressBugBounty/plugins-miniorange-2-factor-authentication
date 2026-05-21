@@ -339,6 +339,62 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		}
 
 		/**
+		 * Sends HTML email and returns true only when delivery is not reported as failed.
+		 *
+		 * @param string       $to_email Recipient email.
+		 * @param string       $subject Email subject.
+		 * @param string       $message Email body.
+		 * @param string|array $headers Optional email headers.
+		 * @return bool
+		 */
+		public static function mo2f_send_html_email( $to_email, $subject, $message, $headers = array() ) {
+			if ( empty( $headers ) ) {
+				$headers = array( 'Content-Type: text/html; charset=UTF-8' );
+			}
+
+			$mail_failed     = false;
+			$on_mail_failed  = static function () use ( &$mail_failed ) {
+				$mail_failed = true;
+			};
+			add_action( 'wp_mail_failed', $on_mail_failed );
+			$sent = wp_mail( $to_email, $subject, $message, $headers );
+			remove_action( 'wp_mail_failed', $on_mail_failed );
+
+			if ( $sent && ! $mail_failed && isset( $GLOBALS['phpmailer'] ) && is_object( $GLOBALS['phpmailer'] ) ) {
+				$phpmailer = $GLOBALS['phpmailer'];
+				if ( is_a( $phpmailer, 'PHPMailer\PHPMailer\PHPMailer' ) || is_a( $phpmailer, 'PHPMailer' ) ) {
+					if ( ! empty( $phpmailer->ErrorInfo ) ) {
+						$sent = false;
+					}
+				}
+			}
+
+			return $sent && ! $mail_failed;
+		}
+
+		/**
+		 * Decrements remaining on-prem email transactions after a successful send.
+		 *
+		 * @return void
+		 */
+		public static function mo2f_decrement_email_transaction() {
+			if ( apply_filters( 'mo2f_is_lv_needed', false ) ) {
+				return;
+			}
+
+			$remaining = (int) self::get_mo2f_db_option( 'cmVtYWluaW5nT1RQ', 'site_option' );
+			if ( $remaining <= 0 ) {
+				return;
+			}
+
+			if ( MO2F_IS_ONPREM && 5 === $remaining ) {
+				Miniorange_Authentication::mo2f_low_otp_alert( 'email' );
+			}
+
+			update_site_option( 'cmVtYWluaW5nT1RQ', $remaining - 1 );
+		}
+
+		/**
 		 * Check session details at login.
 		 *
 		 * @param object $user User.

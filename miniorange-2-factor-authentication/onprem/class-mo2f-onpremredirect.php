@@ -17,7 +17,6 @@ use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Handler\Twofa\Google_Auth_Onpremise;
 use TwoFA\Handler\Twofa\MO2f_Utility;
-use TwoFA\Handler\Twofa\Miniorange_Authentication;
 
 if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 	/**
@@ -201,13 +200,9 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 			$message = MoWpnsUtility::get_mo2f_db_option( 'mo2f_otp_over_email_template', 'site_option' );
 			$message = str_replace( '##image_path##', $mo2f_image_path, $message );
 			$message = str_replace( '##otp_token##', $otp_token, $message );
-			$result  = wp_mail( $email, $subject, $message, $headers );
+			$result = MoWpnsUtility::mo2f_send_html_email( $email, $subject, $message, $headers );
 			if ( $result ) {
-				$cmvtywluaw5nt1rq = get_site_option( 'cmVtYWluaW5nT1RQ' );
-				update_site_option( 'cmVtYWluaW5nT1RQ', $cmvtywluaw5nt1rq - 1 );
-				if ( ! apply_filters( 'mo2f_is_lv_needed', false ) && 5 === (int) $cmvtywluaw5nt1rq ) {
-					Miniorange_Authentication::mo2f_low_otp_alert( 'email' );
-				}
+				MoWpnsUtility::mo2f_decrement_email_transaction();
 				$arr = array(
 					'status'  => 'SUCCESS',
 					'message' => 'An OTP code has been sent to you on your email.',
@@ -305,14 +300,10 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 			update_site_option( $user_idd, $otp_token_d_h );
 			$encrypted_email         = base64_encode( $email );
 			$message                 = $this->getemailtemplate( $user_id, $otp_token_h, $otp_token_d_h, $txid, $encrypted_email );
-			$cm_vt_y_wlua_w5n_t1_r_q = MoWpnsUtility::get_mo2f_db_option( 'cmVtYWluaW5nT1RQ', 'site_option' );
-			$result                  = wp_mail( $email, $subject, $message, $headers );
-			$response                = array( 'txId' => $txid );
+			$result   = MoWpnsUtility::mo2f_send_html_email( $email, $subject, $message, $headers );
+			$response = array( 'txId' => $txid );
 			if ( $result ) {
-				if ( ! apply_filters( 'mo2f_is_lv_needed', false ) && (int) get_site_option( 'cmVtYWluaW5nT1RQ' ) === 5 ) {
-					Miniorange_Authentication::mo2f_low_otp_alert( 'email' );
-				}
-				update_site_option( 'cmVtYWluaW5nT1RQ', $cm_vt_y_wlua_w5n_t1_r_q - 1 );
+				MoWpnsUtility::mo2f_decrement_email_transaction();
 				$response['status']     = 'SUCCESS';
 				$time                   = 'time' . $txid;
 				$current_time_in_millis = round( microtime( true ) * 1000 );

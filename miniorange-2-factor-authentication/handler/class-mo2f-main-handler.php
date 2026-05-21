@@ -18,7 +18,6 @@ use TwoFA\Handler\Twofa\Miniorange_Mobile_Login;
 use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
 use TwoFA\Helper\Mo2f_Login_Popup;
 use TwoFA\Helper\Mo2f_Inline_Popup;
-use TwoFA\Helper\MocURL;
 use WP_Error;
 use TwoFA\Helper\TwoFAMoSessions;
 use TwoFA\Handler\Mo2f_Reconfigure_Link;
@@ -144,6 +143,9 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 					return $this->mo2f_backup_code_validation_success( $_POST );
 				case 'mo2f_send_reconfig_link':
 					$this->mo2f_send_reconfig_link( $_POST );
+					break;
+				case 'mo2f_admin_recovery_login_bypass':
+					$this->mo2f_admin_recovery_login_bypass( $_POST );
 					break;
 				case 'mo2f_email_verification_success':
 					return $this->mo2f_email_verification_success( $_POST );
@@ -300,8 +302,49 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_send_reconfig_link( $post ) {
-			$backup_code_handler = new Mo2f_Reconfigure_Link();
-			$backup_code_handler->mo2f_send_reconfig_link( $post );
+			Mo2f_Reconfigure_Link::instance()->mo2f_send_reconfig_link( $post );
+		}
+
+		/**
+		 * Complete login without 2FA for administrators (only when site option is enabled and explicit recovery action is used).
+		 *
+		 * @param array $post Post data.
+		 * @return void
+		 */
+		public function mo2f_admin_recovery_login_bypass( $post ) {
+			if ( ! (int) get_site_option( 'mo2f_admin_login_bypass_2fa' ) ) {
+				wp_safe_redirect( wp_login_url() );
+				exit;
+			}
+			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : '';
+			$redirect_to        = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : '';
+			if ( '' === $session_id_encrypt ) {
+				wp_safe_redirect( wp_login_url() );
+				exit;
+			}
+			$user_details = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
+			if ( empty( $user_details ) || empty( $user_details['user_id'] ) ) {
+				wp_safe_redirect( wp_login_url() );
+				exit;
+			}
+			$user_id = (int) $user_details['user_id'];
+			if ( ! user_can( $user_id, 'manage_options' ) ) {
+				wp_safe_redirect( wp_login_url() );
+				exit;
+			}
+			$login_status = isset( $user_details['login_status'] ) ? $user_details['login_status'] : '';
+			if ( in_array( $login_status, array( 'MFA_COMPLETED', 'MFA_SKIPPED' ), true ) ) {
+				wp_safe_redirect( wp_login_url() );
+				exit;
+			}
+			$completed = array(
+				'session_id'   => $session_id_encrypt,
+				'user_id'      => $user_id,
+				'login_status' => 'MFA_COMPLETED',
+			);
+			set_transient( $session_id_encrypt . 'mo2f_user_transaction_details', $completed, 600 );
+			$this->mo2fa_pass2login( $redirect_to, $completed );
+			exit;
 		}
 
 		/**
@@ -314,9 +357,9 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : null;
 			$user_details       = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
 			$method_name        = isset( $post['auth_method'] ) ? sanitize_text_field( wp_unslash( $post['auth_method'] ) ) : null;
-			$inline_popup       = new Mo2f_Common_Helper();
-			$process_login      = $inline_popup->mo2f_get_object( $method_name );
-			$message            = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::NEW_OTP_SENT );
+			$inline_popup  = new Mo2f_Common_Helper();
+			$process_login = $inline_popup->mo2f_get_object( $method_name );
+			$message       = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::NEW_OTP_SENT );
 			$process_login->mo2f_send_otp( null, $session_id_encrypt, $user_details, $message );
 		}
 
@@ -473,10 +516,10 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_validate_user_for_login( $post ) {
-			$twofa_method         = isset( $post['mo2f_login_method'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_login_method'] ) ) : null;
-			$session_id_encrypt   = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : null;
-			$redirect_to          = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : null;
-			$otp_token            = isset( $post['mo2fa_softtoken'] ) ? sanitize_text_field( wp_unslash( $post['mo2fa_softtoken'] ) ) : '';
+			$twofa_method       = isset( $post['mo2f_login_method'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_login_method'] ) ) : null;
+			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : null;
+			$redirect_to        = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : null;
+			$otp_token          = isset( $post['mo2fa_softtoken'] ) ? sanitize_text_field( wp_unslash( $post['mo2fa_softtoken'] ) ) : '';
 			$inline_common_helper = new Mo2f_Common_Helper();
 			$method_handler       = $inline_common_helper->mo2f_get_object( $twofa_method );
 			$method_handler->mo2f_login_validate( $otp_token, $redirect_to, $session_id_encrypt );
@@ -775,6 +818,11 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$auth_method      = isset( $post['auth_method'] ) ? sanitize_text_field( wp_unslash( $post['auth_method'] ) ) : '';
 			$request_type     = isset( $post['requesttype'] ) ? sanitize_text_field( wp_unslash( $post['requesttype'] ) ) : '';
 			$auth_method      = MoWpnsConstants::mo2f_convert_method_name( $auth_method, 'pascal_to_cap' );
+			$mo2f_plugin_root_fs     = dirname( __DIR__ );
+			$whatsapp_premium_locked = ! file_exists( $mo2f_plugin_root_fs . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-all-inclusive-premium-settings.php' );
+			if ( $whatsapp_premium_locked && MoWpnsConstants::OTP_OVER_WHATSAPP === $auth_method && ! current_user_can( 'manage_options' ) ) {
+				return;
+			}
 			$method_handler   = $common_helper->mo2f_get_object( $auth_method );
 			$call_to_function = array( $method_handler, 'mo2f_prompt_2fa_' . $request_type . '_dashboard' );
 			$pass2fa_login    = new Miniorange_Password_2Factor_Login();
