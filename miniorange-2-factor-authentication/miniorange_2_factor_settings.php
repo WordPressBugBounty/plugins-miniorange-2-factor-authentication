@@ -9,7 +9,7 @@
  * Plugin Name: miniOrange 2FA – Two Factor Authentication for WordPress (OTP, SMS, Email, Google Authenticator)
  * Plugin URI: https://miniorange.com
  * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. Supports Google/Authy/LastPass/Microsoft Authenticator, QR Code, Push Notification, Soft Token, and Security Questions (KBA). Free plan: up to 5 users can complete 2FA setup; premium unlocks unlimited users and advanced policies.
- * Version: 6.2.5
+ * Version: 6.2.6
  * Author: miniOrange
  * Author URI: https://miniorange.com
  * Text Domain: miniorange-2-factor-authentication
@@ -42,7 +42,7 @@ require __DIR__ . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'new-
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
 define( 'MO_HOST_NAME', 'https://login.xecurify.com' );
-define( 'MO2F_VERSION', '6.2.5' );
+define( 'MO2F_VERSION', '6.2.6' );
 define( 'MO2F_PLUGIN_URL', ( plugin_dir_url( __FILE__ ) ) );
 define( 'MO2F_TEST_MODE', false );
 define( 'MO2F_IS_ONPREM', get_option( 'is_onprem', 1 ) );

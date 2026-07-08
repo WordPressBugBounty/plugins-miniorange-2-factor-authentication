@@ -1229,11 +1229,11 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 							</div>
 							<div class="w-full mo-input-wrapper group">
 								<label class="mo-input-label">Password</label>
-								<input class="w-full mo2f-input" type="password" name="password" required placeholder="Choose your password (Min. length 6)" />
+								<input id="mo2f_reg_password" class="w-full mo2f-input" type="password" name="password" required placeholder="Choose your password (Min. length 6)" />
 							</div>
 							<div class="w-full mo-input-wrapper group">
 								<label class="mo-input-label">Confirm Password</label>
-								<input class="w-full mo2f-input" type="password" name="confirmPassword" required placeholder="Confirm your password" />
+								<input id="mo2f_reg_confirmPassword" class="w-full mo2f-input" type="password" name="confirmPassword" required placeholder="Confirm your password" />
 							</div>
 							<div class="flex">
 								<input type="checkbox" class="mo2f-plugin-policy-check" id="mo2f_agree_plugin_policy" name="mo2f_customer_validation_agree_plugin_policy" value="1" />
@@ -1349,8 +1349,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 							action: "mo_two_factor_ajax",
 							mo_2f_two_factor_ajax: "mo2f_miniorange_sign_up",
 							email: jQuery("input[name=\'email\']").val(),
-							password: jQuery("input[name=\'password\']").val(),
-							confirmPassword: jQuery("input[name=\'confirmPassword\']").val(),
+							password: jQuery("#mo2f_reg_password").val(),
+							confirmPassword: jQuery("#mo2f_reg_confirmPassword").val(),
 							nonce: nonce,
 						};
 						jQuery.post(ajaxurl, data, function(response) {

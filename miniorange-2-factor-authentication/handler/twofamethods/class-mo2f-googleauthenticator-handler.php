@@ -329,7 +329,14 @@ if ( ! class_exists( 'Mo2f_GOOGLEAUTHENTICATOR_Handler' ) ) {
 				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_WHILE_VALIDATING_OTP ) );
 				return;
 			}
-			$ga_secret = isset( $post['ga_secret'] ) ? sanitize_text_field( wp_unslash( $post['ga_secret'] ) ) : ( isset( $post['session_id'] ) ? get_user_meta( $user->ID, 'mo2f_secret_ga', true ) : null );
+			$current_wp_user = wp_get_current_user();
+			if ( $current_wp_user->ID ) {
+				// Authenticated dashboard setup — a caller-supplied secret is acceptable here.
+				$ga_secret = isset( $post['ga_secret'] ) ? sanitize_text_field( wp_unslash( $post['ga_secret'] ) ) : get_user_meta( $user->ID, 'mo2f_secret_ga', true );
+			} else {
+				// Unauthenticated login flow — always load from DB; never trust POST-supplied secret.
+				$ga_secret = get_user_meta( $user->ID, 'mo2f_secret_ga', true );
+			}
 			if ( MO2f_Utility::mo2f_check_number_length( $otp_token ) ) {
 				$email = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $user->ID );
 				$email = ( empty( $email ) ) ? $user->user_email : $email;

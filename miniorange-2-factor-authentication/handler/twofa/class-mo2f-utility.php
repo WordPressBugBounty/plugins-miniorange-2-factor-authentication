@@ -500,8 +500,12 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		 */
 		public static function mo2f_debug_file( $text ) {
 			if ( (int) MoWpnsUtility::get_mo2f_db_option( 'mo2f_enable_debug_log', 'site_option' ) ) {
-				$plugin_root_path = dirname( dirname( plugin_dir_path( __FILE__ ) ) );
-				$debug_log_path   = $plugin_root_path . DIRECTORY_SEPARATOR . 'logs';
+				$upload_dir = wp_upload_dir();
+				if ( ! empty( $upload_dir['error'] ) ) {
+					return;
+				}
+
+				$debug_log_path = trailingslashit( $upload_dir['basedir'] ) . 'miniorange-2-factor-authentication' . DIRECTORY_SEPARATOR . 'logs';
 				if ( ! is_dir( $debug_log_path ) ) {
 					$dir_created = wp_mkdir_p( $debug_log_path );
 					if ( ! $dir_created ) {

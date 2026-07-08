@@ -493,6 +493,12 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$user               = wp_get_current_user();
 			if ( ! $user->ID ) {
 				$user_details = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
+				if ( empty( $user_details )
+					|| ! isset( $user_details['login_status'] )
+					|| 'PASSWORD_VALIDATED' !== $user_details['login_status'] ) {
+					wp_send_json_error( 'Unauthorized.' );
+					return;
+				}
 			} else {
 				$user_details = array(
 					'user_id'      => $user->ID,

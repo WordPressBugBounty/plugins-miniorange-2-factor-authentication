@@ -72,7 +72,7 @@ function mo2fa_register_customer( $post ) {
 	}
 	update_option( 'mo2f_email', $email );
 	update_option( 'mo_wpns_company', $company );
-	update_option( 'mo_wpns_password', $password );
+	delete_option( 'mo_wpns_password' );
 	$customer = new MocURL();
 	$content  = json_decode( $customer->check_customer( $email ), true );
 	switch ( $content['status'] ) {

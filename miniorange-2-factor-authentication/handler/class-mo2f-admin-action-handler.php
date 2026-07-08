@@ -115,7 +115,7 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 			}
 			update_site_option( 'mo2f_email', $email );
 			update_site_option( 'mo_wpns_company', $company );
-			update_site_option( 'mo_wpns_password', $password );
+			delete_site_option( 'mo_wpns_password' );
 			$customer      = new MocURL();
 			$content       = json_decode( $customer->check_customer( $email ), true );
 			$common_helper = new Mo2f_Common_Helper();
