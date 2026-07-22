@@ -23,6 +23,8 @@ namespace TwoFA\Handler\Twofa;
 
 use TwoFA\Traits\Instance;
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Helper\Mo2f_Common_Helper;
+use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -105,6 +107,10 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		 * @return array
 		 */
 		public function send_otp_token( $phone, $email, $auth_type, $current_user = null, $session_id = null ) {
+			$rate_limit_error = Mo2f_Common_Helper::instance()->mo2f_check_otp_send_allowed( $phone, $email, $current_user );
+			if ( null !== $rate_limit_error ) {
+				return $rate_limit_error;
+			}
 			$content = $this->class_object->send_otp_token( $phone, $email, $auth_type, $current_user, $session_id );
 			return $content;
 		}
@@ -225,6 +231,10 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_send_link( $current_user, $mo2f_second_factor, $email, $session_id_encrypt ) {
+			$rate_limit_error = Mo2f_Common_Helper::instance()->mo2f_check_otp_send_allowed( null, $email, $current_user );
+			if ( null !== $rate_limit_error ) {
+				return $rate_limit_error;
+			}
 			MO2f_Utility::mo2f_debug_file( 'Email verification link has been sent successfully for ' . $mo2f_second_factor . ' User_Id-' . $current_user->ID . ' Email-' . $current_user->user_email );
 			$content = $this->class_object->mo2f_send_verification_link( $email, $mo2f_second_factor, $current_user, $session_id_encrypt );
 			return $content;
@@ -261,6 +271,12 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		 * @return void
 		 */
 		public function mo2f_email_verification_call( $current_user ) {
+			$email            = ! empty( $current_user ) ? $current_user->user_email : null;
+			$rate_limit_error = Mo2f_Common_Helper::instance()->mo2f_check_otp_send_allowed( null, $email, $current_user );
+			if ( null !== $rate_limit_error ) {
+				( new MoWpnsMessages() )->mo2f_show_message( __( 'Too many OTP requests. Please wait a while before trying again.', 'miniorange-2-factor-authentication' ), 'ERROR' );
+				return;
+			}
 			$this->class_object->mo2f_email_verification_call( $current_user );
 		}
 		/**

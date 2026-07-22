@@ -175,6 +175,122 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		}
 
 		/**
+		 * Checks whether a 2FA configuration/rebind request is allowed to proceed.
+		 * Once a user already has a 2FA method configured, the request must target that same
+		 * method, and any attacker-supplied destination (email/phone) is discarded in favour of
+		 * the address already on file, so an in-flight login challenge can never be used to rebind
+		 * an existing factor to attacker-controlled material.
+		 *
+		 * @param int    $user_id User ID.
+		 * @param string $twofa_method Requested method.
+		 * @param string $otp_input Requested destination (email/phone), passed by reference so it can be nulled out.
+		 * @return bool True if the request may proceed.
+		 */
+		public function mo2f_guard_2fa_configuration_request( $user_id, $twofa_method, &$otp_input = null ) {
+			global $mo2fdb_queries;
+			if ( ! $this->mo2f_is_2fa_set( $user_id ) ) {
+				return true;
+			}
+			if ( $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id ) !== $twofa_method ) {
+				return false;
+			}
+			$otp_input = null; // Always deliver to the address/number already on file; ignore any attacker-supplied destination.
+			return true;
+		}
+
+		/**
+		 * Single choke point for every paid OTP/verification-link send in the plugin (called from
+		 * `MO2f_Cloud_Onprem_Interface::send_otp_token()` and `::mo2f_send_link()`, which every
+		 * caller — configuration, real login challenge, dashboard test-send, KBA, custom
+		 * registration forms — funnels through). Layers three independent throttles so no single
+		 * account, IP, or destination can be used to exhaust the site's paid SMS/Email quota, and a
+		 * site-wide daily ceiling bounds worst-case loss even from a distributed attack.
+		 *
+		 * @param string $phone Destination phone number, if any.
+		 * @param string $email Destination email address, if any.
+		 * @param object $current_user Current user, if known.
+		 * @return string|null JSON-encoded error response if the send should be blocked, null if allowed.
+		 */
+		public function mo2f_check_otp_send_allowed( $phone, $email, $current_user ) {
+			$phone       = is_string( $phone ) ? trim( $phone ) : $phone;
+			$email       = is_string( $email ) ? trim( $email ) : $email;
+			$identifiers = array();
+			if ( ! empty( $current_user ) && ! empty( $current_user->ID ) ) {
+				$identifiers[] = 'user_' . $current_user->ID;
+			}
+			$identifiers[] = 'ip_' . MoWpnsUtility::get_client_ip();
+			if ( ! empty( $phone ) ) {
+				// Normalize to digits only so formatting differences (+1 234-567-8900 vs (123) 456-7890)
+				// don't create separate rate-limit buckets for the same destination.
+				$identifiers[] = 'dest_' . md5( preg_replace( '/\D+/', '', $phone ) );
+			} elseif ( ! empty( $email ) ) {
+				$identifiers[] = 'dest_' . md5( strtolower( $email ) );
+			}
+			foreach ( $identifiers as $identifier ) {
+				if ( $this->mo2f_is_otp_send_rate_limited( $identifier ) ) {
+					return wp_json_encode(
+						array(
+							'status'  => 'ERROR',
+							'message' => __( 'Too many OTP requests. Please wait a while before trying again.', 'miniorange-2-factor-authentication' ),
+						)
+					);
+				}
+			}
+			if ( $this->mo2f_is_otp_daily_cap_reached() ) {
+				return wp_json_encode(
+					array(
+						'status'  => 'ERROR',
+						'message' => __( 'The daily OTP send limit for this site has been reached. Please try again later or contact the site administrator.', 'miniorange-2-factor-authentication' ),
+					)
+				);
+			}
+			return null;
+		}
+
+		/**
+		 * Throttles OTP sends per identifier: a short cooldown between requests plus a per-hour cap.
+		 * The hourly counter is not a sliding/rolling log — each accepted request resets its transient's
+		 * TTL to a fresh hour, so the count only stops growing (and the window only starts expiring)
+		 * once a request is blocked; the block then lasts until an hour passes with no further attempts.
+		 *
+		 * @param string $identifier Rate-limit bucket key, e.g. 'user_123', 'ip_1.2.3.4', 'dest_<hash>'.
+		 * @return bool True if the request should be blocked.
+		 */
+		private function mo2f_is_otp_send_rate_limited( $identifier ) {
+			$cooldown_seconds = (int) apply_filters( 'mo2f_otp_send_cooldown_seconds', 15 );
+			$hourly_cap       = (int) apply_filters( 'mo2f_otp_send_hourly_cap', 5 );
+			$cooldown_key     = 'mo2f_otp_rl_cd_' . md5( $identifier );
+			if ( false !== get_transient( $cooldown_key ) ) {
+				return true;
+			}
+			set_transient( $cooldown_key, true, $cooldown_seconds );
+			$hourly_key   = 'mo2f_otp_rl_hr_' . md5( $identifier );
+			$hourly_count = (int) get_transient( $hourly_key );
+			if ( $hourly_count >= $hourly_cap ) {
+				return true;
+			}
+			set_transient( $hourly_key, $hourly_count + 1, HOUR_IN_SECONDS );
+			return false;
+		}
+
+		/**
+		 * Site-wide ceiling on total OTP sends per day, regardless of how many distinct
+		 * accounts/IPs/destinations an attack is spread across. Filterable per site's own quota.
+		 *
+		 * @return bool True if today's global cap has been reached.
+		 */
+		private function mo2f_is_otp_daily_cap_reached() {
+			$daily_cap = (int) apply_filters( 'mo2f_otp_send_daily_cap', 200 );
+			$daily_key = 'mo2f_otp_rl_daily_' . gmdate( 'Y-m-d' );
+			$count     = (int) get_transient( $daily_key );
+			if ( $count >= $daily_cap ) {
+				return true;
+			}
+			set_transient( $daily_key, $count + 1, DAY_IN_SECONDS );
+			return false;
+		}
+
+		/**
 		 * It will invoke after inline registration setup success
 		 *
 		 * @param string $user_details It will carry the user details value .

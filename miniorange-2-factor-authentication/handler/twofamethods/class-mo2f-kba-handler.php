@@ -199,10 +199,22 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 			}
 			$redirect_to   = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : null;
 			$common_helper = new Mo2f_Common_Helper();
-			$user_id       = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
-			$current_user  = empty( $user_id ) ? wp_get_current_user() : get_user_by( 'id', $user_id );
+			// Anonymous, mid-login-challenge requests must be tied to a password-validated session before a factor can be (re)bound.
+			$is_login_challenge = ! is_user_logged_in();
+			if ( $is_login_challenge ) {
+				$user_details = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
+				if ( empty( $user_details )
+					|| ! isset( $user_details['login_status'] )
+					|| 'PASSWORD_VALIDATED' !== $user_details['login_status'] ) {
+					wp_send_json_error( 'Unauthorized.' );
+					return;
+				}
+			}
+			$user_id      = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
+			$current_user = empty( $user_id ) ? wp_get_current_user() : get_user_by( 'id', $user_id );
 			if ( empty( $current_user ) ) {
 				wp_send_json_error( __( 'Something went wrong. Please try again.', 'miniorange-2-factor-authentication' ) );
+				return;
 			}
 			$kba_ques_ans    = $this->mo2f_get_ques_ans( $post );
 			$kba_questions   = $this->mo2f_validate_questions( $kba_ques_ans, $session_id_encrypt, $redirect_to, $user_id );
@@ -213,6 +225,10 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 				update_user_meta( $user_id, 'mo2f_backup_method_set', 1 );
 				$mo2fdb_queries->mo2f_update_user_details( $user_id, array( 'mo2f_SecurityQuestions_config_status' => true ) );
 			} else {
+				if ( $is_login_challenge && $common_helper->mo2f_is_2fa_set( $current_user->ID ) ) {
+					wp_send_json_error( 'Unauthorized.' );
+					return;
+				}
 				$this->mo2f_update_user_details( $post, $current_user->ID, $current_user->user_email );
 			}
 			$common_helper = new Mo2f_Common_Helper();

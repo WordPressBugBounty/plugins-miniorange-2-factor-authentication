@@ -278,9 +278,12 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 					set_transient( $session_id . 'tempRegEmail', $temp_reg_email, 300 );
 					set_transient( $session_id . 'mo2f_otp_send_true', true, 300 );
 					wp_send_json_success( $message . ' ' . MO2f_Utility::mo2f_get_hidden_email( $email ) . '. ' . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ENTER_OTP ) . MoWpnsMessages::mo2f_get_message( MoWpnsMessages::VERIFY_YOURSELF ) );
+				} elseif ( 'ERROR' === $content['status'] && ! empty( $content['message'] ) ) {
+					wp_send_json_error( $content['message'] );
 				}
 			}
-			$mo2fa_login_message = user_can( $current_user->ID, 'manage_options' ) ? MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ) : MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
+			$user_id              = isset( $user_details['user_id'] ) ? $user_details['user_id'] : null;
+			$mo2fa_login_message = user_can( $user_id, 'manage_options' ) ? MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ) : MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
 			wp_send_json_error( $mo2fa_login_message );
 		}
 

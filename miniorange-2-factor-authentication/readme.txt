@@ -2,9 +2,10 @@
 Contributors: twofactor, twofactorauthentication, hsn97, cyberlord92
 Tags: 2fa, two-factor-authentication, mfa, authentication, security, wp 2fa
 Requires at least: 5.3.0
+Requires at least: 5.3.0
 Tested up to: 7.0
 Requires PHP: 5.3.0
-Stable tag: 6.2.6
+Stable tag: 6.2.7
 License: Expat
 License URI: https://plugins.miniorange.com/mit-license
 
@@ -239,6 +240,10 @@ You can use backup codes, the email verification recovery option, or disable the
 
 == Changelog ==
 
+= 6.2.7 =
+* Added rate limiting
+* other bug fixes
+
 = 6.2.6 =
 * Readme changes.
 * Security fixes.
@@ -391,6 +396,10 @@ You can use backup codes, the email verification recovery option, or disable the
 For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/miniorange-2-factor-authentication/trunk/changelog.txt) provided with the plugin.
 
 == Upgrade Notice ==
+
+= 6.2.7 =
+* Added rate limiting
+* other bug fixes
 
 = 6.2.6 =
 * Readme changes.

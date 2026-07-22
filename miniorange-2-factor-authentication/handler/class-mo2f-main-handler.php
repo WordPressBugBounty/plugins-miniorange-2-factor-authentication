@@ -453,11 +453,31 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$user      = wp_get_current_user();
 			if ( ! $user->ID ) {
 				$user_details = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
+				if ( empty( $user_details )
+					|| ! isset( $user_details['login_status'] )
+					|| 'PASSWORD_VALIDATED' !== $user_details['login_status'] ) {
+					wp_send_json_error( 'Unauthorized.' );
+					return;
+				}
+				$inline_popup = new Mo2f_Common_Helper();
+				if ( ! $inline_popup->mo2f_guard_2fa_configuration_request( $user_details['user_id'], $twofa_method, $otp_input ) ) {
+					wp_send_json_error( 'Unauthorized.' );
+					return;
+				}
 			} else {
 				$user_details = array(
 					'user_id'      => $user->ID,
 					'login_status' => 'LOGGED_IN',
 				);
+			}
+			// When the site hasn't explicitly allowed users to send email OTPs to a custom address,
+			// always deliver to the account's own WordPress email, regardless of what was posted.
+			if ( MoWpnsConstants::OTP_OVER_EMAIL === $twofa_method
+				&& ! MoWpnsUtility::get_mo2f_db_option( 'mo2f_enable_email_change', 'site_option' ) ) {
+				$bound_user = get_user_by( 'id', $user_details['user_id'] );
+				if ( $bound_user ) {
+					$otp_input = $bound_user->user_email;
+				}
 			}
 			$inline_popup = new Mo2f_Common_Helper();
 			$send_otp     = $inline_popup->mo2f_get_object( $twofa_method );
@@ -511,6 +531,11 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$twofa_method = isset( $post['mo2f_otp_based_method'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_otp_based_method'] ) ) : '';
 			$prev_input   = isset( $post['mo2f_phone_email_telegram'] ) ? str_replace( ' ', '', sanitize_text_field( wp_unslash( $post['mo2f_phone_email_telegram'] ) ) ) : '';
 			$inline_popup = new Mo2f_Common_Helper();
+			if ( 'PASSWORD_VALIDATED' === $user_details['login_status']
+				&& ! $inline_popup->mo2f_guard_2fa_configuration_request( $user_details['user_id'], $twofa_method ) ) {
+				wp_send_json_error( 'Unauthorized.' );
+				return;
+			}
 			$validate_otp = $inline_popup->mo2f_get_object( $twofa_method );
 			$validate_otp->mo2f_validate_otp( $otp_token, $session_id_encrypt, $user_details, $prev_input, $post );
 		}
