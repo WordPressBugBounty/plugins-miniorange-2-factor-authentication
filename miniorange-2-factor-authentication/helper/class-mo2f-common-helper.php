@@ -1794,6 +1794,11 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 						jQuery("#mo2f_2fa_popup_dashboard").fadeOut();
 						closeVerification = true;
 						success_msg("You have successfully validated your 2FA method.");
+					} else if (response.data && response.data.status === "ACCOUNT_LOCKED") {
+						jQuery("#mo2fa_softtoken").val("");
+						jQuery("#mo2f_validate").prop("disabled", true);
+						mo2f_show_message("' . esc_js( __( 'Too many incorrect attempts. Please wait a few minutes before trying again.', 'miniorange-2-factor-authentication' ) ) . '");
+						setTimeout(function() { jQuery("#mo2f_validate").prop("disabled", false); }, response.data.remaining * 1000);
 					} else if ( response.data == \'INVALID_OTP\' || response.data == \'LIMIT_EXCEEDED\' ){
 						jQuery("#mo2fa_softtoken").val("");
 						mo2f_show_message("Invalid OTP. Please enter the correct OTP.");
@@ -1818,9 +1823,38 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 */
 		public function mo2f_get_login_script( $twofa_method ) {
 			$common_helper = new Mo2f_Common_Helper();
-			$script        = '<script>		
+			$script        = '<script>
 			var twofa_method = "' . esc_js( $twofa_method ) . '";
-			var attemptleft = 3;	
+			var attemptleft = 3;
+			var mo2fLockoutInterval = null;
+			function mo2f_start_lockout_countdown(seconds) {
+				if (mo2fLockoutInterval) { clearInterval(mo2fLockoutInterval); mo2fLockoutInterval = null; }
+				var remaining = Math.max(0, parseInt(seconds, 10) || 0);
+				jQuery("#mo2f_validate, #mo2f_catchy_validate").prop("disabled", true);
+				jQuery("#mo2fa_softtoken, .mo2f-otp-catchy, #mo2f_answer_1, #mo2f_answer_2").val("").prop("disabled", true);
+				var attemptSpan = document.getElementById("mo2f_attempt_span");
+				if (attemptSpan) { attemptSpan.textContent = "0"; }
+				mo2f_show_message("' . esc_js( __( 'Too many incorrect attempts. Please wait', 'miniorange-2-factor-authentication' ) ) . ' <span id=\"mo2f_lockout_timer\"></span> ' . esc_js( __( 'before trying again.', 'miniorange-2-factor-authentication' ) ) . '");
+				var render = function() {
+					var m = Math.floor(remaining / 60);
+					var s = remaining % 60;
+					var label = (m > 0 ? m + "m " : "") + s + "s";
+					var timerSpan = document.getElementById("mo2f_lockout_timer");
+					if (timerSpan) { timerSpan.textContent = label; }
+				};
+				render();
+				mo2fLockoutInterval = setInterval(function() {
+					remaining -= 1;
+					if (remaining <= 0) {
+						clearInterval(mo2fLockoutInterval);
+						jQuery("#mo2f_validate, #mo2f_catchy_validate").prop("disabled", false);
+						jQuery("#mo2fa_softtoken, .mo2f-otp-catchy, #mo2f_answer_1, #mo2f_answer_2").prop("disabled", false);
+						mo2f_show_message("' . esc_js( __( 'You can try again now. Please enter the OTP.', 'miniorange-2-factor-authentication' ) ) . '");
+					} else {
+						render();
+					}
+				}, 1000);
+			}
 			jQuery("#mo2f_validate").click(function() {
 				' . $common_helper->mo2f_show_loader() . '
 				var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
@@ -1841,6 +1875,8 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				    ' . $common_helper->mo2f_hide_loader() . '
 					if (response.success) {
 						jQuery("#mo2f_inline_otp_validated_form").submit();
+					} else if (response.data && response.data.status === "ACCOUNT_LOCKED") {
+						mo2f_start_lockout_countdown(response.data.remaining);
 					} else if(response.data == "LIMIT_EXCEEDED"){
 						mologinback();
 					} else if( response.data == \'INVALID_ANSWERS\') {
@@ -2339,7 +2375,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			}
 			if ( MO2f_Utility::get_index_value( 'GLOBALS', 'mo2f_is_ajax_request' ) ) {
 				$redirect = array(
-					'redirect' => $redirect_url,
+					'redirect' => wp_validate_redirect( $redirect_url, home_url() ),
 				);
 				wp_send_json_success( $redirect );
 			} else {

@@ -140,7 +140,7 @@ $GLOBALS['mo2f_out_of_band_email_template']        = '<table cellpadding="25" st
 <p style="margin-top:0;margin-bottom:20px">Dear Customer,</p>
 <p style="margin-top:0;margin-bottom:10px">You initiated a transaction <b>WordPress 2 Factor Authentication Plugin</b>:</p>
 <p style="margin-top:0;margin-bottom:10px">To accept, <a href="##url##userID=##user_id##&amp;accessToken=##accept_token##&amp;secondFactorAuthType=OUT+OF+BAND+EMAIL&amp;Txid=##txid##&amp;user=##email##" target="_blank">Accept Transaction</a></p>
-<p style="margin-top:0;margin-bottom:10px">To deny, <a href="##url##userID=##user_id##&amp;accessToken=##denie_token##&amp;secondFactorAuthType=OUT+OF+BAND+EMAIL&amp;Txid=##txid##&amp;user=##email##" target="_blank">Deny Transaction</a></p><div><div class="adm"><div id="q_31" class="ajR h4" data-tooltip="Hide expanded content" aria-label="Hide expanded content" aria-expanded="true"><div class="ajT"></div></div></div><div class="im">
+<p style="margin-top:0;margin-bottom:10px">To deny, <a href="##url##userID=##user_id##&amp;accessToken=##deny_token##&amp;secondFactorAuthType=OUT+OF+BAND+EMAIL&amp;Txid=##txid##&amp;user=##email##" target="_blank">Deny Transaction</a></p><div><div class="adm"><div id="q_31" class="ajR h4" data-tooltip="Hide expanded content" aria-label="Hide expanded content" aria-expanded="true"><div class="ajT"></div></div></div><div class="im">
 <p style="margin-top:0;margin-bottom:15px">Thank you,<br>miniOrange Team</p>
 <p style="margin-top:0;margin-bottom:0px;font-size:11px;color:red">Disclaimer: This email and any files transmitted with it are confidential and intended solely for the use of the individual or entity to whom they are addressed.</p>
 </div></div></td>

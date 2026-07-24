@@ -332,7 +332,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 			$message = str_replace( '##user_id##', $user_id, $message );
 			$message = str_replace( '##url##', $url, $message );
 			$message = str_replace( '##accept_token##', $otp_token_h, $message );
-			$message = str_replace( '##denie_token##', $otp_token_d_h, $message );
+			$message = str_replace( array( '##deny_token##', '##denie_token##' ), $otp_token_d_h, $message );
 			$message = str_replace( '##txid##', rawurlencode( $txid ), $message );
 			$message = str_replace( '##email##', $email, $message );
 			return $message;

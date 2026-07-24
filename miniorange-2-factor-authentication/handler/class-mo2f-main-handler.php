@@ -547,12 +547,26 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_validate_user_for_login( $post ) {
+			global $mo2f_mo_wpns_utility;
 			$twofa_method       = isset( $post['mo2f_login_method'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_login_method'] ) ) : null;
 			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : null;
 			$redirect_to        = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : null;
 			$otp_token          = isset( $post['mo2fa_softtoken'] ) ? sanitize_text_field( wp_unslash( $post['mo2fa_softtoken'] ) ) : '';
 			$inline_common_helper = new Mo2f_Common_Helper();
-			$method_handler       = $inline_common_helper->mo2f_get_object( $twofa_method );
+			$user_id              = $inline_common_helper->mo2f_get_current_user_id( $session_id_encrypt );
+			if ( $user_id ) {
+				$lockout_remaining = $mo2f_mo_wpns_utility->mo2f_get_login_lockout_remaining( $user_id );
+				if ( $lockout_remaining > 0 ) {
+					wp_send_json_error(
+						array(
+							'status'    => MoWpnsConstants::MO2F_ACCOUNT_LOCKED,
+							'remaining' => $lockout_remaining,
+						)
+					);
+					return;
+				}
+			}
+			$method_handler = $inline_common_helper->mo2f_get_object( $twofa_method );
 			$method_handler->mo2f_login_validate( $otp_token, $redirect_to, $session_id_encrypt );
 		}
 

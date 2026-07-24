@@ -156,6 +156,8 @@ if ( ! class_exists( 'Mo2f_Whitelabelling' ) ) {
 			$subject_value     = isset( $post['mo2f_email_subject'] ) ? stripslashes( wp_unslash( $post['mo2f_email_subject'] ) ) : '';
 			$template_raw_key  = $template_option . '_config_message';
 			$template_content  = isset( $post[ $template_raw_key ] ) ? stripslashes( wp_unslash( $post[ $template_raw_key ] ) ) : '';
+			$template_content  = MoWpnsUtility::mo2f_sanitize_email_template( $template_content );
+			// get_mo2f_db_option() already neutralizes on read, so this comparison is apples-to-apples.
 			$existing_template = (string) MoWpnsUtility::get_mo2f_db_option( $template_option, 'site_option' );
 
 			if ( ! $this->mo2f_is_enterprise_plan_active() ) {
@@ -168,6 +170,14 @@ if ( ! class_exists( 'Mo2f_Whitelabelling' ) ) {
 					);
 					return;
 				}
+			}
+
+			if ( MoWpnsUtility::mo2f_template_has_unsafe_placeholder_link( $template_content ) || MoWpnsUtility::mo2f_template_has_offsite_anchor( $template_content ) ) {
+				$show_message->mo2f_show_message(
+					esc_html__( 'Links in email templates must point back to this site. Please remove or correct the offending link.', 'miniorange-2-factor-authentication' ),
+					'ERROR'
+				);
+				return;
 			}
 
 			update_site_option( $subject_name, $subject_value );

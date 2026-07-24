@@ -156,7 +156,238 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 			} else {
 				$db_value = get_option( $value, $default_value );
 			}
+			// Neutralize email templates on read too, in case they reached the DB some other way.
+			if ( 'site_option' === $type && in_array( $value, self::mo2f_email_template_options(), true ) ) {
+				$db_value = self::mo2f_neutralize_email_template( (string) $db_value );
+			}
 			return $db_value;
+		}
+
+		/**
+		 * Site option names for the plugin's editable email templates.
+		 *
+		 * @return array
+		 */
+		public static function mo2f_email_template_options() {
+			return array(
+				'mo2f_otp_over_email_template',
+				'mo2f_out_of_band_email_template',
+				'mo2f_reconfig_link_email_template',
+				'mo2f_backup_code_email_template',
+				'mo2f_new_ip_detected_email_template',
+			);
+		}
+
+		/**
+		 * Allowed HTML for stored email templates.
+		 *
+		 * @return array
+		 */
+		public static function mo2f_email_template_allowed_html() {
+			return array(
+				'table'  => array(
+					'cellpadding' => true,
+					'cellspacing' => true,
+					'width'       => true,
+					'style'       => true,
+					'border'      => true,
+				),
+				'tbody'  => array(),
+				'thead'  => array(),
+				'tfoot'  => array(),
+				'tr'     => array(),
+				'td'     => array(
+					'style' => true,
+					'width' => true,
+				),
+				'th'     => array(
+					'style' => true,
+					'width' => true,
+				),
+				'p'      => array( 'style' => true ),
+				'div'    => array(
+					'style' => true,
+					'class' => true,
+					'id'    => true,
+				),
+				'span'   => array(
+					'style' => true,
+					'class' => true,
+				),
+				'b'      => array(),
+				'i'      => array(),
+				'strong' => array(),
+				'em'     => array(),
+				'br'     => array(),
+				'hr'     => array(),
+				'img'    => array(
+					'src'    => true,
+					'alt'    => true,
+					'style'  => true,
+					'width'  => true,
+					'height' => true,
+				),
+				'a'      => array(
+					'href'   => true,
+					'target' => true,
+					'style'  => true,
+					'rel'    => true,
+				),
+				'input'  => array(
+					'type'  => true,
+					'name'  => true,
+					'id'    => true,
+					'value' => true,
+				),
+			);
+		}
+
+		/**
+		 * Sanitizes stored email template HTML, preserving inline base64 image data URIs in <img src>.
+		 *
+		 * @param string $template_content Raw template HTML.
+		 * @return string Sanitized template HTML.
+		 */
+		public static function mo2f_sanitize_email_template( $template_content ) {
+			$data_uris         = array();
+			$template_content  = preg_replace_callback(
+				'/(<img\b[^>]*\bsrc\s*=\s*)(["\'])(data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+\/=]+)\2/i',
+				function ( $matches ) use ( &$data_uris ) {
+					$placeholder               = '##MO2F_DATA_URI_' . count( $data_uris ) . '##';
+					$data_uris[ $placeholder ]  = $matches[3];
+					return $matches[1] . $matches[2] . $placeholder . $matches[2];
+				},
+				$template_content
+			);
+
+			$template_content = wp_kses( $template_content, self::mo2f_email_template_allowed_html() );
+
+			if ( $data_uris ) {
+				$template_content = strtr( $template_content, $data_uris );
+			}
+
+			return $template_content;
+		}
+
+		/**
+		 * Sensitive one-time placeholder names that must not appear in off-site links/images.
+		 *
+		 * @return array
+		 */
+		private static function mo2f_sensitive_template_tokens() {
+			return array( 'otp_token', 'code1', 'code2', 'code3', 'code4', 'code5', 'accept_token', 'deny_token', 'denie_token', 'txid' );
+		}
+
+		/**
+		 * Whether a decoded href/src value smuggles a sensitive placeholder outside a ##url## link.
+		 *
+		 * @param string $decoded_value Decoded attribute value.
+		 * @return bool
+		 */
+		private static function mo2f_value_has_sensitive_placeholder( $decoded_value ) {
+			if ( 0 === strpos( $decoded_value, '##url##' ) ) {
+				return false;
+			}
+			foreach ( self::mo2f_sensitive_template_tokens() as $token ) {
+				if ( false !== strpos( $decoded_value, '##' . $token . '##' ) ) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/**
+		 * Whether a decoded href points to a different host, port, or path prefix than this site.
+		 *
+		 * @param string $decoded_href Decoded href value.
+		 * @return bool
+		 */
+		private static function mo2f_href_is_offsite( $decoded_href ) {
+			if ( '' === $decoded_href || 0 === strpos( $decoded_href, '##' ) || '#' === $decoded_href[0] || 0 === stripos( $decoded_href, 'mailto:' ) ) {
+				return false;
+			}
+			$link_parts = wp_parse_url( $decoded_href );
+			if ( empty( $link_parts['host'] ) ) {
+				return false;
+			}
+			$site_parts = wp_parse_url( home_url() );
+			$site_host  = isset( $site_parts['host'] ) ? strtolower( $site_parts['host'] ) : '';
+			$site_port  = isset( $site_parts['port'] ) ? (string) $site_parts['port'] : '';
+			$site_path  = isset( $site_parts['path'] ) ? untrailingslashit( $site_parts['path'] ) : '';
+			$link_port  = isset( $link_parts['port'] ) ? (string) $link_parts['port'] : '';
+			$link_path  = isset( $link_parts['path'] ) ? $link_parts['path'] : '';
+			$same_host  = strtolower( $link_parts['host'] ) === $site_host && $link_port === $site_port;
+			$same_path  = '' === $site_path || $link_path === $site_path || 0 === strpos( $link_path, $site_path . '/' );
+			return ! ( $same_host && $same_path );
+		}
+
+		/**
+		 * Detects a sensitive placeholder inside a link/image that doesn't point back at this site.
+		 *
+		 * @param string $template_content Template HTML content.
+		 * @return bool
+		 */
+		public static function mo2f_template_has_unsafe_placeholder_link( $template_content ) {
+			if ( empty( $template_content ) || ! preg_match_all( '/\b(?:href|src)\s*=\s*(["\'])(.*?)\1/i', $template_content, $matches ) ) {
+				return false;
+			}
+			foreach ( $matches[2] as $attr_value ) {
+				if ( self::mo2f_value_has_sensitive_placeholder( html_entity_decode( $attr_value ) ) ) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/**
+		 * Detects an <a href> in the template that points somewhere other than this exact site.
+		 *
+		 * @param string $template_content Template HTML content.
+		 * @return bool
+		 */
+		public static function mo2f_template_has_offsite_anchor( $template_content ) {
+			if ( empty( $template_content ) || ! preg_match_all( '/<a\b[^>]*\bhref\s*=\s*(["\'])(.*?)\1/i', $template_content, $matches ) ) {
+				return false;
+			}
+			foreach ( $matches[2] as $href ) {
+				if ( self::mo2f_href_is_offsite( html_entity_decode( $href ) ) ) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/**
+		 * Neutralizes an email template for safe sending, regardless of how it reached the database.
+		 *
+		 * @param string $template_content Raw template HTML.
+		 * @return string Safe-to-send template HTML.
+		 */
+		public static function mo2f_neutralize_email_template( $template_content ) {
+			if ( empty( $template_content ) ) {
+				return $template_content;
+			}
+			$template_content = self::mo2f_sanitize_email_template( $template_content );
+
+			$template_content = preg_replace_callback(
+				'/<img\b[^>]*\bsrc\s*=\s*(["\'])(.*?)\1[^>]*\/?>/i',
+				function ( $matches ) {
+					return self::mo2f_value_has_sensitive_placeholder( html_entity_decode( $matches[2] ) ) ? '' : $matches[0];
+				},
+				$template_content
+			);
+
+			$template_content = preg_replace_callback(
+				'/<a\b[^>]*\bhref\s*=\s*(["\'])(.*?)\1[^>]*>(.*?)<\/a>/is',
+				function ( $matches ) {
+					$decoded_href = html_entity_decode( $matches[2] );
+					$unsafe       = self::mo2f_value_has_sensitive_placeholder( $decoded_href ) || self::mo2f_href_is_offsite( $decoded_href );
+					return $unsafe ? $matches[3] : $matches[0];
+				},
+				$template_content
+			);
+
+			return $template_content;
 		}
 		/**
 		 * Collect data for the plugin configurations.
@@ -461,14 +692,52 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		 * @return void
 		 */
 		public function mo2f_handle_attempt_validation( $error_type, $session_id_encrypt ) {
+			$common_helper = new Mo2f_Common_Helper();
+			$user_id       = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
+
 			$attempts = get_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect' );
 			if ( is_numeric( $attempts ) && $attempts > 1 ) {
 				set_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect', $attempts - 1, 300 );
 				wp_send_json_error( $error_type );
 			} else {
 				delete_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect' );
-				wp_send_json_error( 'LIMIT_EXCEEDED' );
+				if ( $user_id ) {
+					$this->mo2f_set_login_lockout( $user_id );
+				}
+				wp_send_json_error(
+					array(
+						'status'    => MoWpnsConstants::MO2F_ACCOUNT_LOCKED,
+						'remaining' => MoWpnsConstants::MO2F_LOGIN_LOCKOUT_DURATION,
+					)
+				);
 			}
+		}
+
+		/**
+		 * Locks a user's 2FA login validation for a fixed duration, keyed to the account
+		 * rather than the client-suppliable session id, so re-initiating the login flow
+		 * does not grant a fresh attempt quota.
+		 *
+		 * @param int $user_id User id to lock out.
+		 * @return void
+		 */
+		public function mo2f_set_login_lockout( $user_id ) {
+			$duration = MoWpnsConstants::MO2F_LOGIN_LOCKOUT_DURATION;
+			set_transient( 'mo2f_login_lockout_' . $user_id, time() + $duration, $duration );
+		}
+
+		/**
+		 * Returns the number of seconds remaining in a user's 2FA login lockout, or 0 if not locked.
+		 *
+		 * @param int $user_id User id to check.
+		 * @return int
+		 */
+		public function mo2f_get_login_lockout_remaining( $user_id ) {
+			$locked_until = get_transient( 'mo2f_login_lockout_' . $user_id );
+			if ( $locked_until && $locked_until > time() ) {
+				return (int) ( $locked_until - time() );
+			}
+			return 0;
 		}
 	}
 }

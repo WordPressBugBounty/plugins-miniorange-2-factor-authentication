@@ -93,6 +93,8 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const MO_2_FACTOR_USE_BACKUP_CODES                = 'MO_2_FACTOR_USE_BACKUP_CODES';
 		const MO2F_ERROR_MESSAGE_PROMPT                   = 'MO2F_ERROR_MESSAGE_PROMPT';
 		const MO2F_USER_BLOCKED_PROMPT                    = 'MO2F_USER_BLOCKED_PROMPT';
+		const MO2F_ACCOUNT_LOCKED                         = 'ACCOUNT_LOCKED';
+		const MO2F_LOGIN_LOCKOUT_DURATION                 = 300;
 		const MO2F_RBA_GET_USER_CONSENT                   = 'MO2F_RBA_GET_USER_CONSENT';
 		const MO2F_REMEMBER_IP_GET_USER_CONSENT           = 'MO2F_REMEMBER_IP_GET_USER_CONSENT';
 		const MO_2_FACTOR_SHOW_CONFIRMATION_BLOCK         = 'MO_2_FACTOR_SHOW_CONFIRMATION_BLOCK';
