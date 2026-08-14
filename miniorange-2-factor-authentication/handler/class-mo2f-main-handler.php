@@ -104,6 +104,18 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 				case 'mo2f_resend_otp_login':
 					$this->mo2f_resend_otp_login( $_POST );
 					break;
+				case 'mo2f_passkey_get_registration_options':
+					$this->mo2f_passkey_get_registration_options( $_POST );
+					break;
+				case 'mo2f_passkey_get_authentication_options':
+					$this->mo2f_passkey_get_authentication_options( $_POST );
+					break;
+				case 'mo2f_passkey_delete_credential':
+					$this->mo2f_passkey_delete_credential( $_POST );
+					break;
+				case 'mo2f_passkey_log_client_error':
+					$this->mo2f_passkey_log_client_error( $_POST );
+					break;
 			}
 		}
 
@@ -665,6 +677,58 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$inline_popup = new Mo2f_Common_Helper();
 			$validate_kba = $inline_popup->mo2f_get_object( MoWpnsConstants::SECURITY_QUESTIONS );
 			$validate_kba->mo2f_set_kba( $post );
+		}
+
+		/**
+		 * Builds WebAuthn registration options for the Passkey setup ceremony.
+		 *
+		 * @param array $post Post data.
+		 * @return void
+		 */
+		public function mo2f_passkey_get_registration_options( $post ) {
+			$common_helper = new Mo2f_Common_Helper();
+			$passkey       = $common_helper->mo2f_get_object( MoWpnsConstants::PASSKEY );
+			$passkey->mo2f_get_registration_options( $post );
+		}
+
+		/**
+		 * Builds WebAuthn authentication options for the Passkey login/test ceremony.
+		 *
+		 * @param array $post Post data.
+		 * @return void
+		 */
+		public function mo2f_passkey_get_authentication_options( $post ) {
+			$common_helper = new Mo2f_Common_Helper();
+			$passkey       = $common_helper->mo2f_get_object( MoWpnsConstants::PASSKEY );
+			$passkey->mo2f_get_authentication_options( $post );
+		}
+
+		/**
+		 * Removes one of the current user's registered passkeys.
+		 *
+		 * @param array $post Post data.
+		 * @return void
+		 */
+		public function mo2f_passkey_delete_credential( $post ) {
+			$common_helper = new Mo2f_Common_Helper();
+			$passkey       = $common_helper->mo2f_get_object( MoWpnsConstants::PASSKEY );
+			$passkey->mo2f_delete_credential( $post );
+		}
+
+		/**
+		 * Records a client-side WebAuthn ceremony failure (e.g. navigator.credentials
+		 * rejecting before any verification request ever reaches the server - the
+		 * common case for a cross-device/QR hybrid transport failure) into the same
+		 * debug log used by the rest of the Passkey flow, so both sides of the
+		 * ceremony are diagnosable from one place.
+		 *
+		 * @param array $post Post data.
+		 * @return void
+		 */
+		public function mo2f_passkey_log_client_error( $post ) {
+			$common_helper = new Mo2f_Common_Helper();
+			$passkey       = $common_helper->mo2f_get_object( MoWpnsConstants::PASSKEY );
+			$passkey->mo2f_log_client_error( $post );
 		}
 
 		/**

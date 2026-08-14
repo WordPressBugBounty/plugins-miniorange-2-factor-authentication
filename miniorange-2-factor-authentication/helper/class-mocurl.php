@@ -440,7 +440,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 				'body'        => $json_string,
 				'timeout'     => '10000',
 				'redirection' => '10',
-				'sslverify'   => false,
+				'sslverify'   => true,
 				'httpversion' => '1.0',
 				'blocking'    => true,
 				'headers'     => $http_header_array,
@@ -494,7 +494,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 			$args = array(
 				'method'    => 'POST',
 				'timeout'   => 45,
-				'sslverify' => false,
+				'sslverify' => true,
 				'headers'   => array(),
 				'body'      => $postdata,
 			);
@@ -590,7 +590,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 			$args = array(
 				'method'    => 'POST',
 				'timeout'   => 45,
-				'sslverify' => false,
+				'sslverify' => true,
 				'headers'   => array(),
 				'body'      => $postdata,
 

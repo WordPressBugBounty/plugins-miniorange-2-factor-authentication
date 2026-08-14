@@ -14,8 +14,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
 
-$mo2f_setup_plugin_root            = dirname( dirname( __DIR__ ) );
-$mo2f_whatsapp_premium_locked      = ! file_exists( $mo2f_setup_plugin_root . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-all-inclusive-premium-settings.php' );
 $mo2f_user                         = wp_get_current_user();
 $mo2f_user_id                      = $mo2f_user->ID;
 $mo2f_selected_method              = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $mo2f_user_id );
@@ -32,8 +30,8 @@ if ( ! $mo2f_can_display_admin_features ) {
 	$mo2f_methods_on_dashboard         = array_values(
 		array_filter(
 			$mo2f_methods_on_dashboard,
-			static function ( $method ) use ( $mo2f_end_user_customer_registered, $mo2f_whatsapp_premium_locked ) {
-				if ( $mo2f_whatsapp_premium_locked && MoWpnsConstants::OTP_OVER_WHATSAPP === $method ) {
+			static function ( $method ) use ( $mo2f_end_user_customer_registered, $mo2f_two_factor_methods_details ) {
+				if ( ! empty( $mo2f_two_factor_methods_details[ $method ]['crown'] ) ) {
 					return false;
 				}
 				if ( ! $mo2f_end_user_customer_registered && MoWpnsConstants::OTP_OVER_SMS === $method ) {

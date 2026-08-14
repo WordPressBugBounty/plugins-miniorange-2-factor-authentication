@@ -137,6 +137,7 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 				MoWpnsConstants::MO_2_FACTOR_CHALLENGE_OOB_EMAIL => 'Verify Link',
 				MoWpnsConstants::MO2F_REMEMBER_IP_GET_USER_CONSENT => 'Remember IP',
 				MoWpnsConstants::MO_2_FACTOR_SHOW_CONFIRMATION_BLOCK => 'Confirmation Popup',
+				MoWpnsConstants::MO_2_FACTOR_CHALLENGE_PASSKEY_AUTHENTICATION => 'Sign in with a Passkey',
 
 			);
 			return $prompt_title[ $login_status ] ?? 'Validate OTP';
@@ -197,12 +198,14 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 				'resend_otp'             => '<span style="color:#1F618D;"></span><span><a href="#resend" style="color:#a7a7a8 ;text-decoration:none;">' . esc_html__( 'Resend OTP', 'miniorange-2-factor-authentication' ) . '</a></span>&nbsp;<br><br>',
 				'validate_button_catchy' => '<input type="button" name="mo2f_catchy_validate" id="mo2f_catchy_validate" class="mo2f-save-settings-button mo2f_width_30" value="' . esc_attr__( 'Validate', 'miniorange-2-factor-authentication' ) . '"/><input type="button" name="mo2f-save-settings-button" id="mo2f_validate" class="hidden" />',
 				'validate_button'        => ' <input type="button" name="mo2f-save-settings-button" id="mo2f_validate" class="mo2f-save-settings-button mo2f_width_30" value="' . esc_attr__( 'Validate', 'miniorange-2-factor-authentication' ) . '"/>',
+				'passkey_validate_button' => '<input type="button" name="mo2f_passkey_authenticate_btn" id="mo2f_passkey_authenticate_btn" class="mo2f-save-settings-button" style="width:90%;white-space:nowrap;" value="' . esc_attr__( 'Authenticate with Passkey', 'miniorange-2-factor-authentication' ) . '"/><input type="hidden" name="mo2fa_softtoken" id="mo2fa_softtoken" /><input type="button" name="mo2f-save-settings-button" id="mo2f_validate" class="hidden" />',
 				'backtologin'            => MoWpnsConstants::MO2F_USER_BLOCKED_PROMPT === $login_status ? 'mo2f_login_form' : 'mo2f_inline_form',
 				'email_loader'           => '	<div id="showPushImage"><br>
 				<div class="mo2fa_text-align-center">We are waiting for your approval...</div>
 				                                <div class="mo2fa_text-align-center">
 					                               <img src="' . esc_url( plugins_url( 'includes/images/email-loader.gif', __DIR__ ) ) . '"/>
-											</div>',
+											</div>
+										</div>',
 				'use_backup_codes'       => 'test_2fa' === $validation_flow || ! in_array( 'mo2f_back_up_codes', $backup_methods, true ) ? '' : '<div> <a href="#mo2f_backup_option" class="mo2f_text_decoration">
                                      <p class="mo2f_footer_text">' . esc_html__( 'Use Backup Codes', 'miniorange-2-factor-authentication' ) . ' ' . MoWpnsConstants::MO2F_SVG_ARROW_ICON . '</p>
                                      </a>
@@ -290,6 +293,13 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
 					'##sendbackupcodes##'  => $skeleton_blocks['send_backup_codes'],
 					'##sendreconfiglink##' => $skeleton_blocks['send_reconfig_link'],
+				),
+				MoWpnsConstants::MO_2_FACTOR_CHALLENGE_PASSKEY_AUTHENTICATION => array(
+					'##validatebutton##'   => $skeleton_blocks['passkey_validate_button'],
+					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
+					'##sendbackupcodes##'  => $skeleton_blocks['send_backup_codes'],
+					'##sendreconfiglink##' => $skeleton_blocks['send_reconfig_link'],
+					'##backupmethod##'     => $skeleton_blocks['kba_backup_method_link'],
 				),
 				MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT => array(
 					'##usebackupcodes##'   => $skeleton_blocks['use_backup_codes'],
@@ -683,6 +693,7 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 												'value' => array(),
 												'id'    => array(),
 												'class' => array(),
+												'style' => array(),
 											),
 
 										)
@@ -993,13 +1004,14 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 		 * @param array  $kba_questions KBA questions.
 		 * @return void
 		 */
-		public function mo2f_show_login_prompt_for_otp_based_methods( $mo2fa_login_message, $mo2fa_login_status, $current_user, $redirect_to, $session_id_encrypt, $twofa_method, $kba_questions = null ) {
+		public function mo2f_show_login_prompt_for_otp_based_methods( $mo2fa_login_message, $mo2fa_login_status, $current_user, $redirect_to, $session_id_encrypt, $twofa_method, $kba_questions = null, $extra_script = '' ) {
 			$common_helper   = new Mo2f_Common_Helper();
 			$skeleton_values = $this->mo2f_twofa_login_prompt_skeleton_values( $mo2fa_login_message, $mo2fa_login_status, isset( $kba_questions[0] ) ? $kba_questions[0] : null, isset( $kba_questions[1] ) ? $kba_questions[1] : null, $current_user->ID, 'login_2fa', '', $session_id_encrypt );
 			$html            = $this->mo2f_twofa_authentication_login_prompt( $mo2fa_login_status, $mo2fa_login_message, $redirect_to, $session_id_encrypt, $skeleton_values, $twofa_method );
 			$html           .= $common_helper->mo2f_get_hidden_forms_login( $redirect_to, $session_id_encrypt, $mo2fa_login_status, $mo2fa_login_message, $twofa_method, $current_user->ID );
 			$html           .= $common_helper->mo2f_get_login_script( $twofa_method );
 			$html           .= $common_helper->mo2f_get_hidden_script_login();
+			$html           .= $extra_script;
 			echo $html;// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Already escaped the necessary in the definition.
 			exit;
 		}

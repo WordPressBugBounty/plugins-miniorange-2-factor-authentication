@@ -117,19 +117,35 @@ if ( ! class_exists( 'Customer_Cloud_Setup' ) ) {
 					'video' => MoWpnsConstants::KBA_YOUTUBE,
 					'desc'  => 'Configure and Answer Three Security Questions to login',
 				),
+				MoWpnsConstants::PASSKEY              => array(
+					'doc'   => MoWpnsConstants::PASSKEY_DOCUMENT_LINK,
+					'video' => null,
+					'desc'  => 'Use your fingerprint, face, or a security key to sign in - no code needed',
+					'crown' => false,
+				),
 				MoWpnsConstants::OTP_OVER_WHATSAPP    => array(
 					'doc'   => MoWpnsConstants::OTP_OVER_WA_DOCUMENT_LINK,
 					'video' => null,
 					'desc'  => 'Enter the One Time Passcode sent to your WhatsApp number.',
 					'crown' => false,
 				),
+				MoWpnsConstants::PUSH_NOTIFICATIONS   => array(
+					'doc'   => MoWpnsConstants::MO_PUSHNOTIFICATION_DOCUMENT_LINK,
+					'video' => MoWpnsConstants::MO_PUSH_NOTIFICATION_YOUTUBE,
+					'desc'  => 'Approve a push notification sent to the miniOrange Authenticator App on your phone to login',
+					'crown' => true,
+				),
 			);
+			global $mo2f_dir_name;
+			$mo2f_all_inclusive_premium = file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-all-inclusive-premium-settings.php' );
+			$mo2f_starter_premium       = file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-basic-premium-settings.php' );
+			$two_factor_methods_details[ MoWpnsConstants::PUSH_NOTIFICATIONS ]['crown'] = ! $mo2f_all_inclusive_premium;
 			if ( ! apply_filters( 'mo2f_is_lv_needed', false ) ) {
-				global $mo2f_dir_name;
-				$mo2f_all_inclusive_premium = file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-all-inclusive-premium-settings.php' );
 				if ( ! $mo2f_all_inclusive_premium ) {
 					$two_factor_methods_details[ MoWpnsConstants::OTP_OVER_WHATSAPP ]['crown'] = true;
 				}
+				$two_factor_methods_details[ MoWpnsConstants::OTP_OVER_SMS ]['crown']      = ! $mo2f_starter_premium;
+				$two_factor_methods_details[ MoWpnsConstants::OUT_OF_BAND_EMAIL ]['crown'] = ! $mo2f_starter_premium;
 			}
 			return $two_factor_methods_details;
 		}

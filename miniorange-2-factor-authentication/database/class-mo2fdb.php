@@ -52,6 +52,9 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 			global $wpdb;
 			$this->user_details_table    = $wpdb->base_prefix . 'mo2f_user_details';
 			$this->user_login_info_table = $wpdb->base_prefix . 'mo2f_user_login_info';
+			if ( is_multisite() ) {
+				wp_cache_add_global_groups( array( 'mo2f_user_2fa_meta_cache' ) );
+			}
 		}
 
 		/**
@@ -220,33 +223,58 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		}
 
 		/**
-		 * Gets the count of number of users who uses specific method.
+		 * Fetches every user's 2FA meta row (user_id + serialized meta_value), cached to avoid
+		 * a full wp_usermeta table scan on every call. Cache is invalidated by
+		 * mo2f_update_user_details()/mo2f_delete_user_details(), the only two places this meta
+		 * is written.
 		 *
-		 * @param string $method 2FA method setup by the user.
-		 * @return integer
+		 * @return array
 		 */
-		public function mo2f_get_specific_method_users_count( $method ) {
+		private function mo2f_get_all_user_2fa_meta_cached() {
+			$cache_key   = 'mo2f_all_user_2fa_meta';
+			$cache_group = 'mo2f_user_2fa_meta_cache';
+
+			$users_meta = wp_cache_get( $cache_key, $cache_group );
+			if ( false !== $users_meta ) {
+				return $users_meta;
+			}
+
 			global $wpdb;
-			$users_meta = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-				$wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
+			$users_meta = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Result is cached above.
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Result is cached above.
 					"SELECT user_id, meta_value
 					FROM {$wpdb->usermeta}
 					WHERE meta_key = %s",
 					MoWpnsConstants::USER_DEATIL_META_KEY
 				)
 			);
-			$count      = 0;
-			if ( ! empty( $users_meta ) ) {
-				foreach ( $users_meta as $user_meta ) {
-					$meta_value = maybe_unserialize( $user_meta->meta_value );
-					if (
-						is_array( $meta_value )
-						&& isset( $meta_value['mo_2factor_user_registration_status'], $meta_value['mo2f_configured_2FA_method'] )
-						&& MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $meta_value['mo_2factor_user_registration_status']
-						&& $meta_value['mo2f_configured_2FA_method'] === $method
-					) {
-						++$count;
-					}
+
+			if ( ! is_array( $users_meta ) ) {
+				$users_meta = array();
+			}
+
+			wp_cache_set( $cache_key, $users_meta, $cache_group );
+
+			return $users_meta;
+		}
+
+		/**
+		 * Gets the count of number of users who uses specific method.
+		 *
+		 * @param string $method 2FA method setup by the user.
+		 * @return integer
+		 */
+		public function mo2f_get_specific_method_users_count( $method ) {
+			$count = 0;
+			foreach ( $this->mo2f_get_all_user_2fa_meta_cached() as $user_meta ) {
+				$meta_value = maybe_unserialize( $user_meta->meta_value );
+				if (
+					is_array( $meta_value )
+					&& isset( $meta_value['mo_2factor_user_registration_status'], $meta_value['mo2f_configured_2FA_method'] )
+					&& MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $meta_value['mo_2factor_user_registration_status']
+					&& $meta_value['mo2f_configured_2FA_method'] === $method
+				) {
+					++$count;
 				}
 			}
 			return $count;
@@ -260,6 +288,7 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 */
 		public function mo2f_delete_user_details( $user_id ) {
 			delete_user_meta( $user_id, MoWpnsConstants::USER_DEATIL_META_KEY );
+			wp_cache_delete( 'mo2f_all_user_2fa_meta', 'mo2f_user_2fa_meta_cache' );
 		}
 
 		/**
@@ -287,20 +316,11 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 * @return array
 		 */
 		public function get_all_user_2fa_methods() {
-			global $wpdb;
 			$all_methods = array();
-			$users_meta  = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-				$wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-					"SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s",
-					MoWpnsConstants::USER_DEATIL_META_KEY
-				)
-			);
-			if ( ! empty( $users_meta ) ) {
-				foreach ( $users_meta as $user_meta ) {
-					$meta_value = maybe_unserialize( $user_meta->meta_value );
-					if ( is_array( $meta_value ) && isset( $meta_value['mo2f_configured_2FA_method'] ) ) {
-						array_push( $all_methods, $meta_value['mo2f_configured_2FA_method'] );
-					}
+			foreach ( $this->mo2f_get_all_user_2fa_meta_cached() as $user_meta ) {
+				$meta_value = maybe_unserialize( $user_meta->meta_value );
+				if ( is_array( $meta_value ) && isset( $meta_value['mo2f_configured_2FA_method'] ) ) {
+					array_push( $all_methods, $meta_value['mo2f_configured_2FA_method'] );
 				}
 			}
 			return $all_methods;
@@ -349,6 +369,7 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 					$mo2f_user_2fa_data[ $key ] = $value;
 			}
 			update_user_meta( $user_id, 'mo2f_user_2fa_data', $mo2f_user_2fa_data );
+			wp_cache_delete( 'mo2f_all_user_2fa_meta', 'mo2f_user_2fa_meta_cache' );
 		}
 
 		/**
@@ -482,24 +503,15 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		 * @return int
 		 */
 		public function mo2f_get_configured_2fa_user_count() {
-			global $wpdb;
-			$users_meta = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-				$wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- DB Direct Query is necessary here.
-					"SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s",
-					MoWpnsConstants::USER_DEATIL_META_KEY
-				)
-			);
-			$count      = 0;
-			if ( ! empty( $users_meta ) ) {
-				foreach ( $users_meta as $user_meta ) {
-					$meta_value = maybe_unserialize( $user_meta->meta_value );
-					if (
-						is_array( $meta_value )
-						&& isset( $meta_value['mo_2factor_user_registration_status'] )
-						&& MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $meta_value['mo_2factor_user_registration_status']
-					) {
-						++$count;
-					}
+			$count = 0;
+			foreach ( $this->mo2f_get_all_user_2fa_meta_cached() as $user_meta ) {
+				$meta_value = maybe_unserialize( $user_meta->meta_value );
+				if (
+					is_array( $meta_value )
+					&& isset( $meta_value['mo_2factor_user_registration_status'] )
+					&& MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $meta_value['mo_2factor_user_registration_status']
+				) {
+					++$count;
 				}
 			}
 			return $count;
@@ -508,19 +520,14 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		/**
 		 * Checks if the user limit is exceeded.
 		 *
+		 * The free plan allows unlimited users to set up 2FA; only the method
+		 * selection is restricted (see Mo2f_Common_Helper::fetch_methods()).
+		 *
 		 * @param integer $user_id User Id to check if the corresponding user already configured the 2fa method.
 		 * @return bool
 		 */
 		public function check_alluser_limit_exceeded( $user_id ) {
-			$total_users_configured  = $this->mo2f_get_configured_2fa_user_count();
-			$user_already_configured = $this->mo2f_user_has_completed_2fa_setup( $user_id );
-
-			$free_limit = MoWpnsConstants::MO2F_FREE_PLAN_USER_LIMIT;
-			if ( $total_users_configured < $free_limit || $user_already_configured ) {
-				return false;
-			} else {
-				return true;
-			}
+			return false;
 		}
 
 		/**

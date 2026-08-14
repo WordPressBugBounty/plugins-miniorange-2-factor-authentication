@@ -8,8 +8,8 @@
 /**
  * Plugin Name: miniOrange 2FA – Two Factor Authentication for WordPress (OTP, SMS, Email, Google Authenticator)
  * Plugin URI: https://miniorange.com
- * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. Supports Google/Authy/LastPass/Microsoft Authenticator, QR Code, Push Notification, Soft Token, and Security Questions (KBA). Free plan: up to 5 users can complete 2FA setup; premium unlocks unlimited users and advanced policies.
- * Version: 6.2.8
+ * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. Free plan: unlimited users with Google Authenticator, Email OTP, Security Questions (KBA), and Passkey; premium unlocks SMS/WhatsApp OTP, Authy/LastPass/Microsoft Authenticator, and advanced policies.
+ * Version: 6.2.9
  * Author: miniOrange
  * Author URI: https://miniorange.com
  * Text Domain: miniorange-2-factor-authentication
@@ -42,7 +42,7 @@ require __DIR__ . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'new-
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
 define( 'MO_HOST_NAME', 'https://login.xecurify.com' );
-define( 'MO2F_VERSION', '6.2.8' );
+define( 'MO2F_VERSION', '6.2.9' );
 define( 'MO2F_PLUGIN_URL', ( plugin_dir_url( __FILE__ ) ) );
 define( 'MO2F_TEST_MODE', false );
 define( 'MO2F_IS_ONPREM', get_option( 'is_onprem', 1 ) );
@@ -176,6 +176,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			wp_enqueue_style( 'wp-pointer' );
 			wp_enqueue_script( 'wp-pointer' );
 			wp_enqueue_script( 'utils' );
+			wp_enqueue_style( 'mo2f-feedback-form-style', plugins_url( 'includes/css/mo2f-feedback-form.min.css', __FILE__ ), array(), MO2F_VERSION );
 
 			include $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . 'feedback-form.php';
 		}
@@ -850,6 +851,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 						}
 					);
 					update_user_meta( $user_id, 'mo2f_user_2fa_data', $user_data );        }
+				wp_cache_delete( 'mo2f_all_user_2fa_meta', 'mo2f_user_2fa_meta_cache' );
 			}
 			$mo2fdb_queries->mo2f_drop_table( 'mo2f_user_details' );
 			update_site_option( 'mo2f_user_details_migrated', true );
@@ -906,6 +908,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 					delete_user_meta( (int) $user_id, 'mo2f_telegram_time' );
 					delete_user_meta( (int) $user_id, 'mo2f_otp_token' );
 				}
+				wp_cache_delete( 'mo2f_all_user_2fa_meta', 'mo2f_user_2fa_meta_cache' );
 			}
 
 			update_site_option( 'mo2f_telegram_method_removed', true );

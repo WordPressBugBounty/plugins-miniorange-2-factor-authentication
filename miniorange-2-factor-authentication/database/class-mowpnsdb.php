@@ -47,6 +47,9 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		public function __construct() {
 			global $wpdb;
 			$this->transaction_table = $wpdb->base_prefix . 'mo2f_network_transactions';
+			if ( is_multisite() ) {
+				wp_cache_add_global_groups( array( 'mo2f_transactions' ) );
+			}
 		}
 
 		/**

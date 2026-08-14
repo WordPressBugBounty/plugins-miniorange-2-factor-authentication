@@ -85,6 +85,11 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const OUT_OF_BAND_EMAIL      = 'OUT OF BAND EMAIL';
 		const SECURITY_QUESTIONS     = 'KBA';
 		const HARDWARE_TOKEN         = 'HARDWARE TOKEN';
+		const PASSKEY                = 'PASSKEY';
+		const PUSH_NOTIFICATIONS     = 'PUSH NOTIFICATIONS';
+
+		// Min PHP for the vendored WebAuthn library (uses 7.4+ return types; older PHP fatals on parse).
+		const MO2F_PASSKEY_MIN_PHP_VERSION_ID = 70400;
 		// 2fa registration status
 		const MO_2_FACTOR_PROMPT_USER_FOR_2FA_METHODS     = 'MO_2_FACTOR_PROMPT_USER_FOR_2FA_METHODS';
 		const MO_2_FACTOR_PLUGIN_SETTINGS                 = 'MO_2_FACTOR_PLUGIN_SETTINGS';
@@ -103,6 +108,7 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const MO_2_FACTOR_CHALLENGE_OTP_OVER_SMS          = 'MO_2_FACTOR_CHALLENGE_OTP_OVER_SMS';
 		const MO_2_FACTOR_CHALLENGE_OOB_EMAIL             = 'MO_2_FACTOR_CHALLENGE_OOB_EMAIL';
 		const MO_2_FACTOR_CHALLENGE_KBA_AUTHENTICATION    = 'MO_2_FACTOR_CHALLENGE_KBA_AUTHENTICATION';
+		const MO_2_FACTOR_CHALLENGE_PASSKEY_AUTHENTICATION = 'MO_2_FACTOR_CHALLENGE_PASSKEY_AUTHENTICATION';
 		const INLINE_2FA_FLOW                             = 'mo2f_inline_flow';
 		const MSFT_AUTH                                   = 'msft_authenticator';
 		const SETUPWIZARD_2FA_FLOW                        = 'mo2f_setupwizard_flow';
@@ -150,8 +156,10 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const USER_DEATIL_META_KEY              = 'mo2f_user_2fa_data';
 
 		/**
-		 * Maximum number of users who can complete 2FA setup on the free plan.
-		 * Premium builds may override behavior via filters.
+		 * Legacy free-plan seat cap. No longer enforced — the free plan now
+		 * allows unlimited users; only the available 2FA methods are restricted
+		 * (see Mo2f_Common_Helper::fetch_methods()). Left defined only for any
+		 * remaining reference; do not use for new checks.
 		 */
 		const MO2F_FREE_PLAN_USER_LIMIT = 5;
 
@@ -173,6 +181,7 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const OTP_OVER_SMS_DOCUMENT_LINK        = self::DOCUMENT_LINK . '/step-by-setup-guide-to-set-up-otp-over-sms';
 		const OTP_OVER_EMAIL_DOCUMENT_LINK      = self::DOCUMENT_LINK . '/otp_over_email';
 		const OTP_OVER_WA_DOCUMENT_LINK         = self::DOCUMENT_LINK . '/otp-over-whatsapp';
+		const PASSKEY_DOCUMENT_LINK             = self::DOCUMENT_LINK . '/step-by-setup-guide-to-set-up-passkey';
 		const KBA_YOUTUBE                       = self::YOUTUBE . '/watch?v=pXPqQ047o-0';
 		const GA_YOUTUBE                        = self::YOUTUBE . '/watch?v=6je2iARqrcs';
 		const MO_AUTHENTICATOR_YOUTUBE          = self::YOUTUBE . '/watch?v=oRaGtKxouiI';
@@ -247,6 +256,8 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			self::OTP_OVER_SMS_AND_EMAIL => 'OTP Over SMS and Email',
 			self::OTP_OVER_WHATSAPP      => 'OTP Over Whatsapp',
 			self::HARDWARE_TOKEN         => 'Hardware Token',
+			self::PASSKEY                => 'Passkey',
+			self::PUSH_NOTIFICATIONS     => 'Push Notification',
 		);
 
 		/**
@@ -263,6 +274,7 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			'OTPOverEmail'        => self::OTP_OVER_EMAIL,
 			'DuoAuthenticator'    => self::DUO_AUTHENTICATOR,
 			'OTPOverWhatsapp'     => self::OTP_OVER_WHATSAPP,
+			'Passkey'             => self::PASSKEY,
 		);
 
 		/**
@@ -278,6 +290,7 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			'OTP Over SMS'         => self::OTP_OVER_SMS,
 			'OTP Over Email'       => self::OTP_OVER_EMAIL,
 			'OTP Over WhatsApp'    => self::OTP_OVER_WHATSAPP,
+			'Passkey'              => self::PASSKEY,
 		);
 
 		/**
@@ -299,6 +312,8 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			self::SECURITY_QUESTIONS     => '❓',
 			self::OUT_OF_BAND_EMAIL      => '✉️',
 			self::HARDWARE_TOKEN         => '🔑',
+			self::PASSKEY                => '🛡️',
+			self::PUSH_NOTIFICATIONS     => '📲',
 		);
 
 		/**
@@ -320,6 +335,8 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			self::SECURITY_QUESTIONS     => 'Backup questions',
 			self::OUT_OF_BAND_EMAIL      => 'Email verification',
 			self::HARDWARE_TOKEN         => 'Hardware security key',
+			self::PASSKEY                => 'Fingerprint, face, or security key',
+			self::PUSH_NOTIFICATIONS     => 'Approve from your mobile app',
 		);
 
 		/**

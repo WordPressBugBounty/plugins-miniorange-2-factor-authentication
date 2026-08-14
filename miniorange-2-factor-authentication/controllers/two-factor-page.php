@@ -52,7 +52,8 @@ if ( current_user_can( 'manage_options' ) || 'mo_2fa_my_account' === $mo2f_page 
 								// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $mo2f_is_active contains valid HTML attribute string.
 								echo '<button class="tab" data-tab="' . esc_attr( $mo2f_nav_tab_id ) . '" ' . $mo2f_is_active . ' onclick="window.location.href=\'' . esc_url( admin_url() ) . 'admin.php?page=' . esc_attr( $mo2f_page ) . '&subpage=' . esc_attr( $mo2f_nav_tab_id ) . '\'">' . esc_html( $mo2f_nav_tab ) . '</button>';
 							}
-							echo '</div>';
+							echo '</div>'; // Closes .tablist.
+							echo '</div>'; // Closes .tabs (was previously missing its own close - see the removed compensating stray </div> further below).
 						}
 						$mo2f_content_loaded = false;
 						if ( $mo2f_current_subpage && ! empty( $mo2f_nav_tabs ) ) {
@@ -90,7 +91,6 @@ if ( current_user_can( 'manage_options' ) || 'mo_2fa_my_account' === $mo2f_page 
 				}
 			}
 			?>
-		</div>
 		</div>
 		<?php
 }

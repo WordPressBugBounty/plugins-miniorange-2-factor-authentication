@@ -451,19 +451,13 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 		}
 
 		/**
-		 * Whether the free-plan 2FA seat cap (5 configured users) is reached.
+		 * The free plan allows unlimited users to set up 2FA (only the method
+		 * selection is restricted), so the seat cap can never be reached.
 		 *
 		 * @return bool
 		 */
 		public static function mo2f_is_free_plan_seat_limit_reached() {
-			if ( apply_filters( 'mo2f_is_lv_needed', false ) ) {
-				return false;
-			}
-			global $mo2fdb_queries;
-			if ( ! isset( $mo2fdb_queries ) || ! is_object( $mo2fdb_queries ) || ! method_exists( $mo2fdb_queries, 'mo2f_get_configured_2fa_user_count' ) ) {
-				return false;
-			}
-			return $mo2fdb_queries->mo2f_get_configured_2fa_user_count() >= (int) MoWpnsConstants::MO2F_FREE_PLAN_USER_LIMIT;
+			return false;
 		}
 
 		/**

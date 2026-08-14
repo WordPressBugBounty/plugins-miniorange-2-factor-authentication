@@ -109,7 +109,20 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return object
 		 */
 		public function mo2f_get_object( $selected_method ) {
-			$class_name = 'TwoFA\Handler\TwofaMethods\Mo2f_' . str_replace( ' ', '', $selected_method ) . '_Handler';
+			$allowed_methods = array_map(
+				function ( $method ) {
+					return strtoupper( str_replace( ' ', '', $method ) );
+				},
+				array_values( MoWpnsConstants::$mo2f_pascal_to_cap )
+			);
+			$normalized_method = str_replace( ' ', '', $selected_method );
+			if ( ! in_array( strtoupper( $normalized_method ), $allowed_methods, true ) ) {
+				$error_prompt = new Mo2f_Login_Popup();
+				$current_user = wp_get_current_user();
+				$error_prompt->mo2f_show_login_prompt_for_otp_based_methods( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS ), MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT, $current_user, '', '', '' );
+				exit;
+			}
+			$class_name = 'TwoFA\Handler\TwofaMethods\Mo2f_' . $normalized_method . '_Handler';
 			if ( class_exists( $class_name ) ) {
 				return new $class_name();
 			} else {
@@ -2266,19 +2279,21 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		}
 
 		/**
-		 * This function returns array of methods
+		 * This function returns array of methods.
+		 *
+		 * The free plan allows unlimited users but only exposes Authenticator
+		 * app, OTP over email and Security Questions. SMS, the email
+		 * verification link, WhatsApp and Duo are premium-only, gated the same
+		 * way as the existing WhatsApp check (mo2f_is_lv_needed).
 		 *
 		 * @param object $current_user object containing user details.
 		 * @return array
 		 */
 		public function fetch_methods( $current_user = null ) {
 
-			$methods = array( MoWpnsConstants::OTP_OVER_SMS, MoWpnsConstants::OUT_OF_BAND_EMAIL, MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SECURITY_QUESTIONS, MoWpnsConstants::OTP_OVER_EMAIL );
+			$methods = array( MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SECURITY_QUESTIONS, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::PASSKEY );
 			if ( apply_filters( 'mo2f_is_lv_needed', false ) ) {
-				array_push( $methods, MoWpnsConstants::OTP_OVER_WHATSAPP );
-			}
-			if ( ( ! is_null( $current_user ) && ( 'administrator' !== $current_user->roles[0] ) && ! get_site_option( 'mo2f_email' ) ) || ! get_site_option( 'mo2f_customerKey' ) ) {
-				$methods = array( MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SECURITY_QUESTIONS, MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OUT_OF_BAND_EMAIL );
+				array_push( $methods, MoWpnsConstants::OTP_OVER_SMS, MoWpnsConstants::OUT_OF_BAND_EMAIL, MoWpnsConstants::OTP_OVER_WHATSAPP );
 			}
 			if ( get_site_option( 'duo_credentials_save_successfully' ) ) {
 				array_push( $methods, 'DUO' );
@@ -2373,6 +2388,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			} else {
 				$redirect_url = isset( $redirect_to ) && ! empty( $redirect_to ) ? $redirect_to : home_url();
 			}
+			$redirect_url = wp_validate_redirect( $redirect_url, home_url() );
 			if ( MO2f_Utility::get_index_value( 'GLOBALS', 'mo2f_is_ajax_request' ) ) {
 				$redirect = array(
 					'redirect' => wp_validate_redirect( $redirect_url, home_url() ),

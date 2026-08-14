@@ -428,7 +428,7 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 		 * @return mixed
 		 */
 		public function mo2f_login_validate( $otp_token, $redirect_to, $session_id_encrypt ) {
-			global $mo2f_onprem_cloud_obj;
+			global $mo2f_onprem_cloud_obj, $mo2f_mo_wpns_utility;
 			if ( ! check_ajax_referer( 'mo-two-factor-ajax-nonce', 'nonce', false ) ) {
 				wp_send_json_error( 'class-mo2f-ajax' );
 			}
@@ -451,7 +451,7 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 				$common_helper->mo2f_update_current_user_status( $session_id_encrypt );
 				wp_send_json_success( 'VALIDATED_SUCCESS' );
 			} else {
-				wp_send_json_error( 'INVALID_ANSWERS' );
+				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_ANSWERS', $session_id_encrypt );
 			}
 		}
 	}

@@ -54,10 +54,9 @@ if ( ! class_exists( 'Mo2fCustomRegFormShortcode' ) ) {
 		 * @return void
 		 */
 		public function mo_shortcode() {
-			$show_message = new MoWpnsMessages();
-			$nonce        = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+			$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
 			if ( ! wp_verify_nonce( $nonce, 'ajax-nonce' ) ) {
-				$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ), 'ERROR' );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ) );
 			}
 
 			$choice = isset( $_POST['mo_action'] ) ? sanitize_text_field( wp_unslash( $_POST['mo_action'] ) ) : '';
@@ -84,10 +83,9 @@ if ( ! class_exists( 'Mo2fCustomRegFormShortcode' ) ) {
 		 * @return void
 		 */
 		public function mo_ajax_register() {
-			$show_message = new MoWpnsMessages();
-			$nonce        = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+			$nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
 			if ( ! wp_verify_nonce( $nonce, 'ajax-nonce' ) ) {
-				$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ), 'ERROR' );
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ) );
 			}
 
 			$choice = isset( $_POST['mo_action'] ) ? sanitize_text_field( wp_unslash( $_POST['mo_action'] ) ) : '';
@@ -126,6 +124,7 @@ if ( ! class_exists( 'Mo2fCustomRegFormShortcode' ) ) {
 			$nonce        = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
 			if ( ! wp_verify_nonce( $nonce, 'ajax-nonce' ) ) {
 				$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ), 'ERROR' );
+				return;
 			}
 			if ( isset( $_POST['phone'] ) ) {
 				update_user_meta( $user_id, 'billing_phone', sanitize_text_field( wp_unslash( $_POST['phone'] ) ) );

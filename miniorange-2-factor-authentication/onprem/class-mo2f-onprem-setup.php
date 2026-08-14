@@ -88,13 +88,29 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 					'desc'  => 'Configure and Answer Three Security Questions to login',
 					'crown' => false,
 				),
+				MoWpnsConstants::PASSKEY              => array(
+					'doc'   => MoWpnsConstants::PASSKEY_DOCUMENT_LINK,
+					'video' => null,
+					'desc'  => 'Use your fingerprint, face, or a security key to sign in - no code needed',
+					'crown' => false,
+				),
 				MoWpnsConstants::OTP_OVER_WHATSAPP    => array(
 					'doc'   => MoWpnsConstants::OTP_OVER_WA_DOCUMENT_LINK,
 					'video' => null,
 					'desc'  => 'Enter the One Time Passcode sent to your WhatsApp number. <a href="' . admin_url( 'admin.php?page=mo_2fa_whatsapp' ) . '" target="_blank" >[Configure your business account]</a>',
 					'crown' => false,
 				),
+				MoWpnsConstants::PUSH_NOTIFICATIONS   => array(
+					'doc'   => MoWpnsConstants::MO_PUSHNOTIFICATION_DOCUMENT_LINK,
+					'video' => MoWpnsConstants::MO_PUSH_NOTIFICATION_YOUTUBE,
+					'desc'  => 'Approve a push notification sent to the miniOrange Authenticator App on your phone to login',
+					'crown' => true,
+				),
 			);
+			$mo2f_plugin_root_fs        = dirname( __DIR__ );
+			$mo2f_all_inclusive_premium = file_exists( $mo2f_plugin_root_fs . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-all-inclusive-premium-settings.php' );
+			$mo2f_starter_premium       = file_exists( $mo2f_plugin_root_fs . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-basic-premium-settings.php' );
+			$two_factor_methods_details[ MoWpnsConstants::PUSH_NOTIFICATIONS ]['crown'] = ! $mo2f_all_inclusive_premium;
 			$lv_needed                  = apply_filters( 'mo2f_is_lv_needed', false );
 			if ( ! $lv_needed ) { // To do - Remove this after adding OTP Over Whatsapp functionaly.
 				$two_factor_methods_details[ MoWpnsConstants::OTP_OVER_WHATSAPP ] = array(
@@ -103,6 +119,10 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 					'desc'  => 'Enter the One Time Passcode sent to your WhatsApp number.',
 					'crown' => true,
 				);
+				// SMS and the email verification link are Starter-plan features (not
+				// All Inclusive - they're available starting from the cheapest paid tier).
+				$two_factor_methods_details[ MoWpnsConstants::OTP_OVER_SMS ]['crown']      = ! $mo2f_starter_premium;
+				$two_factor_methods_details[ MoWpnsConstants::OUT_OF_BAND_EMAIL ]['crown'] = ! $mo2f_starter_premium;
 			}
 			return $two_factor_methods_details;
 		}

@@ -206,6 +206,20 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 											</label>
 											<br>
 								</span>
+								<span class="
+								<?php
+								if ( ! ( in_array( MoWpnsConstants::PASSKEY, $selected_methods, true ) ) ) {
+									echo 'mo2f_td_hide';
+								} else {
+									echo 'mo2f_td_show'; }
+								?>
+								">
+									<label title="<?php esc_attr_e( 'Use your fingerprint, face, or a security key to sign in. Supported in modern browsers on Desktops, Laptops, and Smartphones.', 'miniorange-2-factor-authentication' ); ?>" >
+									<input type="radio"  name="mo2f_selected_2factor_method"  value="<?php echo esc_attr( MoWpnsConstants::PASSKEY ); ?>"  />
+										<?php esc_html_e( 'Passkey', 'miniorange-2-factor-authentication' ); ?>
+											</label>
+											<br>
+								</span>
 								</div>
 								</div>
 								<?php
@@ -237,7 +251,6 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 							</div>
 						</div>
 					</div>
-				</div>
 				<?php
 				$common_helper = new Mo2f_Common_Helper();
 				echo wp_kses(

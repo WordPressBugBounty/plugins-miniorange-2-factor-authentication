@@ -98,6 +98,11 @@ $mo2f_two_factor_methods_descriptions = array(
 		$user->user_email
 	),
 	MoWpnsConstants::HARDWARE_TOKEN       => __( 'Enter the One Time Passcode on your Hardware Token to login.', 'miniorange-2-factor-authentication' ),
+	MoWpnsConstants::PASSKEY              => sprintf(
+		/* translators: %s: user login */
+		__( 'Ask %s to register a passkey (fingerprint, face, or security key) from their My Account page.', 'miniorange-2-factor-authentication' ),
+		$user->user_login
+	),
 );
 global $mo2f_main_dir;
 wp_enqueue_style( 'mo2f_intl_tel_style', plugin_dir_url( __FILE__ ) . '../includes/css/phone.min.css', array(), MO2F_VERSION );

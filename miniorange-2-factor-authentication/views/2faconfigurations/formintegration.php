@@ -274,13 +274,12 @@ $mo2f_registration_forms = array(
 				<div>[mo2f_enable_register]</div>
 			</div>
 		</div>
-		<div class="justify-start flex mo2f-basic-plan" id="mo2f_enable_custom_login_save"><div class="mo2f_enable_custom_login_save_button"><button id="mo2f_form_config_save" class="mo2f-save-settings-button"><?php esc_html_e( 'Save Settings', 'miniorange-2-factor-authentication' ); ?></button></div></div>
+		<div class="justify-start flex mo2f-basic-plan" id="mo2f_enable_custom_registration_save"><div class="mo2f_enable_custom_login_save_button"><button id="mo2f_form_config_save" class="mo2f-save-settings-button"><?php esc_html_e( 'Save Settings', 'miniorange-2-factor-authentication' ); ?></button></div></div>
 		<input type="hidden" id="mo2f_nonce_save_form_settings" name="mo2f_nonce_save_form_settings"
 				value="<?php echo esc_attr( wp_create_nonce( 'mo-two-factor-ajax-nonce' ) ); ?>"/>
 	</div>
 	</form>
 	</div>
-</div>
 <?php
 	global $mo2f_main_dir;
 	wp_enqueue_script( 'forms-script', $mo2f_main_dir . '/includes/js/forms.min.js', array(), MO2F_VERSION, false );

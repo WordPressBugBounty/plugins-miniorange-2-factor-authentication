@@ -2,35 +2,42 @@
 Contributors: twofactor, twofactorauthentication, hsn97, cyberlord92
 Tags: 2fa, two-factor-authentication, mfa, authentication, security, wp 2fa
 Requires at least: 5.3.0
-Requires at least: 5.3.0
 Tested up to: 7.0
 Requires PHP: 5.3.0
-Stable tag: 6.2.8
+Stable tag: 6.2.9
 License: Expat
 License URI: https://plugins.miniorange.com/mit-license
 
-Protect WordPress logins with Two-Factor Authentication (2FA), MFA, Google Authenticator, Email OTP, SMS OTP, WooCommerce 2FA & passwordless login.
+Free 2FA plugin for unlimited users with Passkey, Google Authenticator, Email/SMS OTP, Push Notification & passwordless login.
 
 == Description ==
 
 ### WordPress Two-Factor Authentication (2FA)
 
-WordPress websites are frequently targeted by brute force attacks, credential stuffing attacks, phishing attempts, and unauthorized login attempts. Passwords alone are no longer sufficient to protect administrator accounts, customer accounts, and sensitive website data.
+WordPress websites are frequently targeted by brute force attacks, credential stuffing attacks, phishing attempts, and unauthorized login attempts. Passwords alone are no longer sufficient to protect administrator accounts, customer accounts, and sensitive website data. **Which is exactly why 2FA has become essential.**
 
 The miniOrange **2-Factor Authentication** plugin adds an additional layer of security to WordPress logins by requiring users to verify their identity using a second authentication factor. Even if a password is compromised, unauthorized users cannot access accounts without completing the **2FA** verification process.
 
-The plugin supports multiple **Two-Factor Authentication (2FA)** and **Multi-Factor Authentication (MFA)** methods, including **Google Authenticator**, **Microsoft Authenticator**, **Authy**, **Email OTP**, **SMS OTP**, **WhatsApp OTP**, **Telegram OTP**, backup codes, security questions, and hardware token authentication.
+The **2FA** plugin supports multiple **Two-Factor Authentication (2FA)** and **Multi-Factor Authentication (MFA)** methods, including **Google Authenticator**, **Microsoft Authenticator**, **Authy**, **Passkey**, **Email OTP**, **SMS OTP**, **WhatsApp OTP**, **Telegram OTP**, **Push Notification**, backup codes, security questions, and hardware token authentication.
 
 Whether you manage a **WooCommerce** store, membership website, LMS platform, enterprise portal, educational institution, government website, or agency-managed environment, **WordPress 2FA** helps secure user accounts and reduce the risk of account compromise.
 
-The **free** plan supports **2FA setup for up to 5 users**. **Premium** removes the user cap and adds enforcement policies, trusted devices, multisite support, custom branding, and more.
+The **free** plan supports **unlimited users** with Google Authenticator (TOTP), **Passkey**, Email OTP, and Security Questions. **Premium** adds more 2FA methods (SMS OTP, WhatsApp OTP, **Push Notification**, email verification link, and more), enforcement policies, trusted devices, multisite support, custom branding, and more.
 
 ---
 
-### Why Use Two-Factor Authentication for WordPress?
+### What's New in 6.2.9
+
+- **Unlimited users on the free plan** — no user cap, no per-seat charge.
+- **Passkey (WebAuthn/FIDO2) — free** — passwordless **2FA** with Face ID, Touch ID, Windows Hello, or a hardware security key.
+- **Push Notification 2FA (Premium)** — approve the login from your phone with one tap, no code to type.
+
+---
+
+### Why Use (2FA) Two-Factor Authentication for WordPress?
 
 **Protect Administrator Accounts**
-Administrator accounts are the primary target of attackers. **WordPress Two-Factor Authentication** ensures that only verified users can access administrative dashboards.
+Administrator accounts are the primary target of attackers. **WordPress Two-Factor Authentication (2FA)** ensures that only verified users can access administrative dashboards.
 
 **Prevent Unauthorized Access**
 Even if passwords are stolen through phishing attacks or data breaches, additional **authentication** requirements help prevent unauthorized access.
@@ -42,7 +49,7 @@ Even if passwords are stolen through phishing attacks or data breaches, addition
 **Multi-factor authentication** significantly reduces the likelihood of successful account takeover attempts.
 
 **Secure WooCommerce Customer Accounts**
-Protect customer profiles, order information, payment details, and store management accounts using **WooCommerce Two-Factor Authentication**.
+Protect customer profiles, order information, payment details, and store management accounts using **WooCommerce Two-Factor Authentication (2FA)**.
 
 Quick Links:
 [Setup Guide](https://plugins.miniorange.com/step-by-step-guide-for-wordpress-2-factor-authentication) |
@@ -56,9 +63,28 @@ Quick Links:
 
 ---
 
+### Passkey 2FA — Free
+
+**Passkey** replaces the password with a cryptographic key stored on the user's device. Nothing is typed, so nothing can be phished — making Passkey one of the strongest **2FA** methods available today, and it's free in this plugin.
+
+- Register a **Passkey** from the user profile in seconds
+- Works with Face ID, Touch ID, Windows Hello, and Android biometrics
+- Works with hardware security keys such as YubiKey, Titan, and SoloKey
+- Use **Passkey** as passwordless login or as the second **2FA** step
+- Multiple passkeys per user, with backup codes as fallback
+- No external calls — **Passkey** verification happens entirely on your own site
+
+---
+
+### Push Notification 2FA — Premium
+
+**Push Notification 2FA** sends a login approval request directly to the user's phone. They tap Approve and the login completes — no six-digit code, no SMS delay, no copy-paste. It's one of the fastest **2FA** methods for teams that log in many times a day.
+
+---
+
 ### WordPress 2FA Core Features
 
-miniOrange provides comprehensive **WordPress Two-Factor Authentication** and **Multi-Factor Authentication** capabilities for websites of all sizes.
+miniOrange provides comprehensive **WordPress Two-Factor Authentication (2FA)** and **Multi-Factor Authentication** capabilities for websites of all sizes.
 
 ---
 
@@ -67,17 +93,19 @@ miniOrange provides comprehensive **WordPress Two-Factor Authentication** and **
 Secure WordPress logins using multiple **2FA** authentication methods:
 
 - **Google Authenticator** (TOTP-based 2FA)
-- **Microsoft Authenticator**
-- **Authy Authenticator**
-- **Duo Authenticator**
-- **LastPass Authenticator**
+- **Passkey** Authentication (WebAuthn/FIDO2, passwordless & phishing-resistant)
 - **Email OTP** Verification
-- **SMS OTP** Verification
-- **WhatsApp OTP** Authentication *(Premium)*
-- **Telegram OTP** Authentication
 - Security Questions (KBA)
 - Backup Codes
-- Hardware Token Authentication
+- **Microsoft Authenticator** *(Premium)*
+- **Authy Authenticator** *(Premium)*
+- **LastPass Authenticator** *(Premium)*
+- **SMS OTP** Verification *(Premium)*
+- **WhatsApp OTP** Authentication *(Premium)*
+- **Telegram OTP** Authentication *(Premium)*
+- **Push Notification** Authentication *(Premium)*
+- Email Verification Link *(Premium)*
+- Hardware Token Authentication *(Premium)*
 
 ---
 
@@ -93,7 +121,7 @@ Secure WordPress logins using multiple **2FA** authentication methods:
 
 ---
 
-### WooCommerce Two-Factor Authentication
+### WooCommerce Two-Factor Authentication (2FA)
 
 Protect WooCommerce stores with enhanced login **security** and customer account protection.
 
@@ -108,6 +136,7 @@ Protect WooCommerce stores with enhanced login **security** and customer account
 
 Allow users to securely access WordPress without traditional passwords.
 
+- **Passkey** passwordless login
 - Magic Link Login
 - OTP Login (without password)
 - Email Verification Login
@@ -144,9 +173,19 @@ Compatible with:
 
 ---
 
+### Free vs Premium
+
+**Free** — unlimited users, **Passkey**, **Google Authenticator** (and other TOTP apps), **Email OTP**, backup codes, security questions, role-based **2FA**, **WooCommerce 2FA**, passwordless login.
+
+**Premium** — **Push Notification 2FA**, **SMS OTP**, **WhatsApp OTP**, **Telegram OTP**, hardware tokens, trusted devices, custom SMS gateway, custom branding & white-labelling, multisite **2FA**, advanced reporting.
+
+---
+
 ### External Services
 
 Some **2FA** methods require communication with miniOrange services to send or verify OTP, SMS, email, push, or account-related requests. These services are used only when you configure or use the related **2FA** method.
+
+**Passkey** and **Google Authenticator** (TOTP) are verified entirely on your own site and make no external calls.
 
 Service links:
 [miniOrange Terms](https://www.miniorange.com/usecases/miniOrange_User_Agreement.pdf) |
@@ -186,20 +225,23 @@ Service links:
 
 == Frequently Asked Questions ==
 
-= What is Two-Factor Authentication (2FA) in WordPress? =
-**Two-Factor Authentication (2FA)** adds a second verification step to the WordPress login process. After entering their password, users must verify their identity using a second factor such as a time-based OTP from **Google Authenticator**, an **Email OTP**, an **SMS OTP**, or another supported **authentication** method. This ensures accounts remain protected even if passwords are compromised.
-
 = What is WordPress Two-Factor Authentication? =
-**WordPress Two-Factor Authentication** is a login security mechanism that requires users to provide two forms of identity verification. The miniOrange **2FA** plugin integrates **multi-factor authentication** directly into the WordPress login process, supporting **Google Authenticator**, **Email OTP**, **SMS OTP**, **WhatsApp OTP**, **Telegram OTP**, and more.
+**WordPress Two-Factor Authentication (2FA)** is a login security mechanism that requires users to provide two forms of identity verification before access is granted. The miniOrange **2FA** plugin integrates **multi-factor authentication** directly into the WordPress login process, supporting **Passkey**, **Google Authenticator**, **Email OTP**, **SMS OTP**, **WhatsApp OTP**, **Telegram OTP**, and more.
 
 = Does this plugin support Google Authenticator? =
-Yes. The plugin fully supports **Google Authenticator** and all TOTP-based authenticator apps, including **Microsoft Authenticator**, **Authy**, **Duo**, and **LastPass Authenticator**.
+Yes. The plugin fully supports **Google Authenticator** and all TOTP-based authenticator apps, including **Microsoft Authenticator**, **Authy**, and **LastPass Authenticator**.
 
 = Does this 2FA plugin support Microsoft Authenticator? =
 Yes. The plugin supports **Microsoft Authenticator** and any TOTP-compatible authenticator app for **WordPress two-factor authentication**.
 
 = Can I enforce 2FA for all users? =
-You can choose which roles should require **2FA** and which accounts must complete setup. On the **free** plan, up to **5 users** can finish **2FA** setup — enough for small teams and admins. **Premium** removes that limit so you can enforce **multi-factor authentication** across large memberships, stores, and organizations, with added features like trusted devices, stronger enforcement, and multisite support.
+You can choose which roles should require **2FA** and which accounts must complete setup. The **free** plan supports **unlimited users** completing setup with Google Authenticator, Passkey, Email OTP, or Security Questions. **Premium** adds more 2FA methods along with trusted devices, stronger enforcement, and multisite support.
+
+= Does this plugin support Passkey login? =
+Yes. **Passkey** authentication is available in the **free** version, letting users sign in using device biometrics (fingerprint, face recognition) or security keys based on the WebAuthn/FIDO2 standard. It provides a fast, passwordless, and phishing-resistant **2FA** experience.
+
+= Does this plugin support Push Notification authentication? =
+Yes, as a **premium** **2FA** method. Users simply approve or deny a **push notification** sent to their registered mobile device to complete login, without manually entering an OTP.
 
 = Can I enable 2FA for administrators only? =
 Yes. The plugin supports role-based **authentication** policies, allowing you to enforce **2FA** exclusively for administrators, editors, or any specific WordPress user role.
@@ -208,7 +250,7 @@ Yes. The plugin supports role-based **authentication** policies, allowing you to
 Install and activate this plugin, open the miniOrange **2FA** dashboard, choose which users or roles should use **two-factor authentication**, and select a method (**Google Authenticator**, **Email OTP**, **SMS OTP**, and more). The built-in setup wizard walks you through each configuration step.
 
 = Is WordPress 2FA free with this plugin? =
-Yes. The free plan includes **2FA** for up to **5 users** (each user who completes setup counts toward the limit). **Premium** unlocks unlimited users plus trusted devices, custom branding, multisite support, and other advanced **authentication** options.
+Yes. The free plan supports **unlimited users** with Google Authenticator, Passkey, Email OTP, and Security Questions. **Premium** unlocks more 2FA methods (SMS, WhatsApp, Push Notification, email verification link, and more) plus trusted devices, custom branding, multisite support, and other advanced **authentication** options.
 
 = Does this plugin support WooCommerce Two-Factor Authentication? =
 Yes. You can protect **WooCommerce** login and related flows so customers and shop staff complete **2FA** verification wherever you enable it. Full **WooCommerce Two-Factor Authentication** is supported.
@@ -239,6 +281,12 @@ You can use backup codes, the email verification recovery option, or disable the
 8. Test WP 2FA Plugin
 
 == Changelog ==
+
+= 6.2.9 =
+* Free 2FA now supports **unlimited users** completing two-factor authentication setup.
+* Introduced **Passkey** as a new 2FA method in the free version.
+* Introduced **Push Notification** as a new premium 2FA method.
+* Performance optimizations across the 2FA plugin.
 
 = 6.2.8 =
 * Bug fixes for TOTP method and KBA method
@@ -401,6 +449,12 @@ For older changelog entries, please see the [additional changelog.txt file](http
 
 == Upgrade Notice ==
 
+= 6.2.9 =
+* Free 2FA now supports **unlimited users** completing two-factor authentication setup.
+* Introduced **Passkey** as a new 2FA method in the free version.
+* Introduced **Push Notification** as a new premium 2FA method.
+* Performance optimizations across the 2FA plugin.
+
 = 6.2.8 =
 * Bug fixes for TOTP method and KBA method
 * Minor bug fixes and improvements.
@@ -414,10 +468,9 @@ For older changelog entries, please see the [additional changelog.txt file](http
 * Security fixes.
 
 = 6.2.5 =
-* Increased the free 2FA setup limit so up to **5 users** can complete two-factor authentication configuration.
-* Updated account recovery email behavior so the recovery link can be sent without checking remaining email transactions.
-* UI Improvements in 2FA plugin.
-* 2FA plugin readme changes.
+* Increased free 2FA setup limit to 5 users.
+* Recovery email link now sent without checking email transactions.
+* UI improvements and readme updates.
 * Compatibility with WordPress 7.0
 
 = 6.2.4 =

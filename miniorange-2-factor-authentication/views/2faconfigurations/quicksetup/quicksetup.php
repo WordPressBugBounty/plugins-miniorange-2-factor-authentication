@@ -21,7 +21,6 @@ if ( current_user_can( 'manage_options' ) ) {
 			<p style="margin:0;"><?php echo wp_kses_post( MoWpnsMessages::mo2f_user_limit_exceeded_message_html() ); ?></p>
 		</div>
 	<?php endif; ?>
-	<p class="mo2f-plugin-value-hint"><?php esc_html_e( 'Core two-factor authentication is included in this free plugin. A Crown icon marks optional paid add-ons. Everything else on this page applies to the free version.', 'miniorange-2-factor-authentication' ); ?></p>
 	<div class="mo2f-settings-div">
 	<div class="mo2f-settings-head">
 		<?php $mo2f_enable_2fa = MoWpnsUtility::get_mo2f_db_option( 'mo2f_activate_plugin', 'site_option' ); ?>
@@ -125,8 +124,9 @@ if ( current_user_can( 'manage_options' ) ) {
 			<div class="mo2f-method-tiles<?php echo ! empty( $mo2f_method_tiles_readonly ) ? ' mo2f-method-tiles--readonly' : ''; ?>">
 				<?php
 				foreach ( $mo2f_methods_on_dashboard as $mo2f_method ) {
-					$mo2f_is_checked = in_array( $mo2f_method, $mo2f_selected_methods, true ) || ( ! $mo2f_lv_needed );
-					$mo2f_is_enabled = $mo2f_is_checked ? 'enabled' : '';
+					$mo2f_is_method_premium_locked = ! empty( $mo2f_two_factor_methods_details[ $mo2f_method ]['crown'] );
+					$mo2f_is_checked               = ! $mo2f_is_method_premium_locked && ( in_array( $mo2f_method, $mo2f_selected_methods, true ) || ( ! $mo2f_lv_needed ) );
+					$mo2f_is_enabled               = $mo2f_is_checked ? 'enabled' : '';
 					?>
 					<div class="mo2f-method-tile <?php echo esc_attr( $mo2f_is_enabled ); ?>" data-method="<?php echo esc_attr( $mo2f_method ); ?>">
 						<div class="mo2f-method-icon mo2f-method-icon-quick-setup">
@@ -143,18 +143,20 @@ if ( current_user_can( 'manage_options' ) ) {
 						<div class="mo2f-method-content">
 							<div class="mo2f-method-header">
 								<span class="mo2f-method-name"><?php echo esc_html( $mo2f_method_names[ $mo2f_method ] ); ?></span>
-								<?php if ( $mo2f_is_checked ) : ?>
+								<?php if ( $mo2f_is_method_premium_locked ) : ?>
+									<span class="mo2f-method-badge mo2f-method-badge--premium"><?php echo esc_html__( 'Premium', 'miniorange-2-factor-authentication' ); ?></span>
+								<?php elseif ( $mo2f_is_checked ) : ?>
 									<span class="mo2f-method-badge"><?php echo esc_html__( 'Enabled', 'miniorange-2-factor-authentication' ); ?></span>
 								<?php endif; ?>
 							</div>
 							<p class="mo2f-method-hint"><?php echo esc_html( isset( $mo2f_method_hints[ $mo2f_method ] ) ? $mo2f_method_hints[ $mo2f_method ] : '' ); ?></p>
-							<?php if ( ! empty( $mo2f_show_sms_login_notice ) && MoWpnsConstants::OTP_OVER_SMS === $mo2f_method ) : ?>
+							<?php if ( ! $mo2f_is_method_premium_locked && ! empty( $mo2f_show_sms_login_notice ) && MoWpnsConstants::OTP_OVER_SMS === $mo2f_method ) : ?>
 								<p class="mo2f-method-login-notice"><?php esc_html_e( 'You need to log in to your miniOrange account first to use OTP Over SMS.', 'miniorange-2-factor-authentication' ); ?></p>
 							<?php endif; ?>
 						</div>
 						<div class="mo2f-method-toggle">
 							<label class="switch_2fa_methods">
-								<input type="checkbox" name="mo2f_methods[]" id="<?php echo 'mo2fa_forall_' . esc_attr( $mo2f_method ); ?>" value="<?php echo esc_attr( $mo2f_method ); ?>" <?php checked( $mo2f_is_checked ); ?> <?php disabled( ! empty( $mo2f_method_tiles_readonly ) ); ?> aria-disabled="<?php echo ! empty( $mo2f_method_tiles_readonly ) ? 'true' : 'false'; ?>">
+								<input type="checkbox" name="mo2f_methods[]" id="<?php echo 'mo2fa_forall_' . esc_attr( $mo2f_method ); ?>" value="<?php echo esc_attr( $mo2f_method ); ?>" <?php checked( $mo2f_is_checked ); ?> <?php disabled( ! empty( $mo2f_method_tiles_readonly ) || $mo2f_is_method_premium_locked ); ?> aria-disabled="<?php echo ( ! empty( $mo2f_method_tiles_readonly ) || $mo2f_is_method_premium_locked ) ? 'true' : 'false'; ?>">
 								<span class="slider_2fa_methods"></span>
 							</label>
 						</div>
@@ -179,9 +181,10 @@ if ( current_user_can( 'manage_options' ) ) {
 					<div class="mo2f-method-tiles<?php echo ! empty( $mo2f_method_tiles_readonly ) ? ' mo2f-method-tiles--readonly' : ''; ?>">
 						<?php
 						foreach ( $mo2f_methods_on_dashboard as $mo2f_method ) {
-							$mo2f_role_methods = (array) get_site_option( 'mo2f_auth_methods_for_' . $mo2f_role_id );
-							$mo2f_is_checked   = in_array( $mo2f_method, $mo2f_role_methods, true );
-							$mo2f_is_enabled   = $mo2f_is_checked ? 'enabled' : '';
+							$mo2f_role_methods             = (array) get_site_option( 'mo2f_auth_methods_for_' . $mo2f_role_id );
+							$mo2f_is_checked               = in_array( $mo2f_method, $mo2f_role_methods, true );
+							$mo2f_is_enabled               = $mo2f_is_checked ? 'enabled' : '';
+							$mo2f_is_method_premium_locked = ! empty( $mo2f_two_factor_methods_details[ $mo2f_method ]['crown'] );
 							?>
 							<div class="mo2f-method-tile <?php echo esc_attr( $mo2f_is_enabled ); ?>" data-method="<?php echo esc_attr( $mo2f_method ); ?>">
 								<div class="mo2f-method-icon mo2f-method-icon-quick-setup">
@@ -202,7 +205,7 @@ if ( current_user_can( 'manage_options' ) ) {
 										<?php endif; ?>
 									</div>
 									<p class="mo2f-method-hint"><?php echo esc_html( isset( $mo2f_method_hints[ $mo2f_method ] ) ? $mo2f_method_hints[ $mo2f_method ] : '' ); ?></p>
-									<?php if ( ! empty( $mo2f_show_sms_login_notice ) && MoWpnsConstants::OTP_OVER_SMS === $mo2f_method ) : ?>
+									<?php if ( ! $mo2f_is_method_premium_locked && ! empty( $mo2f_show_sms_login_notice ) && MoWpnsConstants::OTP_OVER_SMS === $mo2f_method ) : ?>
 										<p class="mo2f-method-login-notice"><?php esc_html_e( 'You need to log in to your miniOrange account first to use OTP Over SMS.', 'miniorange-2-factor-authentication' ); ?></p>
 									<?php endif; ?>
 								</div>
@@ -296,4 +299,3 @@ if ( current_user_can( 'manage_options' ) ) {
 	);
 }
 ?>
-</div>

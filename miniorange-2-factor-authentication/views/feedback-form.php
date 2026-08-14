@@ -93,7 +93,7 @@ $mo2f_feedback_too_complex_html = '<p>' . esc_html__( 'See the step-by-step guid
 				</div>
 			</form>
 			<form name="f" method="post" action="" id="mo_wpns_feedback_form_close">
-				<input type="hidden" id="mo_wpns_feedback_nonce" name="mo_wpns_feedback_nonce" value="<?php echo esc_attr( wp_create_nonce( 'mo-wpns-feedback-nonce' ) ); ?>"/>
+				<input type="hidden" id="mo_wpns_feedback_nonce_close" name="mo_wpns_feedback_nonce" value="<?php echo esc_attr( wp_create_nonce( 'mo-wpns-feedback-nonce' ) ); ?>"/>
 				<input type="hidden" name="option" value="mo_wpns_skip_feedback" />
 			</form>
 
@@ -163,100 +163,3 @@ $mo2f_feedback_too_complex_html = '<p>' . esc_html__( 'See the step-by-step guid
 
 		});
 	</script>
-	<style>
-		.mo-textarea{
-			-webkit-appearance: none;
-			outline: none !important;
-			box-shadow: none !important;
-			border: 2px solid;
-			--tw-border-opacity: 1;
-			border-color: rgb(226 232 240 / var(--tw-border-opacity));
-			padding-left: 1rem;
-			padding-right: 1rem;
-			padding-top: 0.75rem;
-			padding-bottom: 0.75rem;
-			font-weight: 700;
-			transition-duration: 200ms;
-			border-radius: 0.375rem;
-		}
-		.mo-textarea:disabled{
-			cursor: not-allowed;
-			-webkit-user-select: none;
-			-moz-user-select: none;
-					user-select: none;
-		}
-		.mo-textarea:focus {
-			outline: none !important;
-			box-shadow: none !important;
-			border: 2px solid black;
-			--tw-border-opacity: 1;
-			border-color: rgb(99 102 241 / var(--tw-border-opacity));
-		}
-		.mo-textarea {
-			font-family: monospace, sans-serif;
-			resize: none;
-			font-weight: 400;
-			width: 100%;
-		}
-		.mo2f_modal-footer div{
-			margin-bottom: 0.5em;
-		}
-		.mo2f_modal-footer {
-			margin-bottom: 1em;
-		}
-		.my-mo-3 {
-			margin-top: 0.75rem;
-			margin-bottom: 0.75rem;
-		}
-		.mo2f-save-settings-button {
-			padding-left: 1rem;
-			padding-right: 1rem;
-			padding-top: 0.5rem;
-			padding-bottom: 0.5rem;
-			font-family: Poppins, sans-serif;
-			--tw-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-			--tw-shadow-colored: 0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);
-			box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
-			border-radius: 4px;
-			border-style: none;
-			--tw-bg-opacity: 1;
-			background-color: rgb(99 102 241 / var(--tw-bg-opacity));
-			font-size: 13px;
-			--tw-text-opacity: 1;
-			color: rgb(255 255 255 / var(--tw-text-opacity));
-		}
-		.mo2f-save-settings-button:hover {
-			cursor: pointer;
-			--tw-bg-opacity: 1;
-			background-color: rgb(129 140 248 / var(--tw-bg-opacity));
-		}
-		.mo2f-reset-settings-button {
-			border-radius: 4px;
-			border-width: 1px;
-			border-style: solid;
-			--tw-border-opacity: 1;
-			border-color: rgb(99 102 241 / var(--tw-border-opacity));
-			--tw-bg-opacity: 1;
-			background-color: rgb(255 255 255 / var(--tw-bg-opacity));
-			padding-left: 1rem;
-			padding-right: 1rem;
-			padding-top: 0.5rem;
-			padding-bottom: 0.5rem;
-			font-family: Poppins, sans-serif;
-			font-size: 13px;
-			font-weight: 500;
-			--tw-text-opacity: 1;
-			color: rgb(99 102 241 / var(--tw-text-opacity));
-		}
-		.mo2f-reset-settings-button:hover {
-			cursor: pointer;
-			--tw-bg-opacity: 1;
-			background-color: rgb(224 231 255 / var(--tw-bg-opacity));
-		}
-		.mo2f_plugin_select{
-			padding:5px;
-			margin-left:4%;
-			font-size:13px;
-			background-color: #a3e8c2;
-		}
-	</style>

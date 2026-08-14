@@ -24,6 +24,7 @@ $mo2f_current_page = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $
 ?><div id="mo2f_2fa_popup_dashboard" class="modal" hidden></div>
 <?php
 require_once $mo2f_controller . DIRECTORY_SEPARATOR . 'two-factor-page.php';
+echo '</div>'; // Closes the .mo2f_plugin_dashboard flex wrapper opened in views/main-menu.php.
 if ( current_user_can( 'manage_options' ) ) {
 	require $mo2f_controller . 'contactus.php';
 }

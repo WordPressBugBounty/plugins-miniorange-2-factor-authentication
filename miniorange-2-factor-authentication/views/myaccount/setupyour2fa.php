@@ -101,8 +101,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			echo '</b></div></div>';
 			echo '   <div class="mo2f-guide-icons" >';
+			$mo2f_is_starter_tier_method = in_array( $mo2f_auth_method, array( MoWpnsConstants::OTP_OVER_SMS, MoWpnsConstants::OUT_OF_BAND_EMAIL ), true );
 			if ( $mo2f_is_method_premium_locked ) {
-				echo Mo2f_Common_Helper::mo2f_check_plan( 'all-inclusive', MoWpnsConstants::MO2F_PREMIUM_1PLAN_NAME ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in helper.
+				echo $mo2f_is_starter_tier_method
+					? Mo2f_Common_Helper::mo2f_check_plan( 'basic', MoWpnsConstants::MO2F_PREMIUM_3PLAN_NAME ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in helper.
+					: Mo2f_Common_Helper::mo2f_check_plan( 'all-inclusive', MoWpnsConstants::MO2F_PREMIUM_1PLAN_NAME ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in helper.
 			}
 			if ( isset( $mo2f_doc_link ) && ! $mo2f_is_method_premium_locked ) {
 				echo '<a href=' . esc_url( $mo2f_doc_link ) . ' class="mx-auto" target="_blank">
@@ -136,7 +139,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 			}
 			echo '<div>';
 			if ( $mo2f_is_method_premium_locked ) {
-				echo '<button type="button" class="mo2f-tw-configure-2fa mo2f-tw-configure-2fa--premium-locked" id="' . esc_attr( $mo2f_auth_method_abbr ) . '_configuration" disabled aria-disabled="true" title="' . esc_attr__( 'Available with the All Inclusive plan. Hover the crown icon to upgrade.', 'miniorange-2-factor-authentication' ) . '">';
+				$mo2f_premium_button_title = $mo2f_is_starter_tier_method
+					? __( 'Available with the Starter plan. Hover the crown icon to upgrade.', 'miniorange-2-factor-authentication' )
+					: __( 'Available with the All Inclusive plan. Hover the crown icon to upgrade.', 'miniorange-2-factor-authentication' );
+				echo '<button type="button" class="mo2f-tw-configure-2fa mo2f-tw-configure-2fa--premium-locked" id="' . esc_attr( $mo2f_auth_method_abbr ) . '_configuration" disabled aria-disabled="true" title="' . esc_attr( $mo2f_premium_button_title ) . '">';
 				echo esc_html__( 'Premium', 'miniorange-2-factor-authentication' );
 				echo '</button>';
 			} elseif ( $mo2f_display_configure_button ) {
@@ -194,103 +200,4 @@ wp_localize_script(
 	)
 );
 ?>
-<style>
-#mo2f_free_plan_auth_methods {
-	width: 100%;
-}
-.mo2f_auth_methods_grid {
-	display: grid !important;
-	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-	gap: 16px;
-	width: 100%;
-	margin: 0;
-	padding: 0;
-	border: 0;
-}
-.mo2f_auth_methods_grid .mo2f-tw-thumbnail {
-	width: 100% !important;
-	max-width: none;
-	height: auto !important;
-	min-height: 228px;
-	margin: 0 !important;
-	display: flex !important;
-	flex-direction: column;
-	box-sizing: border-box;
-}
-.mo2f_auth_methods_grid .mo2f-thumbnail-method-desc {
-	flex: 1 1 auto;
-	height: auto !important;
-	min-height: 4.5rem;
-	padding: 12px 16px;
-	line-height: 1.45;
-	font-size: 13px;
-	overflow: visible;
-}
-.mo2f_auth_methods_grid .mo2f-thumbnail-bottom-section {
-	height: auto !important;
-	min-height: 2.75rem;
-	margin-top: auto;
-	padding: 10px 12px;
-	flex-wrap: wrap;
-	gap: 8px;
-	align-items: center;
-}
-.mo2f_auth_methods_grid .mo2f-thumbnail-top-section {
-	flex-shrink: 0;
-}
-.mo2f-tw-top-content {
-	flex-wrap: wrap;
-	gap: 12px 16px;
-	margin-bottom: 16px !important;
-	align-items: flex-start;
-}
-.mo2f-setup-two-factor-title {
-	flex: 1 1 220px;
-	min-width: 0;
-	font-size: 1.05rem;
-	line-height: 1.35;
-}
-.test_auth_button {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	justify-content: flex-end;
-	align-items: center;
-	flex: 1 1 280px;
-}
-@media (max-width: 782px) {
-	.mo2f_auth_methods_grid {
-		grid-template-columns: 1fr;
-	}
-	.test_auth_button {
-		justify-content: flex-start;
-		width: 100%;
-	}
-}
-.mo2f-tw-configure-2fa--premium-locked {
-	opacity: 0.72;
-	cursor: not-allowed !important;
-}
-/* Premium tooltip: card uses overflow:hidden; crown is top-right — show tooltip to the left */
-.mo2f-tw-thumbnail.mo2f-all-inclusive-plan {
-	overflow: visible;
-}
-.mo2f-tw-thumbnail.mo2f-all-inclusive-plan:hover,
-.mo2f-tw-thumbnail.mo2f-all-inclusive-plan:focus-within {
-	z-index: 5;
-}
-.mo2f-tw-thumbnail.mo2f-all-inclusive-plan .mo2f_premium_tooltip .mo2f_premium_tooltiptext,
-.mo2f-tw-thumbnail.mo2f-all-inclusive-plan .mo2f_premium_tooltip.mo2f-premium-marker .mo2f_premium_tooltiptext.mo2f-premium-marker__tip {
-	left: auto !important;
-	right: calc(100% + 10px) !important;
-	top: 50% !important;
-	transform: translateY(-50%) !important;
-	margin: 0 !important;
-}
-.mo2f-tw-thumbnail.mo2f-all-inclusive-plan .mo2f_premium_tooltip .mo2f_premium_tooltiptext::after {
-	right: auto !important;
-	left: 100% !important;
-	border-color: transparent transparent transparent #e0e7ff !important;
-}
-</style>
 <?php
