@@ -2,9 +2,9 @@
 Contributors: twofactor, twofactorauthentication, hsn97, cyberlord92
 Tags: 2fa, two-factor-authentication, mfa, authentication, security, wp 2fa
 Requires at least: 5.3.0
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 5.3.0
-Stable tag: 6.2.9
+Stable tag: 6.3.0
 License: Expat
 License URI: https://plugins.miniorange.com/mit-license
 
@@ -282,6 +282,9 @@ You can use backup codes, the email verification recovery option, or disable the
 
 == Changelog ==
 
+= 6.3.0 =
+* Compatibility with WordPress 7.1
+
 = 6.2.9 =
 * Free 2FA now supports **unlimited users** completing two-factor authentication setup.
 * Introduced **Passkey** as a new 2FA method in the free version.
@@ -448,6 +451,9 @@ You can use backup codes, the email verification recovery option, or disable the
 For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/miniorange-2-factor-authentication/trunk/changelog.txt) provided with the plugin.
 
 == Upgrade Notice ==
+
+= 6.3.0 =
+* Compatibility with WordPress 7.1
 
 = 6.2.9 =
 * Free 2FA now supports **unlimited users** completing two-factor authentication setup.

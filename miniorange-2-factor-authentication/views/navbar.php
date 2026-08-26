@@ -78,8 +78,8 @@ if ( current_user_can( 'manage_options' ) ) {
 		<div class="mo2f-header-actions" style="display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:0 1 auto;flex-wrap:wrap;margin-left:auto;min-width:0;">
     		<div id="mo2f_check_transactions" class="mo2f-transaction-show">
 				<div id="mo2f_remaining_transactions_sms_email">
-        			SMS: ' . esc_attr( $mo2f_remaining_transaction['sms_transactions'] ) . '  |  Email: ' . esc_attr( $mo2f_remaining_transaction['email_transactions'] ) . '   
-				</div>      
+        			Email: ' . esc_attr( $mo2f_remaining_transaction['email_transactions'] ) . '
+				</div>
         		<div class="relative mo2f-30x30">
             		<button id="mo2f_transaction_check" class="mo2f-refresh-btn mo2f-full-size">
 						<svg width="18" height="18" viewBox="0 0 512 512">
