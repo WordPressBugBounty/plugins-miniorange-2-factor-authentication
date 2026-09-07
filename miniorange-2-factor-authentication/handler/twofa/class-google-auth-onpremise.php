@@ -169,6 +169,7 @@ if ( ! class_exists( 'Google_Auth_Onpremise' ) ) {
 		 * @return string
 		 */
 		public function mo2f_verify_code( $secret, $code, $discrepancy = 1, $current_time_slice = null ) {
+			$response   = array( 'status' => 'FAILURE' );
 			$used_codes = (array) get_transient( 'mo2f_google_auth_used_otp_' . $secret );
 			if ( ! is_user_logged_in() && in_array( $code, $used_codes, true ) ) {
 				return wp_json_encode( array( 'status' => 'ALREADY_USED' ) );

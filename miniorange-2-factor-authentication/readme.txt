@@ -4,7 +4,7 @@ Tags: 2fa, two-factor-authentication, mfa, authentication, security, wp 2fa
 Requires at least: 5.3.0
 Tested up to: 7.1
 Requires PHP: 5.3.0
-Stable tag: 6.3.0
+Stable tag: 6.3.1
 License: Expat
 License URI: https://plugins.miniorange.com/mit-license
 
@@ -282,6 +282,10 @@ You can use backup codes, the email verification recovery option, or disable the
 
 == Changelog ==
 
+= 6.3.1 =
+* Fixed unauthenticated arbitrary WordPress option deletion via the email-verification link handler.
+* Fixed 2FA attempt-lockout bypass (client-controlled counter) and added missing rate limiting to the 2FA configuration-validation endpoint.
+
 = 6.3.0 =
 * Compatibility with WordPress 7.1
 
@@ -451,6 +455,10 @@ You can use backup codes, the email verification recovery option, or disable the
 For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/miniorange-2-factor-authentication/trunk/changelog.txt) provided with the plugin.
 
 == Upgrade Notice ==
+
+= 6.3.1 =
+* Fixed unauthenticated arbitrary WordPress option deletion via the email-verification link handler.
+* Fixed 2FA attempt-lockout bypass (client-controlled counter) and added missing rate limiting to the 2FA configuration-validation endpoint.
 
 = 6.3.0 =
 * Compatibility with WordPress 7.1

@@ -360,6 +360,14 @@ if ( ! class_exists( 'Mo2f_PASSKEY_Handler' ) ) {
 				wp_send_json_error( __( 'Unauthorized.', 'miniorange-2-factor-authentication' ) );
 				return;
 			}
+			if ( ! is_user_logged_in() ) {
+				$common_helper = new Mo2f_Common_Helper();
+				if ( $common_helper->mo2f_is_2fa_set( $user->ID ) ) {
+					MO2f_Utility::mo2f_debug_file( 'Passkey get_registration_options - blocked: account already has 2FA configured and this is not an authenticated dashboard session, User_Id-' . $user->ID );
+					wp_send_json_error( __( 'Please log in and use your account dashboard to manage passkeys.', 'miniorange-2-factor-authentication' ) );
+					return;
+				}
+			}
 			$existing_credentials = $this->mo2f_get_user_credentials( $user->ID );
 			$exclude_ids          = array_map(
 				function ( $credential ) {
@@ -414,6 +422,14 @@ if ( ! class_exists( 'Mo2f_PASSKEY_Handler' ) ) {
 				MO2f_Utility::mo2f_debug_file( 'Passkey validate_otp - no user resolved from user_details, rejecting.' );
 				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_WHILE_VALIDATING_OTP ) );
 				return;
+			}
+			if ( 'LOGGED_IN' !== ( $user_details['login_status'] ?? '' ) ) {
+				$common_helper = new Mo2f_Common_Helper();
+				if ( $common_helper->mo2f_is_2fa_set( $user->ID ) ) {
+					MO2f_Utility::mo2f_debug_file( 'Passkey validate_otp - blocked: account already has 2FA configured and this is not an authenticated dashboard session, User_Id-' . $user->ID );
+					wp_send_json_error( __( 'Please log in and use your account dashboard to manage passkeys.', 'miniorange-2-factor-authentication' ) );
+					return;
+				}
 			}
 			$credential = json_decode( $otp_token, true );
 			if ( empty( $credential['response']['clientDataJSON'] ) || empty( $credential['response']['attestationObject'] ) ) {
@@ -582,13 +598,13 @@ if ( ! class_exists( 'Mo2f_PASSKEY_Handler' ) ) {
 			MO2f_Utility::mo2f_debug_file( 'Passkey login_validate - is_user_logged_in=' . ( is_user_logged_in() ? '1' : '0' ) . ' resolved_user_id=' . ( $user_id ? $user_id : '(none)' ) . ' otp_token_length=' . strlen( (string) $otp_token ) );
 			if ( ! $user ) {
 				MO2f_Utility::mo2f_debug_file( 'Passkey login_validate - no user resolved from session, rejecting.' );
-				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $session_id_encrypt );
+				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $user_id );
 				return;
 			}
 			$assertion = json_decode( $otp_token, true );
 			if ( empty( $assertion['id'] ) || empty( $assertion['response']['clientDataJSON'] ) || empty( $assertion['response']['authenticatorData'] ) || empty( $assertion['response']['signature'] ) ) {
 				MO2f_Utility::mo2f_debug_file( 'Passkey login_validate - malformed assertion payload for User_Id-' . $user->ID . ' json_last_error=' . json_last_error_msg() );
-				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $session_id_encrypt );
+				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $user_id );
 				return;
 			}
 			$credentials     = $this->mo2f_get_user_credentials( $user->ID );
@@ -603,7 +619,7 @@ if ( ! class_exists( 'Mo2f_PASSKEY_Handler' ) ) {
 			}
 			if ( null === $matched ) {
 				MO2f_Utility::mo2f_debug_file( 'Passkey login_validate - assertion id did not match any stored credential for User_Id-' . $user->ID . ' registered_count=' . count( $credentials ) );
-				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $session_id_encrypt );
+				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $user_id );
 				return;
 			}
 			$challenge_b64url = get_transient( $session_id_encrypt . 'mo2f_passkey_auth_challenge' );
@@ -635,7 +651,7 @@ if ( ! class_exists( 'Mo2f_PASSKEY_Handler' ) ) {
 					'Passkey login verification failed - User_Id-' . $user->ID
 					. ' ExceptionClass=' . get_class( $e ) . ' Code=' . $e->getCode() . ' Error-' . $e->getMessage()
 				);
-				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $session_id_encrypt );
+				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_OTP', $user_id );
 				return;
 			}
 			delete_transient( $session_id_encrypt . 'mo2f_passkey_auth_challenge' );

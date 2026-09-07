@@ -395,6 +395,9 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				$user_details['login_status'] = 'MFA_COMPLETED';
 				set_transient( $session_id . 'mo2f_user_transaction_details', $user_details, 300 );
 			}
+			if ( is_array( $user_details ) && ! empty( $user_details['user_id'] ) ) {
+				delete_transient( 'mo2f_attempts_before_redirect_' . $user_details['user_id'] );
+			}
 		}
 
 		/**

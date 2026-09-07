@@ -451,7 +451,7 @@ if ( ! class_exists( 'Mo2f_KBA_Handler' ) ) {
 				$common_helper->mo2f_update_current_user_status( $session_id_encrypt );
 				wp_send_json_success( 'VALIDATED_SUCCESS' );
 			} else {
-				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_ANSWERS', $session_id_encrypt );
+				$mo2f_mo_wpns_utility->mo2f_handle_attempt_validation( 'INVALID_ANSWERS', $user_id );
 			}
 		}
 	}

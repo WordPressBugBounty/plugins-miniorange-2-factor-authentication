@@ -39,10 +39,10 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 		 */
 		public function mo2f_twofa_login_prompt_skeleton_values( $login_message, $login_status, $kba_question1, $kba_question2, $user_id, $validation_flow, $login_title = '', $session_id_encrypt = '' ) {
 			$prompt_title = $this->mo2f_login_prompt_title( $login_title, $login_status );
-			if ( ! get_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect' ) ) {
-				set_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect', 3 );
+			if ( $user_id && ! get_transient( 'mo2f_attempts_before_redirect_' . $user_id ) ) {
+				set_transient( 'mo2f_attempts_before_redirect_' . $user_id, 3 );
 			}
-			$attempts            = get_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect' );
+			$attempts            = $user_id ? get_transient( 'mo2f_attempts_before_redirect_' . $user_id ) : 3;
 			$backup_methods      = (array) get_site_option( 'mo2f_enabled_backup_methods' );
 			$custom_logo_enabled = get_site_option( 'mo2f_custom_logo', 'miniOrange2.png' );
 			$skeleton_blocks     = $this->mo2f_skeleton_block( $prompt_title, $login_message, $login_status, $kba_question1, $kba_question2, $user_id, $validation_flow, $attempts, $custom_logo_enabled, $backup_methods );

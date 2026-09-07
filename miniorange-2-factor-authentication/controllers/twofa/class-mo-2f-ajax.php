@@ -134,6 +134,16 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 						}
 						$mo2f_user = get_user_by( 'id', $user_id );
 					}
+					$mo2f_wpns_utility = MoWpnsUtility::instance();
+					$lockout_remaining = $mo2f_wpns_utility->mo2f_get_login_lockout_remaining( $mo2f_user->ID );
+					if ( $lockout_remaining > 0 ) {
+						wp_send_json_error(
+							array(
+								'status'    => MoWpnsConstants::MO2F_ACCOUNT_LOCKED,
+								'remaining' => $lockout_remaining,
+							)
+						);
+					}
 					$email                  = ( empty( $email ) ) ? $mo2f_user->user_email : $email;
 					$twofactor_transactions = new Mo2fDB();
 					$exceeded               = apply_filters( 'mo2f_basic_plan_settings_filter', $twofactor_transactions->check_alluser_limit_exceeded( $mo2f_user->ID ), 'is_user_limit_exceeded', array() );
@@ -149,6 +159,7 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 							$response = json_decode( $this->mo2f_onprem_cloud_obj->mo2f_update_user_info( $mo2f_user->ID, true, MoWpnsConstants::GOOGLE_AUTHENTICATOR, MoWpnsConstants::SUCCESS_RESPONSE, MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS, true, $email, null ), true );
 							if ( json_last_error() === JSON_ERROR_NONE ) {
 								if ( MoWpnsConstants::SUCCESS_RESPONSE === $response['status'] ) {
+									delete_transient( 'mo2f_attempts_before_redirect_' . $mo2f_user->ID );
 									delete_user_meta( $mo2f_user->ID, 'mo2f_2FA_method_to_configure' );
 									delete_user_meta( $mo2f_user->ID, 'mo2f_configure_2FA' );
 									delete_user_meta( $mo2f_user->ID, 'mo2f_google_auth' );
@@ -164,7 +175,7 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 								}
 							}
 						}
-						wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_OTP ) );
+						$mo2f_wpns_utility->mo2f_handle_attempt_validation( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_OTP ), $mo2f_user->ID );
 					}
 					wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_WHILE_VALIDATING_OTP ) );
 				} else {

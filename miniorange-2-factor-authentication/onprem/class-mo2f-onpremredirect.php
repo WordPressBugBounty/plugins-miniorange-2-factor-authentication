@@ -294,10 +294,10 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 				300
 			);
 			$user_id = hash( 'sha512', $current_user->ID . $txid );
-			update_site_option( $user_id, $otp_token_h );
-			update_site_option( $txid, 3 );
+			update_site_option( 'mo2f_oobe_token_' . $user_id, $otp_token_h );
+			update_site_option( 'mo2f_oobe_status_' . $txid, 3 );
 			$user_idd = $user_id . 'D';
-			update_site_option( $user_idd, $otp_token_d_h );
+			update_site_option( 'mo2f_oobe_token_' . $user_idd, $otp_token_d_h );
 			$encrypted_email         = base64_encode( $email );
 			$message                 = $this->getemailtemplate( $user_id, $otp_token_h, $otp_token_d_h, $txid, $encrypted_email );
 			$result   = MoWpnsUtility::mo2f_send_html_email( $email, $subject, $message, $headers );
@@ -307,7 +307,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 				$response['status']     = 'SUCCESS';
 				$time                   = 'time' . $txid;
 				$current_time_in_millis = round( microtime( true ) * 1000 );
-				update_site_option( $time, $current_time_in_millis );
+				update_site_option( 'mo2f_oobe_time_' . $time, $current_time_in_millis );
 			} else {
 				$response['status']  = 'ERROR';
 				$response['message'] = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL );

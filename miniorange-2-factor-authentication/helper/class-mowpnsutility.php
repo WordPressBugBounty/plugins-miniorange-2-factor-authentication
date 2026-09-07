@@ -685,25 +685,28 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		}
 
 		/**
-		 * Handle attempt validation logic.
+		 * Handle attempt validation logic. The attempt budget is keyed on the account being
+		 * authenticated, not on any client-suppliable value, so it cannot be reset by rotating
+		 * the session id.
 		 *
 		 * @param string $error_type Error type to send.
-		 * @param string $session_id_encrypt Session id.
+		 * @param int    $user_id Id of the account being authenticated.
 		 * @return void
 		 */
-		public function mo2f_handle_attempt_validation( $error_type, $session_id_encrypt ) {
-			$common_helper = new Mo2f_Common_Helper();
-			$user_id       = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
+		public function mo2f_handle_attempt_validation( $error_type, $user_id ) {
+			if ( ! $user_id ) {
+				wp_send_json_error( $error_type );
+				return;
+			}
 
-			$attempts = get_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect' );
+			$attempts_key = 'mo2f_attempts_before_redirect_' . $user_id;
+			$attempts     = get_transient( $attempts_key );
 			if ( is_numeric( $attempts ) && $attempts > 1 ) {
-				set_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect', $attempts - 1, 300 );
+				set_transient( $attempts_key, $attempts - 1, 300 );
 				wp_send_json_error( $error_type );
 			} else {
-				delete_transient( $session_id_encrypt . 'mo2f_attempts_before_redirect' );
-				if ( $user_id ) {
-					$this->mo2f_set_login_lockout( $user_id );
-				}
+				delete_transient( $attempts_key );
+				$this->mo2f_set_login_lockout( $user_id );
 				wp_send_json_error(
 					array(
 						'status'    => MoWpnsConstants::MO2F_ACCOUNT_LOCKED,

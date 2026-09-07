@@ -318,10 +318,10 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 */
 		public function mo2f_process_link_validation( $useridget, $txidget, $accesstokenget ) {
 			global $mo2f_main_dir;
-			$otp_token     = get_site_option( $useridget );
-			$txidstatus    = get_site_option( $txidget );
+			$otp_token     = get_site_option( 'mo2f_oobe_token_' . $useridget );
+			$txidstatus    = get_site_option( 'mo2f_oobe_status_' . $txidget );
 			$useridd       = $useridget . 'D';
-			$otp_tokend    = get_site_option( $useridd );
+			$otp_tokend    = get_site_option( 'mo2f_oobe_token_' . $useridd );
 			$mo2f_dir_name = __DIR__;
 			$mo2f_dir_name = explode( 'wp-content', $mo2f_dir_name );
 			$mo2f_dir_name = explode( 'handler', $mo2f_dir_name[1] );
@@ -360,27 +360,28 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 			if ( 3 === (int) $txidstatus ) {
 				$time                   = 'time' . $txidget;
 				$current_time_in_millis = round( microtime( true ) * 1000 );
-				$generatedtimeinmillis  = get_site_option( $time );
+				$generatedtimeinmillis  = get_site_option( 'mo2f_oobe_time_' . $time );
 				$difference             = ( $current_time_in_millis - $generatedtimeinmillis ) / 1000;
 				if ( $difference <= 300 ) {
-					if ( $accesstokenget === $otp_token ) {
+					if ( is_string( $otp_token ) && '' !== $otp_token && hash_equals( $otp_token, $accesstokenget ) ) {
 						$common_helper = new Mo2f_Common_Helper();
 						$common_helper->mo2f_update_current_user_status( $txidget );
-						update_site_option( $txidget, 1 );
+						update_site_option( 'mo2f_oobe_status_' . $txidget, 1 );
 						$body  = __( 'Transaction has been successfully validated . Please continue with the transaction.', 'miniorange-2-factor-authentication' );
 						$head  = __( 'TRANSACTION SUCCESSFUL', 'miniorange-2-factor-authentication' );
 						$color = 'green';
-					} elseif ( $accesstokenget === $otp_tokend ) {
-						update_site_option( $txidget, 0 );
+						delete_site_option( 'mo2f_oobe_token_' . $useridget );
+						delete_site_option( 'mo2f_oobe_token_' . $useridd );
+						delete_site_option( 'mo2f_oobe_time_' . $time );
+					} elseif ( is_string( $otp_tokend ) && '' !== $otp_tokend && hash_equals( $otp_tokend, $accesstokenget ) ) {
+						update_site_option( 'mo2f_oobe_status_' . $txidget, 0 );
 						$body = __( 'Transaction has been Canceled . Please try Again . ', 'miniorange-2-factor-authentication' );
 						$head = __( 'TRANSACTION DENIED', 'miniorange-2-factor-authentication' );
+						delete_site_option( 'mo2f_oobe_token_' . $useridget );
+						delete_site_option( 'mo2f_oobe_token_' . $useridd );
+						delete_site_option( 'mo2f_oobe_time_' . $time );
 					}
-				} else {
-					update_site_option( $txidget, 0 );
 				}
-				delete_site_option( $useridget );
-				delete_site_option( $useridd );
-				delete_site_option( $time );
 			}
 			$content = array(
 				'body'  => $body,
@@ -413,13 +414,13 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 */
 		public function mo2f_handle_polling( $txidpost ) {
 			global $mo2fdb_queries;
-			$status = (int) get_site_option( $txidpost );
+			$status = (int) get_site_option( 'mo2f_oobe_status_' . $txidpost );
 			if ( 1 === $status || 0 === $status ) {
 				$user_details = get_transient( $txidpost );
 				if ( 1 === $status && ! $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_EmailVerification_config_status', $user_details['user_id'] ) ) {
 					$this->mo2f_update_user_details( get_user_by( 'id', $user_details['user_id'] ), $user_details['user_email'] );
 				}
-				delete_site_option( $txidpost );
+				delete_site_option( 'mo2f_oobe_status_' . $txidpost );
 			}
 			wp_send_json( $status );
 		}

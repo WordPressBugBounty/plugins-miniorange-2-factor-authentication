@@ -520,6 +520,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_validate_otp_for_configuration( $post ) {
+			global $mo2f_mo_wpns_utility;
 			$otp_token          = isset( $post['otp_token'] ) ? sanitize_text_field( wp_unslash( $post['otp_token'] ) ) : '';
 			$session_id_encrypt = isset( $post['mo2f_session_id'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_session_id'] ) ) : null;
 			$user               = wp_get_current_user();
@@ -536,6 +537,18 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 					'user_id'      => $user->ID,
 					'login_status' => 'LOGGED_IN',
 				);
+			}
+			if ( ! empty( $user_details['user_id'] ) ) {
+				$lockout_remaining = $mo2f_mo_wpns_utility->mo2f_get_login_lockout_remaining( $user_details['user_id'] );
+				if ( $lockout_remaining > 0 ) {
+					wp_send_json_error(
+						array(
+							'status'    => MoWpnsConstants::MO2F_ACCOUNT_LOCKED,
+							'remaining' => $lockout_remaining,
+						)
+					);
+					return;
+				}
 			}
 			if ( MO2f_Utility::mo2f_check_empty_or_null( $otp_token ) ) {
 				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_ENTRY ) );

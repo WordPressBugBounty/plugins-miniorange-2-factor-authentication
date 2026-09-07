@@ -36,7 +36,27 @@
 		return base64.replace( /\+/g, '-' ).replace( /\//g, '_' ).replace( /=+$/, '' );
 	}
 
+	/**
+	 * Server error payloads are usually a plain string, but the shared attempt-lockout
+	 * check (also used by the main OTP/KBA login popup - see
+	 * Mo2f_Common_Helper::mo2f_show_login_prompt_for_otp_based_methods()) replies with
+	 * { status: 'ACCOUNT_LOCKED', remaining: <seconds> } instead. Normalize that (and any
+	 * other unexpected object shape) to a readable string before it reaches the user,
+	 * otherwise it renders as the literal text "[object Object]".
+	 */
+	function mo2fPasskeyNormalizeMessage( message ) {
+		var fallback = 'Something went wrong. Please try again.';
+		if ( message && typeof message === 'object' ) {
+			if ( message.status === 'ACCOUNT_LOCKED' ) {
+				return 'Too many incorrect attempts. Please wait a few minutes before trying again.';
+			}
+			return ( typeof message.message === 'string' && message.message ) ? message.message : fallback;
+		}
+		return ( typeof message === 'string' && message ) ? message : fallback;
+	}
+
 	function mo2fPasskeyShowMessage( message ) {
+		message = mo2fPasskeyNormalizeMessage( message );
 		if ( typeof window.mo2f_show_message === 'function' ) {
 			window.mo2f_show_message( message );
 		} else {
