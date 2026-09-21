@@ -87,12 +87,25 @@ if ( ! class_exists( 'TwoFACustomRegFormAPI' ) ) {
 		 * @param string $auth_type Authentication type.
 		 * @param string $txid It will carry the transaction id .
 		 * @param string $otp  It will carry the otp .
+		 * @param string $identifier Email or phone number the OTP was sent to.
 		 * @return void
 		 */
-		public static function validate( $auth_type, $txid, $otp ) {
+		public static function validate( $auth_type, $txid, $otp, $identifier = '' ) {
 			$response = TwoFAMOGateway::mo_validate_otp_token( $auth_type, $txid, $otp );
 			if ( isset( $response['message'] ) ) {
 				$response['message'] = $response['message'];
+			}
+			if ( isset( $response['status'] ) && 'SUCCESS' === $response['status'] && ! empty( $identifier ) ) {
+				$reg_otp_token = bin2hex( random_bytes( 16 ) );
+				set_transient(
+					'mo2f_reg_otp_' . $reg_otp_token,
+					array(
+						'identifier' => strtolower( trim( $identifier ) ),
+						'auth_type'  => strtoupper( $auth_type ),
+					),
+					10 * MINUTE_IN_SECONDS
+				);
+				$response['mo2f_reg_otp_token'] = $reg_otp_token;
 			}
 			wp_send_json( $response );
 		}

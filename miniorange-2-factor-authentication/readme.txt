@@ -4,7 +4,7 @@ Tags: 2fa, two-factor-authentication, mfa, authentication, security, wp 2fa
 Requires at least: 5.3.0
 Tested up to: 7.1
 Requires PHP: 5.3.0
-Stable tag: 6.3.1
+Stable tag: 6.3.2
 License: Expat
 License URI: https://plugins.miniorange.com/mit-license
 
@@ -16,6 +16,12 @@ Free 2FA plugin for unlimited users with Passkey, Google Authenticator, Email/SM
 
 WordPress websites are frequently targeted by brute force attacks, credential stuffing attacks, phishing attempts, and unauthorized login attempts. Passwords alone are no longer sufficient to protect administrator accounts, customer accounts, and sensitive website data. **Which is exactly why 2FA has become essential.**
 
+### What's New in 6.2.9
+
+- **Unlimited users on the free plan** — no user cap, no per-seat charge.
+- **Passkey (WebAuthn/FIDO2) — free** — passwordless **2FA** with Face ID, Touch ID, Windows Hello, or a hardware security key.
+- **Push Notification 2FA (Premium)** — approve the login from your phone with one tap, no code to type.
+
 The miniOrange **2-Factor Authentication** plugin adds an additional layer of security to WordPress logins by requiring users to verify their identity using a second authentication factor. Even if a password is compromised, unauthorized users cannot access accounts without completing the **2FA** verification process.
 
 The **2FA** plugin supports multiple **Two-Factor Authentication (2FA)** and **Multi-Factor Authentication (MFA)** methods, including **Google Authenticator**, **Microsoft Authenticator**, **Authy**, **Passkey**, **Email OTP**, **SMS OTP**, **WhatsApp OTP**, **Telegram OTP**, **Push Notification**, backup codes, security questions, and hardware token authentication.
@@ -23,14 +29,6 @@ The **2FA** plugin supports multiple **Two-Factor Authentication (2FA)** and **M
 Whether you manage a **WooCommerce** store, membership website, LMS platform, enterprise portal, educational institution, government website, or agency-managed environment, **WordPress 2FA** helps secure user accounts and reduce the risk of account compromise.
 
 The **free** plan supports **unlimited users** with Google Authenticator (TOTP), **Passkey**, Email OTP, and Security Questions. **Premium** adds more 2FA methods (SMS OTP, WhatsApp OTP, **Push Notification**, email verification link, and more), enforcement policies, trusted devices, multisite support, custom branding, and more.
-
----
-
-### What's New in 6.2.9
-
-- **Unlimited users on the free plan** — no user cap, no per-seat charge.
-- **Passkey (WebAuthn/FIDO2) — free** — passwordless **2FA** with Face ID, Touch ID, Windows Hello, or a hardware security key.
-- **Push Notification 2FA (Premium)** — approve the login from your phone with one tap, no code to type.
 
 ---
 
@@ -282,6 +280,9 @@ You can use backup codes, the email verification recovery option, or disable the
 
 == Changelog ==
 
+= 6.3.2 =
+* Security fixes and improvements.
+
 = 6.3.1 =
 * Fixed unauthenticated arbitrary WordPress option deletion via the email-verification link handler.
 * Fixed 2FA attempt-lockout bypass (client-controlled counter) and added missing rate limiting to the 2FA configuration-validation endpoint.
@@ -455,6 +456,9 @@ You can use backup codes, the email verification recovery option, or disable the
 For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/miniorange-2-factor-authentication/trunk/changelog.txt) provided with the plugin.
 
 == Upgrade Notice ==
+
+= 6.3.2 =
+* Security fixes and improvements.
 
 = 6.3.1 =
 * Fixed unauthenticated arbitrary WordPress option deletion via the email-verification link handler.

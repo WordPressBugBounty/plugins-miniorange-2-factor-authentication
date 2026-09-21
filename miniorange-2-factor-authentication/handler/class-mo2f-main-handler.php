@@ -369,7 +369,12 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : null;
 			$user_details       = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
 			$method_name        = isset( $post['auth_method'] ) ? sanitize_text_field( wp_unslash( $post['auth_method'] ) ) : null;
-			$inline_popup  = new Mo2f_Common_Helper();
+			$inline_popup       = new Mo2f_Common_Helper();
+			if ( 'PASSWORD_VALIDATED' === $user_details['login_status']
+				&& ! $inline_popup->mo2f_guard_2fa_configuration_request( $user_details['user_id'], $method_name ) ) {
+				wp_send_json_error( 'Unauthorized.' );
+				return;
+			}
 			$process_login = $inline_popup->mo2f_get_object( $method_name );
 			$message       = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::NEW_OTP_SENT );
 			$process_login->mo2f_send_otp( null, $session_id_encrypt, $user_details, $message );
@@ -590,6 +595,10 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 					);
 					return;
 				}
+			}
+			if ( ! $inline_common_helper->mo2f_guard_2fa_configuration_request( $user_id, $twofa_method ) ) {
+				wp_send_json_error( 'Unauthorized.' );
+				return;
 			}
 			$method_handler = $inline_common_helper->mo2f_get_object( $twofa_method );
 			$method_handler->mo2f_login_validate( $otp_token, $redirect_to, $session_id_encrypt );
@@ -1051,9 +1060,10 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			if ( ! get_user_meta( $user_id, 'mo2f_grace_period_start_time', true ) ) {
 				update_user_meta( $user_id, 'mo2f_grace_period_start_time', strtotime( current_datetime()->format( 'h:ia M d Y' ) ) );
 			}
-			$common_helper = new Mo2f_Common_Helper();
-			$currentuser   = get_user_by( 'id', $user_id );
-			if ( $user_id && get_site_option( 'mo2f_grace_period' ) && ! $common_helper->mo2f_is_grace_period_expired( $currentuser ) ) {
+			$common_helper           = new Mo2f_Common_Helper();
+			$currentuser             = get_user_by( 'id', $user_id );
+			$mo2f_configured_method  = $user_id ? $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id ) : '';
+			if ( $user_id && empty( $mo2f_configured_method ) && get_site_option( 'mo2f_grace_period' ) && ! $common_helper->mo2f_is_grace_period_expired( $currentuser ) ) {
 				$user_details['login_status'] = 'MFA_SKIPPED';
 				set_transient( $session_id_encrypt . 'mo2f_user_transaction_details', $user_details, 300 );
 				$this->mo2fa_pass2login( $redirect_to, $user_details );

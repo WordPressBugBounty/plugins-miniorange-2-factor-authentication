@@ -102,7 +102,8 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_login_settings_ajax() {
-			if ( ! check_ajax_referer( 'mo2f-login-settings-ajax-nonce', 'nonce', false ) || ! current_user_can( 'manage_options' ) ) {
+			$required_cap = is_multisite() ? 'manage_network_options' : 'manage_options';
+			if ( ! check_ajax_referer( 'mo2f-login-settings-ajax-nonce', 'nonce', false ) || ! current_user_can( $required_cap ) ) {
 				wp_send_json_error( 'class-wpns-ajax' );
 			}
 			$GLOBALS['mo2f_is_ajax_request'] = true;

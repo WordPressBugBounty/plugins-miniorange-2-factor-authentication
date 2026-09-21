@@ -298,7 +298,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 			update_site_option( 'mo2f_oobe_status_' . $txid, 3 );
 			$user_idd = $user_id . 'D';
 			update_site_option( 'mo2f_oobe_token_' . $user_idd, $otp_token_d_h );
-			$encrypted_email         = base64_encode( $email );
+			$encrypted_email         = MO2f_Utility::encrypt_data( $email, wp_salt( 'auth' ) );
 			$message                 = $this->getemailtemplate( $user_id, $otp_token_h, $otp_token_d_h, $txid, $encrypted_email );
 			$result   = MoWpnsUtility::mo2f_send_html_email( $email, $subject, $message, $headers );
 			$response = array( 'txId' => $txid );
@@ -326,15 +326,16 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 		 */
 		public function getemailtemplate( $user_id, $otp_token_h, $otp_token_d_h, $txid, $email ) {
 			global $mo2f_image_path;
-			$url     = get_site_option( 'siteurl' ) . '/wp-login.php?';
-			$message = MoWpnsUtility::get_mo2f_db_option( 'mo2f_out_of_band_email_template', 'site_option' );
-			$message = str_replace( '##image_path##', $mo2f_image_path, $message );
-			$message = str_replace( '##user_id##', $user_id, $message );
-			$message = str_replace( '##url##', $url, $message );
-			$message = str_replace( '##accept_token##', $otp_token_h, $message );
-			$message = str_replace( array( '##deny_token##', '##denie_token##' ), $otp_token_d_h, $message );
-			$message = str_replace( '##txid##', rawurlencode( $txid ), $message );
-			$message = str_replace( '##email##', $email, $message );
+			$url            = get_site_option( 'siteurl' ) . '/wp-login.php?';
+			$message        = MoWpnsUtility::get_mo2f_db_option( 'mo2f_out_of_band_email_template', 'site_option' );
+			$encrypted_txid = MO2f_Utility::encrypt_data( $txid, wp_salt( 'auth' ) );
+			$message        = str_replace( '##image_path##', $mo2f_image_path, $message );
+			$message        = str_replace( '##user_id##', $user_id, $message );
+			$message        = str_replace( '##url##', $url, $message );
+			$message        = str_replace( '##accept_token##', $otp_token_h, $message );
+			$message        = str_replace( array( '##deny_token##', '##denie_token##' ), $otp_token_d_h, $message );
+			$message        = str_replace( '##txid##', rawurlencode( $encrypted_txid ), $message );
+			$message        = str_replace( '##email##', rawurlencode( $email ), $message );
 			return $message;
 		}
 	}

@@ -70,10 +70,13 @@ if ( ! class_exists( 'Mo2fCustomRegFormShortcode' ) ) {
 					break;
 
 				case 'validate':
-					$otp       = isset( $_POST['otp'] ) ? sanitize_text_field( wp_unslash( $_POST['otp'] ) ) : '';
-					$txid      = isset( $_POST['txId'] ) ? sanitize_key( $_POST['txId'] ) : '';
-					$auth_type = isset( $_POST['authType'] ) ? sanitize_text_field( wp_unslash( $_POST['authType'] ) ) : '';
-					TwoFACustomRegFormAPI::validate( $auth_type, $txid, $otp );
+					$otp        = isset( $_POST['otp'] ) ? sanitize_text_field( wp_unslash( $_POST['otp'] ) ) : '';
+					$txid       = isset( $_POST['txId'] ) ? sanitize_key( $_POST['txId'] ) : '';
+					$auth_type  = isset( $_POST['authType'] ) ? sanitize_text_field( wp_unslash( $_POST['authType'] ) ) : '';
+					$reg_email  = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+					$reg_mobile = isset( $_POST['mobile'] ) ? sanitize_text_field( wp_unslash( $_POST['mobile'] ) ) : '';
+					$identifier = 'EMAIL' === strtoupper( $auth_type ) ? $reg_email : $reg_mobile;
+					TwoFACustomRegFormAPI::validate( $auth_type, $txid, $otp, $identifier );
 					break;
 			}
 		}
@@ -104,10 +107,13 @@ if ( ! class_exists( 'Mo2fCustomRegFormShortcode' ) ) {
 					break;
 
 				default:
-					$otp       = isset( $_POST['otp'] ) ? sanitize_text_field( wp_unslash( $_POST['otp'] ) ) : '';
-					$txid      = isset( $_POST['txid'] ) ? sanitize_key( $_POST['txid'] ) : '';
-					$auth_type = isset( $_POST['authType'] ) ? sanitize_text_field( wp_unslash( $_POST['authType'] ) ) : '';
-					TwoFACustomRegFormAPI::validate( $auth_type, $txid, $otp );
+					$otp        = isset( $_POST['otp'] ) ? sanitize_text_field( wp_unslash( $_POST['otp'] ) ) : '';
+					$txid       = isset( $_POST['txid'] ) ? sanitize_key( $_POST['txid'] ) : '';
+					$auth_type  = isset( $_POST['authType'] ) ? sanitize_text_field( wp_unslash( $_POST['authType'] ) ) : '';
+					$reg_email  = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+					$reg_mobile = isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '';
+					$identifier = 'EMAIL' === strtoupper( $auth_type ) ? $reg_email : $reg_mobile;
+					TwoFACustomRegFormAPI::validate( $auth_type, $txid, $otp, $identifier );
 					break;
 			}
 		}

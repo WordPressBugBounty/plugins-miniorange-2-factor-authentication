@@ -26,6 +26,8 @@ if ( ! $mo2f_key ) {
 	$mo2f_common_helper = new Mo2f_Common_Helper();
 	$mo2f_html          = $mo2f_common_helper->mo2f_get_miniorange_user_registration_prompt( '', null, null, 'myaccount', $mo2f_skeleton );
 	require_once dirname( dirname( __DIR__ ) ) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'myaccount' . DIRECTORY_SEPARATOR . 'login.php';
+} elseif ( ! current_user_can( 'manage_options' ) ) {
+	wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'miniorange-2-factor-authentication' ) );
 } else {
 	do_action( 'mo2f_get_license_varification_screen' );
 	require_once dirname( dirname( __DIR__ ) ) . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'myaccount' . DIRECTORY_SEPARATOR . 'account.php';

@@ -318,6 +318,10 @@ if ( ! class_exists( 'Mo2f_OUTOFBANDEMAIL_Handler' ) ) {
 		 */
 		public function mo2f_process_link_validation( $useridget, $txidget, $accesstokenget ) {
 			global $mo2f_main_dir;
+			$decrypted_txidget = MO2f_Utility::decrypt_data( $txidget, wp_salt( 'auth' ) );
+			if ( '' !== $decrypted_txidget ) {
+				$txidget = $decrypted_txidget;
+			}
 			$otp_token     = get_site_option( 'mo2f_oobe_token_' . $useridget );
 			$txidstatus    = get_site_option( 'mo2f_oobe_status_' . $txidget );
 			$useridd       = $useridget . 'D';

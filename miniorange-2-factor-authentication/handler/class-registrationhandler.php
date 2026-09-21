@@ -149,6 +149,17 @@ if ( ! class_exists( 'RegistrationHandler' ) ) {
 					update_site_option( 'number_of_fake_reg', $count );
 				}
 			}
+			if ( get_site_option( 'mo2f_enable_form_shortcode' ) ) {
+				$mo2f_reg_otp_token = isset( $_POST['mo2f_reg_otp_token'] ) ? sanitize_text_field( wp_unslash( $_POST['mo2f_reg_otp_token'] ) ) : '';  // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Cannot do nonce verification here as this is external flow of registration.
+				$mo2f_reg_otp_data  = ! empty( $mo2f_reg_otp_token ) ? get_transient( 'mo2f_reg_otp_' . $mo2f_reg_otp_token ) : false;
+				if ( empty( $mo2f_reg_otp_token ) || false === $mo2f_reg_otp_data || ! is_array( $mo2f_reg_otp_data ) ) {
+					$errors->add( 'mo2f_otp_not_verified', __( '<strong>ERROR</strong>: Please verify the OTP sent to your email/phone before registering.', 'miniorange-2-factor-authentication' ) );
+				} elseif ( 'EMAIL' === $mo2f_reg_otp_data['auth_type'] && strtolower( trim( $user_email ) ) !== $mo2f_reg_otp_data['identifier'] ) {
+					$errors->add( 'mo2f_otp_mismatch', __( '<strong>ERROR</strong>: OTP verification does not match the submitted registration details.', 'miniorange-2-factor-authentication' ) );
+				} else {
+					delete_transient( 'mo2f_reg_otp_' . $mo2f_reg_otp_token );
+				}
+			}
 			return $errors;
 		}
 	}
