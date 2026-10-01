@@ -1,0 +1,77 @@
+/* Core WP pulls p.submit up with a negative top margin to hug the password
+   field; the magic-link panel sits between them, so it needs neutralizing. */
+#loginform p.submit { margin-top: 20px !important; }
+
+.mo2f-magic-link-wrap {
+	clear: both;
+	overflow: hidden;
+	width: 100%;
+	box-sizing: border-box;
+}
+.mo2f-magic-link-toggle-p {
+	margin: 12px 0 0;
+	text-align: center;
+}
+.mo2f-magic-link-toggle-p a {
+	font-size: 13px;
+	color: #2271b1;
+	text-decoration: none;
+}
+.mo2f-magic-link-toggle-p a:hover {
+	color: #135e96;
+	text-decoration: underline;
+}
+.mo2f-magic-link-panel {
+	margin: 16px 0;
+	box-sizing: border-box;
+}
+.mo2f-magic-link-intro {
+	margin: 0 0 24px;
+	color: #3c434a;
+	font-size: 13px;
+	line-height: 1.5;
+}
+.mo2f-magic-link-label {
+	display: block;
+	margin-bottom: 6px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #1d2327;
+}
+.mo2f-magic-link-field {
+	width: 100%;
+	box-sizing: border-box;
+	margin-bottom: 16px;
+	padding: 6px 10px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+}
+.mo2f-magic-link-field:focus {
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+	outline: 2px solid transparent;
+}
+#mo2f_magic_link_send.mo2f-magic-link-send {
+	width: 100%;
+	box-sizing: border-box;
+	text-align: center;
+	border-radius: 4px;
+	margin-top: 10px;
+}
+.mo2f-magic-link-status {
+	margin: 16px 0 0;
+	padding: 10px 12px;
+	border-radius: 4px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+.mo2f-magic-link-status--success {
+	background: #f0f6fc;
+	color: #1d2327;
+	border: 1px solid #c5d9ed;
+}
+.mo2f-magic-link-status--error {
+	background: #fcf0f1;
+	color: #8a2424;
+	border: 1px solid #eac0c3;
+}

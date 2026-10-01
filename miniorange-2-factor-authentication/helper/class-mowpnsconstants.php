@@ -45,19 +45,21 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const PAST_FAILED           = 'pastfailed';
 		const ACCESS_DENIED         = 'accessDenied';
 		const LOGIN_TRANSACTION     = 'User Login';
+		const ADMIN_2FA_RESET       = 'Admin Reset';
 		const ERR_404               = '404';
 		const ERR_403               = '403';
+		const GRACE_PERIOD_UNIT_HOURS         = 'hours';
+		const GRACE_PERIOD_UNIT_DAYS          = 'days';
+		const GRACE_PERIOD_ACTION_BLOCK       = 'block_user_login';
+		const GRACE_PERIOD_ACTION_ENFORCE_2FA = 'enforce_2fa';
 		const DEFAULT_CUSTOMER_KEY  = '16555';
 		const DEFAULT_API_KEY       = 'fFd2XcvTGDemZvbw1bcUesNJWEqKbbUq';
-		const DB_VERSION            = 200;
-		const DB_FEATURE_MAIL       = 5;
+		const DB_VERSION            = 201;
+		const DB_FEATURE_MAIL       = 6;
 		const SMS_EMAIL_TRANSACTION = self::MO2F_PLUGINS_PAGE_URL . '/sms-and-email-transaction-pricing-2fa';
 
 		const SUPPORT_EMAIL        = 'info@xecurify.com';
 		const REAL_TIME_IP_HOST    = 'https://firewall.xecurify.com/';
-		const GENERATE_BACK_CODE   = 'https://sitestats.xecurify.com/backupcodeserviceauthentication';
-		const AUTHENTICATE_REQUEST = 'https://sitestats.xecurify.com/backupcodeserviceauthentication/authenticate.php';
-		const VALIDATE_BACKUP_CODE = 'https://sitestats.xecurify.com/backupcodeserviceauthentication/backup_code_validation.php';
 		const IP_LOOKUP_TEMPLATE   = '<span class="mo2f_ip_lookup_title">GENERAL INFORMATION</span><table class="mo2f_ip_lookup_table"><tr><td class="mo2f_ip_lookup_label">Response</td><td>:</td><td>{{status}}</td></tr><tr><td class="mo2f_ip_lookup_label">IP Address</td><td>:</td><td>{{ip}}</td></tr><tr><td>HostName</td><td>:</td><td>{{hostname}}</td></tr><tr><td>TimeZone</td><td>:</td><td>{{timezone}}</td></tr><tr><td>Time Difference</td><td>:</td><td>{{offset}}</td></tr></table><hr><span class="mo2f_ip_lookup_title">LOCATION INFORMATION</span><table class="mo2f_ip_lookup_table"><tr><td>Latitude</td><td>:</td><td>{{latitude}}</td></tr><tr><td>Longitude</td><td>:</td><td>{{longitude}}</td></tr><tr><td>Region</td><td>:</td><td>{{region}}</td></tr><tr><td>Country</td><td>:</td><td>{{country}}</td></tr><tr><td>City</td><td>:</td><td>{{city}}</td></tr></table>';
 		const CURRENT_BROWSER      = '<span class="mo2f_current_browser">( Current Browser )</span>';
 
@@ -269,8 +271,6 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 			'GoogleAuthenticator' => self::GOOGLE_AUTHENTICATOR,
 			'AuthyAuthenticator'  => self::AUTHY_AUTHENTICATOR,
 			'SecurityQuestions'   => self::SECURITY_QUESTIONS,
-			'EmailVerification'   => self::OUT_OF_BAND_EMAIL,
-			'OTPOverSMS'          => self::OTP_OVER_SMS,
 			'OTPOverEmail'        => self::OTP_OVER_EMAIL,
 			'DuoAuthenticator'    => self::DUO_AUTHENTICATOR,
 			'OTPOverWhatsapp'     => self::OTP_OVER_WHATSAPP,

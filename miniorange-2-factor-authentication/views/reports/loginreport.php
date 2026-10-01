@@ -17,7 +17,7 @@ echo '	<div>
 		<table>
             <tr>
                 <td style="width: 100%">
-                    <div class="mo2f-settings-head">
+                    <div class="mo2f-settings-head -ml-mo-9">
 					<label class="mo2f_checkbox_container"><input type="checkbox" onChange="mo2f_enable_login_transactions_toggle()"id="mo2f_enable_login_report" name="mo2f_enable_login_report" value="1"';
 					checked( get_site_option( 'mo2f_enable_login_report' ), 'true' );
 					echo '><span class="mo2f-settings-checkmark"></span></label>
@@ -42,10 +42,7 @@ echo '	<div>
 		                <th>TimeStamp</th>
 		            </tr>
 		        </thead>
-		        <tbody>';
-				$mo2f_common_helper->mo2f_show_login_transactions_report( $mo2f_logintranscations );
-
-echo '	        </tbody>
+		        <tbody></tbody>
 		    </table>
 		</div>
 	</div>

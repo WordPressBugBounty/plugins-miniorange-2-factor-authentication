@@ -12,7 +12,6 @@ use TwoFA\Helper\MocURL;
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Database\Mo2fDB;
 use TwoFA\Handler\Twofa\MO2f_Cloud_Onprem_Interface;
-use TwoFA\Cloud\Customer_Cloud_Setup;
 use TwoFA\Helper\Mo2f_Login_Popup;
 use TwoFA\Traits\Instance;
 use WP_Error;
@@ -271,7 +270,11 @@ if ( ! class_exists( 'Miniorange_Password_2Factor_Login' ) ) {
 					$this->miniorange_pass2login_form_fields( $mo2fa_login_status, $mo2fa_login_message, $redirect_to, null, $session_id_encrypt, 1, $mo2fa_transaction_id );
 				} else {
 					$mo2fa_login_status  = 'MO_2_FACTOR_PROMPT_USER_FOR_2FA_METHODS';
-					$mo2fa_login_message = user_can( $current_user->ID, 'manage_options' ) ? MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ) : MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
+					if ( 'ERROR' === $response['status'] && ! empty( $response['message'] ) ) {
+						$mo2fa_login_message = $response['message'];
+					} else {
+						$mo2fa_login_message = user_can( $current_user->ID, 'manage_options' ) ? MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ) : MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
+					}
 					$this->miniorange_pass2login_form_fields( $mo2fa_login_status, $mo2fa_login_message, $redirect_to, null, $session_id_encrypt, 1 );
 				}
 			}

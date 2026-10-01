@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use TwoFA\Onprem\Mo2f_KBA_Handler;
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Handler\Mo2f_Main_Handler;
+use TwoFA\Handler\Mo2f_Backup_Codes;
 use TwoFA\Handler\TwofaMethods\Mo2f_GOOGLEAUTHENTICATOR_Handler;
 use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\MoWpnsMessages;
@@ -75,6 +76,74 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				. '<span class="mo2f_premium_header" onclick="upgradeLink()">' . esc_html( $plan_name ) . '</span>'
 				. '<span class="mo2f_premium_body">' . esc_html( MoWpnsConstants::MO2F_PREMIUM_PLAN_DESCRIPTION ) . '</span>'
 				. '</span></span>';
+		}
+
+		/**
+		 * Emails the account owner when they change their own 2FA method, so
+		 * they notice if someone else made the change. Deliberately only covers
+		 * the self-service path -- when an admin sets a method on a user's
+		 * behalf, mo2f_send_twofa_setup_link_on_email() (handler/user-profile-2fa-update.php)
+		 * already emails that user a "your 2FA method has been set by site
+		 * admin" message, so sending this too would duplicate it.
+		 *
+		 * @param int    $user_id User whose method changed.
+		 * @param string $method  The 2FA method constant that was just set.
+		 * @return void
+		 */
+		public static function mo2f_notify_user_2fa_method_changed( $user_id, $method ) {
+			if ( ! get_site_option( 'mo2f_enable_2fa_change_alerts', 1 ) ) {
+				return;
+			}
+			$user = get_userdata( $user_id );
+			if ( ! $user || ! is_email( $user->user_email ) ) {
+				return;
+			}
+			$method_label = MoWpnsConstants::mo2f_convert_method_name( $method, 'cap_to_small' );
+			$subject      = sprintf(
+				/* Translators: %s: site name. */
+				__( 'Your two-factor authentication method was changed on %s', 'miniorange-2-factor-authentication' ),
+				get_bloginfo( 'name' )
+			);
+			$message  = '<p>' . sprintf(
+				/* Translators: 1: site name, 2: 2FA method name. */
+				esc_html__( 'Your two-factor authentication method on %1$s was just changed to: %2$s.', 'miniorange-2-factor-authentication' ),
+				esc_html( get_bloginfo( 'name' ) ),
+				esc_html( $method_label )
+			) . '</p>';
+			$message .= '<p>' . esc_html__( "If you made this change, you can ignore this email. If you didn't make this change, your account may be compromised -- please contact your site administrator immediately.", 'miniorange-2-factor-authentication' ) . '</p>';
+			MocURL::mo2f_send_cloud_email( $user->user_email, $subject, $message );
+		}
+
+		/**
+		 * Emails the account owner when an administrator resets their 2FA
+		 * configuration (see miniorange_reset_save_settings() in
+		 * miniorange_2_factor_settings.php). This is the case that matters most:
+		 * if an attacker gains admin access and strips a victim's 2FA to make
+		 * the account easier to take over, the victim finds out immediately.
+		 *
+		 * @param int $user_id User whose 2FA was reset.
+		 * @return void
+		 */
+		public static function mo2f_notify_user_2fa_reset_by_admin( $user_id ) {
+			if ( ! get_site_option( 'mo2f_enable_2fa_change_alerts', 1 ) ) {
+				return;
+			}
+			$user = get_userdata( $user_id );
+			if ( ! $user || ! is_email( $user->user_email ) ) {
+				return;
+			}
+			$subject  = sprintf(
+				/* Translators: %s: site name. */
+				__( 'Your two-factor authentication was reset on %s', 'miniorange-2-factor-authentication' ),
+				get_bloginfo( 'name' )
+			);
+			$message  = '<p>' . sprintf(
+				/* Translators: %s: site name. */
+				esc_html__( 'Your two-factor authentication configuration on %s was just reset by a site administrator. You will be asked to set up a new 2FA method the next time you log in.', 'miniorange-2-factor-authentication' ),
+				esc_html( get_bloginfo( 'name' ) )
+			) . '</p>';
+			$message .= '<p>' . esc_html__( "If you expected this, you can ignore this email. If you didn't expect it, please contact your site administrator to confirm it was intentional.", 'miniorange-2-factor-authentication' ) . '</p>';
+			MocURL::mo2f_send_cloud_email( $user->user_email, $subject, $message );
 		}
 
 		/**
@@ -335,18 +404,12 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 						$currentuser     = get_user_by( 'id', $current_user_id );
 						$mo2f_user_email = $currentuser->user_email;
 					}
-					$generate_backup_code = new MocURL();
-					$codes                = apply_filters( 'mo2f_basic_plan_settings_filter', $generate_backup_code->mo2f_get_backup_codes( $mo2f_user_email, site_url() ), 'generate_backup_codes', array( 'user_id' => $current_user_id ) );
-					if ( ! is_array( $codes ) ) {
-						$codes = explode( ' ', trim( $codes ) );
-					}
-					$common_helper = new Mo2f_Common_Helper();
-					$mo2f_message  = $common_helper->mo2f_check_backupcode_status( $codes, $current_user_id );
-					if ( ! $mo2f_message ) {
-						$inline_popup = new Mo2f_Inline_Popup();
-						$codes        = $this->mo2f_send_backupcodes_inline( $current_user_id, $codes, $mo2f_user_email );
-						$inline_popup->mo2f_show_generated_backup_codes_inline( $redirect_to, $session_id, $codes );
-					}
+					$backup_code_handler = new Mo2f_Backup_Codes();
+					$codes                = $backup_code_handler->mo2f_generate_local_backup_codes( $current_user_id );
+					$codes                = apply_filters( 'mo2f_basic_plan_settings_filter', $codes, 'generate_backup_codes', array( 'user_id' => $current_user_id ) );
+					$inline_popup = new Mo2f_Inline_Popup();
+					$codes        = $this->mo2f_send_backupcodes_inline( $current_user_id, $codes, $mo2f_user_email );
+					$inline_popup->mo2f_show_generated_backup_codes_inline( $redirect_to, $session_id, $codes );
 				}
 			}
 			$pass2fa = new Mo2f_Main_Handler();
@@ -493,30 +556,6 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		}
 
 		/**
-		 * Check if the backcodes are error.
-		 *
-		 * @param mixed $status Code status.
-		 * @param int   $user_id User ID.
-		 * @return mixed
-		 */
-		public function mo2f_check_backupcode_status( $status, $user_id ) {
-			$status                   = is_array( $status ) ? $status[0] : $status;
-			$error_status_and_message = array(
-				'InternetConnectivityError' => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::BACKUP_CODE_INTERNET_ISSUE ),
-				'AllUsed'                   => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::BACKUP_CODE_ALL_USED ),
-				'UserLimitReached'          => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::BACKUP_CODE_DOMAIN_LIMIT_REACH ),
-				'LimitReached'              => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::BACKUP_CODE_LIMIT_REACH ),
-				'invalid_request'           => MoWpnsMessages::mo2f_get_message( MoWpnsMessages::BACKUP_CODE_INVALID_REQUEST ),
-			);
-			foreach ( $error_status_and_message as $error_status => $error_message ) {
-				if ( $error_status === $status ) {
-					return $error_status_and_message[ $status ];
-				}
-			}
-			update_user_meta( $user_id, 'mo_backup_code_generated', 1 );
-			return false;
-		}
-		/**
 		 * Sends backup codes on email.
 		 *
 		 * @param array  $codes Backup codes.
@@ -557,16 +596,85 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			if ( ! $grace_period_set_time ) {
 				return false;
 			}
-			$grace_period = get_site_option( 'mo2f_grace_period_value' );
-			if ( get_site_option( 'mo2f_grace_period_type' ) === 'hours' ) {
-				$grace_period = $grace_period * 60 * 60;
-			} else {
-				$grace_period = $grace_period * 24 * 60 * 60;
-			}
+			$grace_period = $this->mo2f_get_effective_grace_period_seconds( $currentuser );
 
 			$total_grace_period = $grace_period + (int) $grace_period_set_time;
 			$current_time_stamp = strtotime( current_datetime()->format( 'h:ia M d Y' ) );
 			return $total_grace_period <= $current_time_stamp;
+		}
+
+		/**
+		 * Resolves the grace period duration that applies to a user. If any of the
+		 * user's roles has a per-role override configured (mo2f_role_grace_period_overrides),
+		 * the longest such override is used; otherwise this falls back to the
+		 * site-wide mo2f_grace_period_value/mo2f_grace_period_type default, so sites
+		 * with no overrides configured see identical behaviour to before.
+		 *
+		 * @param \WP_User $currentuser User to resolve the grace period for.
+		 * @return int Grace period, in seconds.
+		 */
+		public function mo2f_get_effective_grace_period_seconds( $currentuser ) {
+			$role_overrides = get_site_option( 'mo2f_role_grace_period_overrides', array() );
+			$role_overrides = is_array( $role_overrides ) ? $role_overrides : array();
+
+			$longest_override_seconds = null;
+			foreach ( (array) $currentuser->roles as $role ) {
+				if ( empty( $role_overrides[ $role ]['value'] ) ) {
+					continue;
+				}
+				$unit    = ( isset( $role_overrides[ $role ]['type'] ) && MoWpnsConstants::GRACE_PERIOD_UNIT_HOURS === $role_overrides[ $role ]['type'] ) ? HOUR_IN_SECONDS : DAY_IN_SECONDS;
+				$seconds = (int) $role_overrides[ $role ]['value'] * $unit;
+				if ( null === $longest_override_seconds || $seconds > $longest_override_seconds ) {
+					$longest_override_seconds = $seconds;
+				}
+			}
+
+			if ( null !== $longest_override_seconds ) {
+				return $longest_override_seconds;
+			}
+
+			$grace_period = (int) get_site_option( 'mo2f_grace_period_value' );
+			$unit         = ( MoWpnsConstants::GRACE_PERIOD_UNIT_HOURS === get_site_option( 'mo2f_grace_period_type' ) ) ? HOUR_IN_SECONDS : DAY_IN_SECONDS;
+			return $grace_period * $unit;
+		}
+
+		/**
+		 * Resolves which action applies once a user's grace period has expired
+		 * ('enforce_2fa' or 'block_user_login'). If any of the user's roles has a
+		 * per-role action override configured, the strictest one present
+		 * (block_user_login) wins over a more lenient one — unlike the duration
+		 * resolver above, this is a security decision, so a conflict between two
+		 * of a user's roles should not silently under-enforce whichever role an
+		 * admin deliberately locked down. Falls back to the site-wide
+		 * mo2f_graceperiod_action default when no role override applies, so sites
+		 * with no overrides configured see identical behaviour to before.
+		 *
+		 * @param \WP_User $currentuser User to resolve the action for.
+		 * @return string 'enforce_2fa' or 'block_user_login'.
+		 */
+		public function mo2f_get_effective_graceperiod_action( $currentuser ) {
+			$role_overrides = get_site_option( 'mo2f_role_grace_period_overrides', array() );
+			$role_overrides = is_array( $role_overrides ) ? $role_overrides : array();
+
+			$resolved_action = null;
+			foreach ( (array) $currentuser->roles as $role ) {
+				if ( empty( $role_overrides[ $role ]['action'] ) ) {
+					continue;
+				}
+				$role_action = $role_overrides[ $role ]['action'];
+				if ( MoWpnsConstants::GRACE_PERIOD_ACTION_BLOCK === $role_action ) {
+					return MoWpnsConstants::GRACE_PERIOD_ACTION_BLOCK;
+				}
+				if ( MoWpnsConstants::GRACE_PERIOD_ACTION_ENFORCE_2FA === $role_action ) {
+					$resolved_action = MoWpnsConstants::GRACE_PERIOD_ACTION_ENFORCE_2FA;
+				}
+			}
+
+			if ( null !== $resolved_action ) {
+				return $resolved_action;
+			}
+
+			return MoWpnsConstants::GRACE_PERIOD_ACTION_BLOCK === get_site_option( 'mo2f_graceperiod_action' ) ? MoWpnsConstants::GRACE_PERIOD_ACTION_BLOCK : MoWpnsConstants::GRACE_PERIOD_ACTION_ENFORCE_2FA;
 		}
 
 		/**
@@ -998,6 +1106,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					if (response.success) {
 						jQuery("#go_back_verify").css("display", "none");
 						jQuery("#mo2f_validateotp_form").css("display", "block");
+						jQuery("#verify").css("display", "none");
 						jQuery("input[name=otp_token]").focus();
 						mo2f_show_message(response.data);
 					} else {
@@ -1005,7 +1114,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 					}
 				});
 			});
-			
+
 			jQuery("#validate").click(function() {
 			   ' . $common_helper->mo2f_show_loader() . '
 				var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
@@ -1473,6 +1582,12 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 							' . call_user_func( $error_response ) . '
 							}
 						});
+					});
+					jQuery("#mo2f_inline_login_form input").keypress(function(e) {
+						if (e.which === 13) {
+							e.preventDefault();
+							jQuery("#mo2f_login").click();
+						}
 					});';
 			$html .= 'jQuery("#mo2f_register").click(function() {
 						var nonce = "' . wp_create_nonce( 'mo-two-factor-ajax-nonce' ) . '";
@@ -1950,6 +2065,15 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			wp_register_script( 'mo2f_bootstrap_js', plugins_url( 'includes/js/bootstrap.min.js', __DIR__ ), array(), MO2F_VERSION, true );
 			wp_print_scripts( 'jquery' );
 			wp_print_scripts( 'mo2f_bootstrap_js' );
+			// Registered and printed last so it wins the cascade above without editing it.
+			wp_register_style( 'mo2f_tokens', plugins_url( 'includes/css/mo2f-tokens.min.css', __DIR__ ), array(), MO2F_VERSION, false );
+			wp_register_style( 'mo2f_login_popup_ui', plugins_url( 'includes/css/mo2f_login_popup_ui.min.css', __DIR__ ), array( 'mo2f_tokens' ), MO2F_VERSION, false );
+			wp_register_style( 'mo2f_responsive_popup', plugins_url( 'includes/css/mo2f-responsive-popup.css', __DIR__ ), array( 'mo2f_tokens', 'mo2f_login_popup_ui' ), MO2F_VERSION, false );
+			wp_register_style( 'mo2f_redesign_admin', plugins_url( 'includes/css/mo2f-redesign-admin.min.css', __DIR__ ), array( 'mo2f_tokens' ), MO2F_VERSION, false );
+			wp_print_styles( 'mo2f_tokens' );
+			wp_print_styles( 'mo2f_login_popup_ui' );
+			wp_print_styles( 'mo2f_responsive_popup' );
+			wp_print_styles( 'mo2f_redesign_admin' );
 			if ( get_site_option( 'mo2f_enable_login_popup_customization' ) ) {
 				$this->mo2f_output_custom_login_popup_css();
 			}
@@ -2052,15 +2176,15 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			$html .= '<div class="mo2f-gauth-otp-container">
 				<form name="mo2f_validate_code_form" id="mo2f_validate_code_form" method="post" class="mo2f-gauth-otp-form">
 					<span><b>' . esc_html__( '3. Enter the code from authenticator app:', 'miniorange-2-factor-authentication' ) . '</b></span><br>
-					<input class="mo2f_table_textbox mo2f-gauth-otp-input" id="google_auth_code" autofocus="true" required="true" type="text" name="google_token" placeholder="' . esc_attr__( 'Enter OTP', 'miniorange-2-factor-authentication' ) . '" />
+					<div class="mo2f-gauth-otp-row">
+						<input class="mo2f_table_textbox mo2f-gauth-otp-input" id="google_auth_code" autofocus="true" required="true" type="text" name="google_token" placeholder="' . esc_attr__( 'Enter OTP', 'miniorange-2-factor-authentication' ) . '" />
+						<button type="button" name="mo2f_validate_gauth" id="mo2f_save_otp_ga_tour" class="mo2f-save-settings-button mo2f-gauth-otp-button">' . esc_html__( 'Verify', 'miniorange-2-factor-authentication' ) . '</button>
+					</div>
 					<input type="hidden" name="option" value="mo2f_inline_validation_success">
 					<input type="hidden" name="redirect_to" value="' . esc_attr( $redirect_to ) . '"/>
 					<input type="hidden" name="session_id" value="' . esc_attr( $session_id ) . '"/>
 					<input type="hidden" name="miniorange_inline_save_2factor_method_nonce" value="' . esc_attr( wp_create_nonce( 'miniorange-2-factor-inline-save-2factor-method-nonce' ) ) . '" />
 				</form>
-				<div class="mo2f-gauth-otp-button-wrapper">
-					<button name="mo2f_validate_gauth" id="mo2f_save_otp_ga_tour" class="mo2f-save-settings-button mo2f-gauth-otp-button">' . esc_html__( 'Verify', 'miniorange-2-factor-authentication' ) . '</button>
-				</div>
 			</div>';
 
 			if ( 'dashboard' !== $prev_screen ) {
@@ -2088,9 +2212,10 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			}
 
 			$html .= '<div id="links_to_apps_tour" class="mo2f-app-links-container"><span id="links_to_apps"></span></div>';
-			$html .= '<div class="mo2f_customize_logo">' . $common_helper->mo2f_customize_logo() . '</div>';
 
-			$html .= '</td></tr></table></div></div></div><br>';
+			$html .= '</td></tr></table>';
+			$html .= '<div class="mo2f_customize_logo">' . $common_helper->mo2f_customize_logo() . '</div>';
+			$html .= '</div></div></div><br>';
 
 			$server_time = isset( $_SERVER['REQUEST_TIME'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_TIME'] ) ) * 1000 : null;
 
@@ -2123,8 +2248,14 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 							mo2f_validate_gauth(nonce, ga_secret);
 						}
 					});
-		
-					jQuery("#mo2f_save_otp_ga_tour").click(function() {
+
+					jQuery("#mo2f_validate_code_form").on("submit", function(event) {
+						event.preventDefault();
+						mo2f_validate_gauth(nonce, ga_secret);
+					});
+
+					jQuery("#mo2f_save_otp_ga_tour").click(function(event) {
+						event.preventDefault();
 						mo2f_validate_gauth(nonce, ga_secret);
 					});
 		
@@ -2276,6 +2407,15 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			wp_print_scripts( 'mo2f_phone_js' );
 			wp_register_style( 'mo2f_phone', plugins_url( 'includes/css/phone.min.css', __DIR__ ), array(), MO2F_VERSION, false );
 			wp_print_styles( 'mo2f_phone' );
+			// Registered and printed last so it wins the cascade above without editing it.
+			wp_register_style( 'mo2f_tokens', plugins_url( 'includes/css/mo2f-tokens.min.css', __DIR__ ), array(), MO2F_VERSION, false );
+			wp_register_style( 'mo2f_login_popup_ui', plugins_url( 'includes/css/mo2f_login_popup_ui.min.css', __DIR__ ), array( 'mo2f_tokens' ), MO2F_VERSION, false );
+			wp_register_style( 'mo2f_responsive_popup', plugins_url( 'includes/css/mo2f-responsive-popup.css', __DIR__ ), array( 'mo2f_tokens', 'mo2f_login_popup_ui' ), MO2F_VERSION, false );
+			wp_register_style( 'mo2f_redesign_admin', plugins_url( 'includes/css/mo2f-redesign-admin.min.css', __DIR__ ), array( 'mo2f_tokens' ), MO2F_VERSION, false );
+			wp_print_styles( 'mo2f_tokens' );
+			wp_print_styles( 'mo2f_login_popup_ui' );
+			wp_print_styles( 'mo2f_responsive_popup' );
+			wp_print_styles( 'mo2f_redesign_admin' );
 			if ( get_site_option( 'mo2f_enable_login_popup_customization' ) ) {
 				$this->mo2f_output_custom_login_popup_css();
 			}
@@ -2368,6 +2508,26 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		}
 
 		/**
+		 * Function to show the Compliance Log (admin resets, method changes, enrollment, etc.)
+		 *
+		 * @param array $mo2f_compliance_events - Database entries that need to be shown.
+		 * @return void
+		 */
+		public function mo2f_show_compliance_log_report( $mo2f_compliance_events ) {
+			foreach ( $mo2f_compliance_events as $mo2f_event ) {
+				$mo2f_actor = $mo2f_event->actor_id ? get_userdata( $mo2f_event->actor_id ) : false;
+				echo '<tr>';
+				echo '<td>' . esc_html( gmdate( 'M j, Y, g:i:s a', $mo2f_event->created_timestamp ) ) . '</td>';
+				echo '<td>' . esc_html( $mo2f_event->type ) . '</td>';
+				echo '<td>' . esc_html( $mo2f_event->username ) . '</td>';
+				echo '<td>' . esc_html( $mo2f_actor ? $mo2f_actor->user_login : '—' ) . '</td>';
+				echo '<td>' . esc_html( $mo2f_event->method ? $mo2f_event->method : '—' ) . '</td>';
+				echo '<td>' . esc_html( $mo2f_event->ip_address ) . '</td>';
+				echo '</tr>';
+			}
+		}
+
+		/**
 		 * This function redirect user to given url.
 		 *
 		 * @param object $user object containing user details.
@@ -2427,103 +2587,249 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		 * @return string
 		 */
 		public function mo2f_get_default_page( $is_lv_needed ) {
-			$page = ( $is_lv_needed && ! get_site_option( 'mo2f_customerKey' ) ) || ! current_user_can( 'manage_options' ) ? 'mo_2fa_my_account' : 'mo_2fa_two_fa';
+			$page = ( $is_lv_needed && ! get_site_option( 'mo2f_customerKey' ) ) || ! current_user_can( 'manage_options' ) ? 'mo_2fa_my_account' : 'mo_2fa_dashboard';
 			return $page;
 		}
 
 		/**
-		 * Function to show user details
+		 * Sends a server-side DataTables response for reports, dispatched by
+		 * report_type. DataTables' serverSide mode calls this once per page
+		 * turn / search / sort instead of the whole report being rendered
+		 * into the page up front.
+		 *
+		 * @param array $post Request payload (draw, start, length, search, order, report_type).
+		 * @return void
+		 */
+		public function mo2f_reports_datatable_response( $post ) {
+			$report_type = isset( $post['report_type'] ) ? sanitize_text_field( wp_unslash( $post['report_type'] ) ) : '';
+			$draw        = isset( $post['draw'] ) ? absint( $post['draw'] ) : 0;
+			$start       = isset( $post['start'] ) ? absint( $post['start'] ) : 0;
+			$length      = isset( $post['length'] ) ? (int) $post['length'] : 10;
+			$length      = -1 === $length ? 100 : max( 1, min( 100, $length ) );
+			$search      = isset( $post['search']['value'] ) ? sanitize_text_field( wp_unslash( $post['search']['value'] ) ) : '';
+			$order_col   = isset( $post['order'][0]['column'] ) ? absint( $post['order'][0]['column'] ) : 0;
+			$order_dir   = isset( $post['order'][0]['dir'] ) ? sanitize_key( wp_unslash( $post['order'][0]['dir'] ) ) : 'asc';
+
+			if ( 'login_report' === $report_type ) {
+				$this->mo2f_send_login_report_datatable_response( $draw, $start, $length, $search, $order_col, $order_dir );
+			}
+
+			if ( in_array( $report_type, array( 'registered_users', 'unregistered_users' ), true ) ) {
+				$this->mo2f_send_user_status_datatable_response( $report_type, $draw, $start, $length, $search, $order_col, $order_dir );
+			}
+
+			wp_send_json_error( __( 'Invalid report type.', 'miniorange-2-factor-authentication' ) );
+		}
+
+		/**
+		 * Sends paged login report rows.
+		 *
+		 * @param int    $draw DataTables draw counter.
+		 * @param int    $start Start offset.
+		 * @param int    $length Page length.
+		 * @param string $search Search term.
+		 * @param int    $order_col Order column.
+		 * @param string $order_dir Order direction.
+		 * @return void
+		 */
+		private function mo2f_send_login_report_datatable_response( $draw, $start, $length, $search, $order_col, $order_dir ) {
+			global $mo2f_wpns_db_queries;
+
+			$result = $mo2f_wpns_db_queries->mo2f_get_login_transaction_report_page( $start, $length, $search, $order_col, $order_dir );
+			$rows   = array();
+
+			foreach ( $result['rows'] as $transaction ) {
+				$status = 'N/A';
+				if ( MoWpnsConstants::FAILED === $transaction->status || MoWpnsConstants::PAST_FAILED === $transaction->status ) {
+					$status = '<span style="color:red">' . esc_html( MoWpnsConstants::FAILED ) . '</span>';
+				} elseif ( MoWpnsConstants::SUCCESS === $transaction->status ) {
+					$status = '<span style="color:green">' . esc_html( MoWpnsConstants::SUCCESS ) . '</span>';
+				}
+
+				$rows[] = array(
+					esc_html( $transaction->ip_address ),
+					esc_html( $transaction->username ),
+					$status,
+					esc_html( gmdate( 'M j, Y, g:i:s a', $transaction->created_timestamp ) ),
+				);
+			}
+
+			wp_send_json(
+				array(
+					'draw'            => $draw,
+					'recordsTotal'    => (int) $result['total'],
+					'recordsFiltered' => (int) $result['filtered'],
+					'data'            => $rows,
+				)
+			);
+		}
+
+		/**
+		 * Sends paged registered or unregistered user status rows.
+		 *
+		 * @param string $report_type 'registered_users' or 'unregistered_users'.
+		 * @param int    $draw DataTables draw counter.
+		 * @param int    $start Start offset.
+		 * @param int    $length Page length.
+		 * @param string $search Search term.
+		 * @param int    $order_col Order column.
+		 * @param string $order_dir Order direction.
+		 * @return void
+		 */
+		private function mo2f_send_user_status_datatable_response( $report_type, $draw, $start, $length, $search, $order_col, $order_dir ) {
+			global $wpdb, $mo2fdb_queries;
+
+			$order_map   = array(
+				0 => 'u.user_login',
+				1 => 'u.user_email',
+				2 => 'u.user_login',
+				3 => 'u.user_login',
+				4 => 'u.ID',
+			);
+			$order_by    = isset( $order_map[ $order_col ] ) ? $order_map[ $order_col ] : 'u.user_login';
+			$order_dir   = 'desc' === strtolower( $order_dir ) ? 'DESC' : 'ASC';
+			$reg_like    = '%' . $wpdb->esc_like( MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS ) . '%';
+			$query_args  = array( MoWpnsConstants::USER_DEATIL_META_KEY, $reg_like );
+			$join        = "INNER JOIN {$wpdb->usermeta} mo2f_status ON u.ID = mo2f_status.user_id AND mo2f_status.meta_key = %s AND mo2f_status.meta_value LIKE %s";
+			$where       = 'WHERE 1=1';
+
+			if ( 'unregistered_users' === $report_type ) {
+				$join  = "LEFT JOIN {$wpdb->usermeta} mo2f_status ON u.ID = mo2f_status.user_id AND mo2f_status.meta_key = %s AND mo2f_status.meta_value LIKE %s";
+				$where = 'WHERE mo2f_status.user_id IS NULL';
+			}
+
+			if ( '' !== $search ) {
+				$search_like  = '%' . $wpdb->esc_like( $search ) . '%';
+				$where       .= ' AND (u.user_login LIKE %s OR u.user_email LIKE %s OR u.display_name LIKE %s)';
+				$query_args[] = $search_like;
+				$query_args[] = $search_like;
+				$query_args[] = $search_like;
+			}
+
+			$total_args  = array( MoWpnsConstants::USER_DEATIL_META_KEY, $reg_like );
+			$total_where = 'registered_users' === $report_type ? 'WHERE 1=1' : 'WHERE mo2f_status.user_id IS NULL';
+
+			$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Server-side report count; $join/$total_where are developer-controlled, not user input.
+				$wpdb->prepare(
+					"SELECT COUNT(DISTINCT u.ID) FROM {$wpdb->users} u {$join} {$total_where}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Table names are WordPress globals; $join's 2 %s always match $total_args.
+					$total_args
+				)
+			);
+
+			$filtered = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Server-side report count; $join/$where are developer-controlled, not user input.
+				$wpdb->prepare(
+					"SELECT COUNT(DISTINCT u.ID) FROM {$wpdb->users} u {$join} {$where}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Table names are WordPress globals; placeholder count always matches $query_args.
+					$query_args
+				)
+			);
+
+			$query_args[] = $length;
+			$query_args[] = $start;
+
+			$user_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Server-side report page; dynamic pieces are allow-listed above.
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- $query_args' element count always matches the placeholder count.
+					"SELECT DISTINCT u.ID FROM {$wpdb->users} u {$join} {$where} ORDER BY {$order_by} {$order_dir} LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Dynamic pieces are allow-listed above.
+					$query_args
+				)
+			);
+
+			$rows = array();
+			foreach ( $user_ids as $user_id ) {
+				$user = get_user_by( 'id', (int) $user_id );
+				if ( ! $user ) {
+					continue;
+				}
+				$user_role            = ! empty( $user->roles ) ? reset( $user->roles ) : '';
+				$mo2f_method_selected = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
+				$method_label         = empty( $mo2f_method_selected ) ? 'None' : $mo2f_method_selected;
+
+				if ( 'registered_users' === $report_type ) {
+					$rows[] = array(
+						esc_html( $user->user_login ),
+						esc_html( $user->user_email ),
+						esc_html( $user_role ),
+						'<span>' . esc_html( $method_label ) . '</span>',
+						$this->mo2f_get_reset_2fa_button_html( $user->ID ),
+					);
+				} else {
+					$rows[] = array(
+						esc_html( $user->user_login ),
+						esc_html( $user->user_email ),
+						esc_html( $user_role ),
+						'<span>' . esc_html( $method_label ) . '</span>',
+						$this->mo2f_get_unblock_user_button_html( $user ),
+					);
+				}
+			}
+
+			wp_send_json(
+				array(
+					'draw'            => $draw,
+					'recordsTotal'    => $total,
+					'recordsFiltered' => $filtered,
+					'data'            => $rows,
+				)
+			);
+		}
+
+		/**
+		 * Builds reset-2FA button HTML for one row of the registered-users report.
+		 *
+		 * @param int $user_id User ID.
+		 * @return string
+		 */
+		private function mo2f_get_reset_2fa_button_html( $user_id ) {
+			$reset_url = wp_nonce_url( 'users.php?page=reset&action=reset_edit&user_id=' . (int) $user_id, 'reset_edit', 'mo2f_reset-2fa' );
+			return '<form action="' . esc_url( $reset_url ) . '" method="post" name="reset2fa" class="mo2f-reset-2fa-report-form"><input type="submit" name="mo2f_reset_2fa" value="' . esc_attr__( 'Reset 2FA', 'miniorange-2-factor-authentication' ) . '" class="mo2f-reset-settings-button" /></form>';
+		}
+
+		/**
+		 * Builds the unblock-user button HTML for one report row.
+		 *
+		 * @param \WP_User $user User.
+		 * @return string
+		 */
+		private function mo2f_get_unblock_user_button_html( $user ) {
+			if ( get_site_option( 'mo2f_grace_period' ) && $this->mo2f_is_grace_period_expired( $user ) && MoWpnsConstants::GRACE_PERIOD_ACTION_BLOCK === $this->mo2f_get_effective_graceperiod_action( $user ) ) {
+				return '<button onclick="mo2f_unblock_user(' . esc_js( $user->ID ) . ')" id="unblock-button-' . esc_attr( $user->ID ) . '" class="mo2f-reset-settings-button">' . esc_html__( 'Unblock User', 'miniorange-2-factor-authentication' ) . '</button>';
+			}
+			return '';
+		}
+
+		/**
+		 * Table skeleton for the unregistered-users report.
 		 *
 		 * @return void
 		 */
 		public function mo2f_show_unregistered_user_details() {
-			global $mo2fdb_queries;
-			$users = get_users();
 			echo ' <table  id="mo2f_unregistered_user_details" class="display" cellspacing="0" width="100%" style="display:none">
-      <thead> 
+      <thead>
         <tr>
 			<th>' . esc_html__( 'Username', 'miniorange-2-factor-authentication' ) . '</th>
 			<th>' . esc_html__( 'Email', 'miniorange-2-factor-authentication' ) . '</th>
 			<th>' . esc_html__( 'Role', 'miniorange-2-factor-authentication' ) . '</th>
 			<th>' . esc_html__( 'Method Selected', 'miniorange-2-factor-authentication' ) . '</th>
-			<th>' . esc_html__( 'Blocked User', 'miniorange-2-factor-authentication' ) . '</th>             
+			<th>' . esc_html__( 'Blocked User', 'miniorange-2-factor-authentication' ) . '</th>
         </tr>
-      </thead><tbody>';
-			$entries = false;
-			foreach ( $users as $user ) {
-				$user_role                     = $user->roles[0];
-				$wp_user                       = get_user_by( 'id', $user->ID );
-				$mo2f_user_registration_status = $mo2fdb_queries->mo2f_get_user_detail( 'mo_2factor_user_registration_status', $user->ID );
-				$mo2f_method_selected          = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
-				if ( MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS !== $mo2f_user_registration_status ) {
-					$entries = true;
-					echo '<tr><td>' . esc_html( $wp_user->user_login ) .
-					'</td><td>' . esc_html( $user->user_email ) .
-					'</td><td>' . esc_html( $user_role ) .
-					'</td><td>' .
-					'<span>';
-					echo esc_html( ( empty( $mo2f_method_selected ) ) ? 'None' : $mo2f_method_selected );
-					echo '</span>';
-					echo '</td><td>';
-					if ( get_site_option( 'mo2f_grace_period' ) && $this->mo2f_is_grace_period_expired( $user ) && 'block_user_login' === get_site_option( 'mo2f_graceperiod_action' ) ) {
-						?>
-					<button onclick="mo2f_unblock_user(<?php echo esc_js( $user->ID ); ?>)" id="unblock-button-<?php echo esc_attr( $user->ID ); ?>" class="mo2f-reset-settings-button"><?php echo esc_html__( 'Unblock User', 'miniorange-2-factor-authentication' ); ?></button>
-						<?php
-					}
-					echo '</td> </tr>';
-				} else {
-					continue;
-				}
-			}
-			echo '
-	</tbody></table>';
+      </thead><tbody></tbody></table>';
 		}
 
 		/**
-		 * Shows 2FA registered user entries.
+		 * Table skeleton for the registered-users report.
 		 *
 		 * @return void
 		 */
 		public function mo2f_show_registered_user_details() {
-			global $mo2fdb_queries;
-			$users = get_users();
 			echo ' <table  id="mo2f_registered_user_details" class="display" cellspacing="0" width="100%" style="display:none">
-      <thead > 
+      <thead >
         <tr>
 			<th>Username</th>
 			<th>Email</th>
 			<th>Role</th>
 			<th>Method Selected</th>
-			<th>Reset 2-Factor</th>      
+			<th>Reset 2-Factor</th>
         </tr>
-      </thead><tbody>';
-			foreach ( $users as $user ) {
-				$user_role                     = $user->roles[0];
-				$wp_user                       = get_user_by( 'id', $user->ID );
-				$mo2f_user_registration_status = $mo2fdb_queries->mo2f_get_user_detail( 'mo_2factor_user_registration_status', $user->ID );
-				if ( MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $mo2f_user_registration_status ) {
-						$mo2f_method_selected = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
-						echo '<tr class="mo2f-registered-row" ><td>' . esc_html( $wp_user->user_login ) .
-						'</td><td>' . esc_html( $user->user_email ) .
-						'</td><td>' . esc_html( $user_role ) .
-						'</td><td>' .
-						'<span>';
-						echo esc_html( ( empty( $mo2f_method_selected ) ) ? 'None' : $mo2f_method_selected );
-						echo '</span>';
-						echo '</td><td>';
-					?>
-				<form action="<?php echo esc_url( wp_nonce_url( 'users.php?page=reset&amp;action=reset_edit&amp;user_id=' . esc_attr( $user->ID ), 'reset_edit', 'mo2f_reset-2fa' ) ); ?>" method="post" name="reset2fa" id="reset2fa">
-					<input type="submit" name="mo2f_reset_2fa" id="mo2f_reset_2fa" value="Reset 2FA" class="mo2f-reset-settings-button" />
-				</form>
-					<?php
-						echo '</td> </tr>';
-				} else {
-					continue;
-				}
-			}
-
-			echo '
-</tbody></table>';
+      </thead><tbody></tbody></table>';
 		}
 
 		/**

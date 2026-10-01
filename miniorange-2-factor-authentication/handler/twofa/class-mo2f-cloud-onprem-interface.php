@@ -26,6 +26,7 @@ use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\Mo2f_Common_Helper;
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
+use TwoFA\OnPrem\Mo2f_Onprem_Setup;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -64,15 +65,6 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		private $class_object;
 
 		/**
-		 * Plugin type
-		 *
-		 * @var array
-		 */
-		private $plugin_type_to_class = array(
-			'Mo2f_OnPrem' => 'TwoFA\OnPrem\Mo2f_Onprem_Setup',
-			'Mo2f_Cloud'  => 'TwoFA\Cloud\Customer_Cloud_Setup',
-		);
-		/**
 		 * Plan methods
 		 *
 		 * @var array
@@ -83,9 +75,7 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		 * Constructor of the class.
 		 */
 		public function __construct() {
-			$mo2f_plugin_type   = MO2F_IS_ONPREM ? 'Mo2f_OnPrem' : 'Mo2f_Cloud';
-			$plugin_type        = $this->plugin_type_to_class[ $mo2f_plugin_type ];
-			$this->class_object = $plugin_type::instance();
+			$this->class_object = Mo2f_Onprem_Setup::instance();
 		}
 		/**
 		 * Undocumented function
@@ -350,11 +340,7 @@ if ( ! class_exists( 'MO2f_Cloud_Onprem_Interface' ) ) {
 		 * @return string
 		 */
 		public function locked_out_link() {
-			if ( MO2F_IS_ONPREM ) {
-				return MoWpnsConstants::ONPREMISELOCKEDOUT;
-			} else {
-				return MoWpnsConstants::CLOUDLOCKOUT;
-			}
+			return MoWpnsConstants::ONPREMISELOCKEDOUT;
 		}
 		/**
 		 * Set google authenticator on WordPress user profile.

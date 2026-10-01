@@ -83,15 +83,19 @@ if ( ! class_exists( 'Mo2f_TabDetails' ) ) {
 			$can_user_manage_options = current_user_can( 'manage_options' );
 
 			$this->mo2fa_nav_tab_details   = ( $lv_needed ? array(
-				'Quick Setup',
-				'Settings',
+				'Access Rules',
+				'Login Experience',
+				'Notifications',
 				'Advanced Features',
 				'Form Integration',
+				'Methods',
 			) : array(
-				'Quick Setup',
-				'Settings',
+				'Access Rules',
+				'Login Experience',
+				'Notifications',
 				'Advanced Features',
 				'Form Integration',
+				'Methods',
 			) );
 			$this->wl_tab_details          = $lv_needed ? array(
 				'Login Popup',
@@ -106,6 +110,7 @@ if ( ! class_exists( 'Mo2f_TabDetails' ) ) {
 				'Users 2FA Status',
 				'Remembered Devices',
 				'Login Report',
+				'Compliance Log',
 			);
 			$this->ma_tab_details          = array(
 				'My Account',
@@ -116,12 +121,21 @@ if ( ! class_exists( 'Mo2f_TabDetails' ) ) {
 				'IP Blacklist',
 			);
 			$this->tab_details             = array(
+				Mo2f_Tabs::DASHBOARD       => new Mo2f_PluginPageDetails(
+					'Dashboard',
+					'mo_2fa_dashboard',
+					'manage_options',
+					$request_uri,
+					'2faconfigurations' . DIRECTORY_SEPARATOR . 'dashboard.php',
+					$can_user_manage_options,
+					array(),
+				),
 				Mo2f_Tabs::TWO_FACTOR      => new Mo2f_PluginPageDetails(
 					'2FA Configurations',
 					'mo_2fa_two_fa',
 					'read',
 					$request_uri,
-					'2faconfigurations' . DIRECTORY_SEPARATOR . 'quicksetup.php',
+					'2faconfigurations' . DIRECTORY_SEPARATOR . 'dashboard.php',
 					$can_user_manage_options,
 					$this->mo2fa_nav_tab_details,
 				),
@@ -142,15 +156,6 @@ if ( ! class_exists( 'Mo2f_TabDetails' ) ) {
 					'reports' . DIRECTORY_SEPARATOR . 'users2fastatus.php',
 					$can_user_manage_options,
 					$this->reports_tab_details,
-				),
-				Mo2f_Tabs::WHATSAPP        => new Mo2f_PluginPageDetails(
-					'WhatsApp',
-					'mo_2fa_whatsapp',
-					'manage_options',
-					$request_uri,
-					'mo2fawhatsapp.php',
-					$can_user_manage_options,
-					array(),
 				),
 				Mo2f_Tabs::MY_ACCOUNT      => new Mo2f_PluginPageDetails(
 					'My Account',

@@ -49,7 +49,9 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 			$common_helper       = new Mo2f_Common_Helper();
 			$configure_methods   = $common_helper->mo2fa_return_methods_value( $user_id );
 			if ( $common_helper->mo2f_is_2fa_set( $user_id ) ) {
-				if ( empty( get_user_meta( $user_id, 'mo_backup_code_generated', true ) ) ) {
+				// Keyed on codes actually remaining, not the never-reset "were any ever generated" flag.
+				$remaining_backup_codes = (array) get_user_meta( $user_id, 'mo2f_backup_codes', true );
+				if ( empty( $remaining_backup_codes ) ) {
 					$skeleton_blocks['use_backup_codes'] = '';
 				} else {
 					$skeleton_blocks['send_backup_codes'] = '';
@@ -316,6 +318,7 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 					'##enterbackupcode##' => $skeleton_blocks['backup_code_input'],
 					'##validatebutton##'  => $skeleton_blocks['validate_button'],
 					'##backupmethod##'    => $skeleton_blocks['kba_backup_method_link'],
+					'##sendbackupcodes##' => $skeleton_blocks['send_backup_codes'],
 				),
 				MoWpnsConstants::MO2F_RBA_GET_USER_CONSENT => array(
 					'##rbaconsent##' => $skeleton_blocks['rba_consent'],

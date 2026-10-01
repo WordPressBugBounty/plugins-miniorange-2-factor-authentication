@@ -211,8 +211,8 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 				);
 			} else {
 				$arr = array(
-					'status'  => 'FAILED',
-					'message' => 'TEST FAILED.',
+					'status'  => 'ERROR',
+					'message' => user_can( $current_user->ID, 'manage_options' ) ? MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ) : MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS ),
 				);
 			}
 			$content = wp_json_encode( $arr );
@@ -310,7 +310,7 @@ if ( ! class_exists( 'Mo2f_OnPremRedirect' ) ) {
 				update_site_option( 'mo2f_oobe_time_' . $time, $current_time_in_millis );
 			} else {
 				$response['status']  = 'ERROR';
-				$response['message'] = MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL );
+				$response['message'] = user_can( $current_user->ID, 'manage_options' ) ? MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ) : MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
 			}
 			return wp_json_encode( $response );
 		}

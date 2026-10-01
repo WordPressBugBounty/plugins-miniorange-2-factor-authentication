@@ -170,7 +170,8 @@ $GLOBALS['mo2f_backup_code_email_template']        = '<table cellpadding="25" st
 <p style="margin-top:0;margin-bottom:10px">You initiated a transaction from <b>WordPress 2 Factor Authentication Plugin</b>:</p>
 <p style="margin-top:0;margin-bottom:10px">Your backup codes are:-
 <table cellspacing="10">
-	<tr><td> ##code1## </td><td> ##code2## </td><td> ##code3## </td><td> ##code4## </td><td> ##code5## </td>
+	<tr><td> ##code1## </td><td> ##code2## </td><td> ##code3## </td><td> ##code4## </td></tr>
+	<tr><td> ##code5## </td><td> ##code6## </td><td> ##code7## </td><td> ##code8## </td></tr>
 </table></p>
 <p style="margin-top:0;margin-bottom:10px">Please use this carefully as each code can only be used once. Please do not share these codes with anyone.</p>
 <p style="margin-top:0;margin-bottom:10px">Also, we would highly recommend you to reconfigure your two-factor after logging in.</p>

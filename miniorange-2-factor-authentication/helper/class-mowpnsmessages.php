@@ -200,7 +200,7 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 		const SOMETHING_WENT_WRONG                       = 'SOMETHING_WENT_WRONG';
 		const ENTER_SENT_OTP                             = 'ENTER_SENT_OTP';
 		const USER_LIMIT_EXCEEDED                        = 'USER_LIMIT_EXCEEDED';
-		const USER_PROFILE_SETUP_SMTP                    = 'USER_PROFILE_SETUP_SMTP';
+		const USER_PROFILE_SETUP_EMAIL_FAILED            = 'USER_PROFILE_SETUP_EMAIL_FAILED';
 		const SESSION_LIMIT_REACHED                      = 'SESSION_LIMIT_REACHED';
 		const EMAIL_LABEL                                = 'EMAIL_LABEL';
 		const LOGIN_WITH_TWO_FACTOR                      = 'LOGIN_WITH_TWO_FACTOR';
@@ -248,7 +248,7 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 						self::IP_WHITELISTED              => __( 'IP has been whitelisted successfully', 'miniorange-2-factor-authentication' ),
 						self::INVALID_IP_FORMAT           => __( 'Please enter Valid IP Range.', 'miniorange-2-factor-authentication' ),
 						self::DEACTIVATE_PLUGIN           => __( 'Plugin deactivated successfully', 'miniorange-2-factor-authentication' ),
-						self::GET_BACKUP_CODES            => __( "<div class='mo2f-custom-notice notice notice-warning backupcodes-notice'><p><p class='notice-message'><b>Please download backup codes using the 'Get backup codes' button to avoid getting locked out. Backup codes will be emailed as well as downloaded.</b></p><button class='backup_codes_dismiss notice-button'><i>NEVER SHOW AGAIN</i></button></p></div>", 'miniorange-2-factor-authentication' ),
+						self::GET_BACKUP_CODES            => __( "<div class='mo2f-custom-notice notice notice-warning backupcodes-notice MOWrn'><p><p class='notice-message'><b>Please download backup codes using the 'Get backup codes' button to avoid getting locked out. Backup codes will be emailed as well as downloaded.</b></p><button class='backup_codes_dismiss notice-button'><i>NEVER SHOW AGAIN</i></button></p></div>", 'miniorange-2-factor-authentication' ),
 						self::REG_SUCCESS                 => __( 'Your account has been retrieved successfully.', 'miniorange-2-factor-authentication' ),
 						self::ACCOUNT_EXISTS              => __( 'You already have an account with miniOrange. Please enter a valid password.', 'miniorange-2-factor-authentication' ),
 						self::ALREADY_ACCOUNT_EXISTS      => __( 'You already have an account with miniOrange. Please click on "Already have an account?" to continue.', 'miniorange-2-factor-authentication' ),
@@ -350,7 +350,7 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 						self::SET_AS_2ND_FACTOR           => __( 'is set as your 2 factor authentication method.', 'miniorange-2-factor-authentication' ),
 						self::VALIDATE_DUO                => __( 'Duo push notification validate successfully.', 'miniorange-2-factor-authentication' ),
 						self::ERROR_DURING_USER_REGISTRATION => __( 'Error occurred while registering the user. Please try again.', 'miniorange-2-factor-authentication' ),
-						self::ERROR_DURING_PROCESS_EMAIL  => __( 'An error occured while processing your request. Please check if your SMTP server is configured or check if email transactions are exhausted.', 'miniorange-2-factor-authentication' ),
+						self::ERROR_DURING_PROCESS_EMAIL  => '', // Resolved in mo2f_get_message() via mo2f_email_send_admin_message().
 						self::ERROR_DURING_PROCESS        => __( 'An error occured while processing your request. Please try again or contact site administrator.', 'miniorange-2-factor-authentication' ),
 						self::ERROR_IN_SENDING_PN         => __( 'An error occured while sending push notification to your app. You can click on <b>Phone is Offline</b> button to enter soft token from app or <b>Forgot your phone</b> button to receive OTP to your registered email.', 'miniorange-2-factor-authentication' ),
 						self::SCAN_QR_CODE                => __( 'Please scan the QR code.', 'miniorange-2-factor-authentication' ),
@@ -379,7 +379,7 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 						self::TEST_GAUTH_METHOD           => __( 'to test Google Authenticator method.', 'miniorange-2-factor-authentication' ),
 						self::ERROR_WHILE_VALIDATING_OTP  => __( 'Error occurred while validating the OTP. Please try again.', 'miniorange-2-factor-authentication' ),
 						self::PUSH_NOTIFICATION_SENT      => __( 'A Push notification has been sent to your miniOrange Authenticator App.', 'miniorange-2-factor-authentication' ),
-						self::ERROR_IN_SENDING_OTP_ONPREM => __( 'There was an error in sending one-time passcode. Please check your SMTP Setup and remaining transactions.', 'miniorange-2-factor-authentication' ),
+						self::ERROR_IN_SENDING_OTP_ONPREM => '', // Resolved in mo2f_get_message() via mo2f_email_send_admin_message().
 						self::ERROR_IN_SENDING_OTP        => __( 'There was an error in sending one-time passcode. Your transaction limit might have exceeded.', 'miniorange-2-factor-authentication' ),
 						self::ENTER_OTP                   => __( 'Please enter below the code in order to ', 'miniorange-2-factor-authentication' ),
 						self::VERIFY_YOURSELF             => __( 'verify yourself.', 'miniorange-2-factor-authentication' ),
@@ -417,7 +417,7 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 						self::SOMETHING_WENT_WRONG        => __( 'Something went wrong', 'miniorange-2-factor-authentication' ),
 						self::ENTER_SENT_OTP              => __( '. Please enter the OTP you received to Validate.', 'miniorange-2-factor-authentication' ),
 						self::USER_LIMIT_EXCEEDED         => '', // Resolved in mo2f_get_message() via mo2f_user_limit_exceeded_plain_message().
-						self::USER_PROFILE_SETUP_SMTP     => __( 'Please setup SMTP on your site in order to set the 2FA for your users.', 'miniorange-2-factor-authentication' ),
+						self::USER_PROFILE_SETUP_EMAIL_FAILED => '', // Resolved in mo2f_get_message() via mo2f_email_send_admin_message().
 						self::SESSION_LIMIT_REACHED       => __( 'You have reached the limit for maximum concurrent session allowed. Please logout from another session or wait for it to expire.', 'miniorange-2-factor-authentication' ),
 						self::EMAIL_LABEL                 => __( 'Username or Email', 'miniorange-2-factor-authentication' ),
 						self::LOGIN_WITH_TWO_FACTOR       => __( 'Login With 2nd Factor', 'miniorange-2-factor-authentication' ),
@@ -446,8 +446,28 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 			if ( self::USER_LIMIT_EXCEEDED === $key ) {
 				return self::mo2f_user_limit_exceeded_plain_message();
 			}
+			if ( in_array( $key, array( self::ERROR_DURING_PROCESS_EMAIL, self::ERROR_IN_SENDING_OTP_ONPREM, self::USER_PROFILE_SETUP_EMAIL_FAILED ), true ) ) {
+				return self::mo2f_email_send_admin_message();
+			}
 			$messages = self::get_messages();
 			return isset( $messages[ $key ] ) ? $messages[ $key ] : '';
+		}
+
+		/**
+		 * Message shown when a plugin email could not be sent.
+		 *
+		 * @return string
+		 */
+		public static function mo2f_email_send_admin_message() {
+			$remaining = (int) get_site_option( 'cmVtYWluaW5nT1RQ', 30 );
+			if ( $remaining <= 0 ) {
+				return sprintf(
+					/* translators: %s: recharge URL */
+					__( 'Your miniOrange account has no email transactions remaining, so this email could not be sent. Please recharge your account to continue: %s', 'miniorange-2-factor-authentication' ),
+					esc_url( MoWpnsConstants::RECHARGELINK )
+				);
+			}
+			return __( 'We were unable to send this email right now. Please try again in a moment; if this keeps happening, contact miniOrange support.', 'miniorange-2-factor-authentication' );
 		}
 
 		/**

@@ -8,6 +8,7 @@
 namespace TwoFA\Handler;
 
 use TwoFA\Helper\Mo2f_Common_Helper;
+use TwoFA\Helper\MocURL;
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Database\Mo2fDB;
@@ -57,6 +58,16 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		private $mo2f_onprem_cloud_obj;
 
 		/**
+		 * Whether the magic-link hooks have already been registered for this request.
+		 * This class is instantiated with `new` in several places across the codebase
+		 * (not only via the Instance trait), so hook registration must be guarded here
+		 * to avoid registering the same callback multiple times per request.
+		 *
+		 * @var bool
+		 */
+		private static $magic_link_hooks_registered = false;
+
+		/**
 		 * Cunstructor for Mo2f_Main_Handler
 		 */
 		public function __construct() {
@@ -64,8 +75,17 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			add_action( 'init', array( $this, 'miniorange_pass2login_redirect' ) );
 			add_action( 'wp_ajax_mo_two_factor_ajax', array( $this, 'mo_two_factor_ajax' ) );
 			add_action( 'wp_ajax_nopriv_mo_two_factor_ajax', array( $this, 'mo_two_factor_ajax' ) );
-			add_filter( 'login_errors', array( $this, 'mo2f_show_error_on_wp_login_form' ) );
-			add_filter( 'login_message', array( $this, 'mo2f_show_on_wp_login_form' ) );
+
+			if ( ! self::$magic_link_hooks_registered ) {
+				self::$magic_link_hooks_registered = true;
+				add_filter( 'login_errors', array( $this, 'mo2f_show_error_on_wp_login_form' ) );
+				add_filter( 'login_message', array( $this, 'mo2f_show_on_wp_login_form' ) );
+				add_action( 'login_init', array( $this, 'mo2f_handle_magic_link_login' ) );
+				add_action( 'login_form', array( $this, 'mo2f_render_magic_link_option' ) );
+				add_action( 'login_head', array( $this, 'mo2f_magic_link_mandatory_login_css' ) );
+				add_action( 'login_enqueue_scripts', array( $this, 'mo2f_magic_link_enqueue_assets' ) );
+				add_filter( 'authenticate', array( $this, 'mo2f_block_password_login_if_mandatory' ), 30, 3 );
+			}
 		}
 
 		/**
@@ -115,6 +135,9 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 					break;
 				case 'mo2f_passkey_log_client_error':
 					$this->mo2f_passkey_log_client_error( $_POST );
+					break;
+				case 'mo2f_request_magic_link':
+					$this->mo2f_request_magic_link( $_POST );
 					break;
 			}
 		}
@@ -387,6 +410,10 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_skiptwofactor_wizard( $post ) {
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( 'Unauthorized.' );
+				return;
+			}
 			$skip_wizard_2fa_stage = isset( $post['twofactorskippedon'] ) ? sanitize_text_field( wp_unslash( $post['twofactorskippedon'] ) ) : null;
 			update_site_option( 'mo2f_wizard_skipped', $skip_wizard_2fa_stage );
 			wp_send_json_success();
@@ -470,9 +497,10 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$user      = wp_get_current_user();
 			if ( ! $user->ID ) {
 				$user_details = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
+				// MFA_COMPLETED is a valid state here too -- e.g. right after a backup code is used.
 				if ( empty( $user_details )
 					|| ! isset( $user_details['login_status'] )
-					|| 'PASSWORD_VALIDATED' !== $user_details['login_status'] ) {
+					|| ! in_array( $user_details['login_status'], array( 'PASSWORD_VALIDATED', 'MFA_COMPLETED' ), true ) ) {
 					wp_send_json_error( 'Unauthorized.' );
 					return;
 				}
@@ -533,7 +561,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 				$user_details = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
 				if ( empty( $user_details )
 					|| ! isset( $user_details['login_status'] )
-					|| 'PASSWORD_VALIDATED' !== $user_details['login_status'] ) {
+					|| ! in_array( $user_details['login_status'], array( 'PASSWORD_VALIDATED', 'MFA_COMPLETED' ), true ) ) {
 					wp_send_json_error( 'Unauthorized.' );
 					return;
 				}
@@ -561,7 +589,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$twofa_method = isset( $post['mo2f_otp_based_method'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_otp_based_method'] ) ) : '';
 			$prev_input   = isset( $post['mo2f_phone_email_telegram'] ) ? str_replace( ' ', '', sanitize_text_field( wp_unslash( $post['mo2f_phone_email_telegram'] ) ) ) : '';
 			$inline_popup = new Mo2f_Common_Helper();
-			if ( 'PASSWORD_VALIDATED' === $user_details['login_status']
+			if ( in_array( $user_details['login_status'], array( 'PASSWORD_VALIDATED', 'MFA_COMPLETED' ), true )
 				&& ! $inline_popup->mo2f_guard_2fa_configuration_request( $user_details['user_id'], $twofa_method ) ) {
 				wp_send_json_error( 'Unauthorized.' );
 				return;
@@ -680,6 +708,9 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 				$common_helper->mo2f_remove_current_activity( $session_id_encrypted );
 				delete_expired_transients( true );
 				delete_site_option( $session_id_encrypted );
+				if ( 'MFA_COMPLETED' === $mo2f_1stfactor_status && get_site_option( 'mo2f_enable_trusted_device' ) ) {
+					$this->mo2f_set_trusted_device_cookie( $user_id );
+				}
 				wp_set_auth_cookie( $user_id, true );
 				do_action( 'wp_login', $currentuser->user_login, $currentuser ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 				$common_helper->mo2f_redirect_user_to( $currentuser, $redirect_to );
@@ -687,6 +718,69 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			} else {
 				$common_helper->mo2f_remove_current_activity( $session_id_encrypted );
 			}
+		}
+
+		/**
+		 * Marks the current browser as trusted for 7 days.
+		 *
+		 * @param int $user_id User ID.
+		 * @return void
+		 */
+		public function mo2f_set_trusted_device_cookie( $user_id ) {
+			$token      = bin2hex( openssl_random_pseudo_bytes( 32 ) );
+			$token_hash = hash( 'sha256', $token );
+			$expires    = time() + ( 7 * DAY_IN_SECONDS );
+
+			$trusted_devices = (array) get_user_meta( $user_id, 'mo2f_trusted_devices', true );
+			$trusted_devices = array_filter(
+				$trusted_devices,
+				function ( $device ) {
+					return isset( $device['expires'] ) && $device['expires'] > time();
+				}
+			);
+			if ( count( $trusted_devices ) >= 10 ) {
+				array_shift( $trusted_devices );
+			}
+			$trusted_devices[] = array(
+				'token_hash' => $token_hash,
+				'expires'    => $expires,
+			);
+			update_user_meta( $user_id, 'mo2f_trusted_devices', array_values( $trusted_devices ) );
+
+			setcookie(
+				'mo2f_trusted_device',
+				$token,
+				array(
+					'expires'  => $expires,
+					'path'     => defined( 'COOKIEPATH' ) ? COOKIEPATH : '/',
+					'domain'   => defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '',
+					'secure'   => is_ssl(),
+					'httponly' => true,
+					'samesite' => 'Lax',
+				)
+			);
+		}
+
+		/**
+		 * Checks whether the current request's mo2f_trusted_device cookie is a
+		 * valid, unexpired trusted device for the given user.
+		 *
+		 * @param int $user_id User ID.
+		 * @return bool
+		 */
+		public function mo2f_is_trusted_device( $user_id ) {
+			if ( empty( $_COOKIE['mo2f_trusted_device'] ) ) {
+				return false;
+			}
+			$token           = sanitize_text_field( wp_unslash( $_COOKIE['mo2f_trusted_device'] ) );
+			$token_hash      = hash( 'sha256', $token );
+			$trusted_devices = (array) get_user_meta( $user_id, 'mo2f_trusted_devices', true );
+			foreach ( $trusted_devices as $device ) {
+				if ( isset( $device['token_hash'], $device['expires'] ) && $device['expires'] > time() && hash_equals( $device['token_hash'], $token_hash ) ) {
+					return true;
+				}
+			}
+			return false;
 		}
 
 		/**
@@ -825,6 +919,9 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			);
 			if ( $this->mo2f_check_if_twofa_is_enabled( $currentuser ) ) {
 				$common_helper = new Mo2f_Common_Helper();
+				if ( get_site_option( 'mo2f_enable_trusted_device' ) && $this->mo2f_is_trusted_device( $currentuser->ID ) ) {
+					return $currentuser;
+				}
 				if ( apply_filters( 'mo2f_basic_plan_settings_filter', $mo2fdb_queries->check_alluser_limit_exceeded( $currentuser->ID ), 'is_user_limit_exceeded', array() ) ) {
 					return $currentuser;
 				}
@@ -865,7 +962,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 						return $user;
 					}
 				} elseif ( ! get_site_option( 'mo2f_disable_inline_registration' ) ) {
-					if ( get_site_option( 'mo2f_grace_period' ) && $common_helper->mo2f_is_grace_period_expired( $currentuser ) && 'block_user_login' === get_site_option( 'mo2f_graceperiod_action' ) ) {
+					if ( get_site_option( 'mo2f_grace_period' ) && $common_helper->mo2f_is_grace_period_expired( $currentuser ) && MoWpnsConstants::GRACE_PERIOD_ACTION_BLOCK === $common_helper->mo2f_get_effective_graceperiod_action( $currentuser ) ) {
 						$mo2fa_login_message = 'Your grace period to setup the 2FA has expired. Please contact site admin to unblock yourself.';
 						$mo2fa_login_status  = MoWpnsConstants::MO2F_USER_BLOCKED_PROMPT;
 						$login_popup         = new Mo2f_Login_Popup();
@@ -879,6 +976,256 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 				}
 			} else {
 				return $currentuser;
+			}
+		}
+
+		/**
+		 * True mandatory mode, unless MO2F_DISABLE_MAGIC_LINK_MANDATORY is set truthy
+		 * in wp-config.php -- an escape hatch so a site can't be fully locked out of
+		 * password login if outbound email breaks while mandatory mode is on.
+		 *
+		 * @return string
+		 */
+		private function mo2f_magic_link_mode() {
+			if ( defined( 'MO2F_DISABLE_MAGIC_LINK_MANDATORY' ) && MO2F_DISABLE_MAGIC_LINK_MANDATORY ) {
+				return 'optional';
+			}
+			return get_site_option( 'mo2f_magic_link_login_mode', 'optional' );
+		}
+
+		/**
+		 * @return string
+		 */
+		private function mo2f_magic_link_generic_message() {
+			return __( 'If that account exists, a login link has been sent to its registered email address.', 'miniorange-2-factor-authentication' );
+		}
+
+		/**
+		 * Enqueues the magic-link panel's JS/CSS on wp-login.php.
+		 *
+		 * @return void
+		 */
+		public function mo2f_magic_link_enqueue_assets() {
+			if ( ! get_site_option( 'mo2f_enable_magic_link_login' ) ) {
+				return;
+			}
+			wp_enqueue_style( 'mo2f-magic-link', plugins_url( 'includes/css/mo2f-magic-link.css', __DIR__ ), array(), MO2F_VERSION );
+			wp_enqueue_script( 'mo2f-magic-link', plugins_url( 'includes/js/mo2f-magic-link.js', __DIR__ ), array(), MO2F_VERSION, true );
+			wp_localize_script(
+				'mo2f-magic-link',
+				'mo2fMagicLink',
+				array(
+					'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+					'nonce'          => wp_create_nonce( 'mo-two-factor-ajax-nonce' ),
+					'isMandatory'    => 'mandatory' === $this->mo2f_magic_link_mode(),
+					'sendingText'    => __( 'Sending...', 'miniorange-2-factor-authentication' ),
+					'errorText'      => __( 'Something went wrong. Please try again.', 'miniorange-2-factor-authentication' ),
+					'genericMessage' => $this->mo2f_magic_link_generic_message(),
+				)
+			);
+		}
+
+		/**
+		 * Renders the "log in with a magic link" option on the standard login form.
+		 * Behavior lives in mo2f_magic_link_enqueue_assets() and includes/js/mo2f-magic-link.js.
+		 *
+		 * @return void
+		 */
+		public function mo2f_render_magic_link_option() {
+			if ( ! get_site_option( 'mo2f_enable_magic_link_login' ) ) {
+				return;
+			}
+			$is_mandatory = 'mandatory' === $this->mo2f_magic_link_mode();
+			?>
+			<div id="mo2f_magic_link_wrap" class="mo2f-magic-link-wrap">
+				<?php if ( ! $is_mandatory ) : ?>
+					<p class="mo2f-magic-link-toggle-p">
+						<a href="#" id="mo2f_magic_link_toggle"><?php esc_html_e( 'Email me a login link instead', 'miniorange-2-factor-authentication' ); ?></a>
+					</p>
+				<?php endif; ?>
+				<div id="mo2f_magic_link_panel" class="mo2f-magic-link-panel" style="display:<?php echo $is_mandatory ? 'block' : 'none'; ?>;">
+					<?php if ( $is_mandatory ) : ?>
+						<p class="mo2f-magic-link-intro"><?php esc_html_e( 'Enter your username or email above, then request a login link:', 'miniorange-2-factor-authentication' ); ?></p>
+					<?php else : ?>
+						<label for="mo2f_magic_link_identifier" class="mo2f-magic-link-label"><?php esc_html_e( 'Username or Email', 'miniorange-2-factor-authentication' ); ?></label>
+						<input type="text" id="mo2f_magic_link_identifier" class="input mo2f-magic-link-field" autocomplete="username" />
+					<?php endif; ?>
+					<input type="button" id="mo2f_magic_link_send" class="button button-primary mo2f-magic-link-send" value="<?php esc_attr_e( 'Send login link', 'miniorange-2-factor-authentication' ); ?>" />
+					<p id="mo2f_magic_link_status" role="status" class="mo2f-magic-link-status" style="display:none;"></p>
+				</div>
+			</div>
+			<?php
+		}
+
+		/**
+		 * Hides the password field/Log In button when mandatory mode is active.
+		 * UI only -- mo2f_block_password_login_if_mandatory() enforces it server-side.
+		 *
+		 * @return void
+		 */
+		public function mo2f_magic_link_mandatory_login_css() {
+			if ( ! get_site_option( 'mo2f_enable_magic_link_login' ) ) {
+				return;
+			}
+			if ( 'mandatory' !== $this->mo2f_magic_link_mode() ) {
+				return;
+			}
+			?>
+			<style>
+				#loginform #user_pass,
+				#loginform label[for="user_pass"],
+				#loginform .forgetmenot,
+				#loginform #wp-submit,
+				#loginform p.submit,
+				#loginform .user-pass-wrap { display: none !important; }
+			</style>
+			<?php
+		}
+
+		/**
+		 * Rejects a successful password login when mandatory mode is active, so
+		 * posting wp-login.php directly can't bypass the UI. A wrong password is
+		 * left alone so WordPress's own invalid-credentials error still shows.
+		 *
+		 * @param \WP_User|\WP_Error|null $user     User if authenticated, WP_Error otherwise.
+		 * @param string                  $username Username or email.
+		 * @param string                  $password Password.
+		 * @return \WP_User|\WP_Error|null
+		 */
+		public function mo2f_block_password_login_if_mandatory( $user, $username, $password ) {
+			if ( empty( $password ) || ! ( $user instanceof \WP_User ) ) {
+				return $user;
+			}
+			if ( ! get_site_option( 'mo2f_enable_magic_link_login' ) ) {
+				return $user;
+			}
+			if ( 'mandatory' !== $this->mo2f_magic_link_mode() ) {
+				return $user;
+			}
+			return new WP_Error(
+				'mo2f_magic_link_required',
+				__( '<strong>Error:</strong> Password login is disabled on this site. Please use the "Email me a login link" option on the login page.', 'miniorange-2-factor-authentication' )
+			);
+		}
+
+		/**
+		 * Handles a magic-link login request: looks up the account, generates a
+		 * single-use token good for 15 minutes, and emails a login link. Always
+		 * responds with the same generic message to avoid user enumeration.
+		 * Rate-limited per IP.
+		 *
+		 * @param array $post $_POST data.
+		 * @return void
+		 */
+		public function mo2f_request_magic_link( $post ) {
+			global $mo2f_mo_wpns_utility;
+			$generic_message = $this->mo2f_magic_link_generic_message();
+
+			if ( ! get_site_option( 'mo2f_enable_magic_link_login' ) ) {
+				wp_send_json_error( __( 'Magic link login is not enabled on this site.', 'miniorange-2-factor-authentication' ) );
+				return;
+			}
+
+			$ip             = $mo2f_mo_wpns_utility->get_client_ip();
+			$rate_limit_key = 'mo2f_magic_link_rl_' . md5( $ip );
+			$attempts       = (int) get_transient( $rate_limit_key );
+			if ( $attempts >= 5 ) {
+				// Falls back to generic wording if the transient's expiry isn't readable this way
+				// (e.g. an external object cache, which doesn't store it as an option).
+				$expires_at        = (int) get_option( '_transient_timeout_' . $rate_limit_key );
+				$remaining_minutes = $expires_at > time() ? (int) ceil( ( $expires_at - time() ) / MINUTE_IN_SECONDS ) : 0;
+				if ( $remaining_minutes > 0 ) {
+					$rate_limit_message = sprintf(
+						/* translators: %d: minutes remaining until the rate limit resets */
+						_n(
+							'Too many login link requests from this network. Please wait %d minute and try again.',
+							'Too many login link requests from this network. Please wait %d minutes and try again.',
+							$remaining_minutes,
+							'miniorange-2-factor-authentication'
+						),
+						$remaining_minutes
+					);
+				} else {
+					$rate_limit_message = __( 'Too many login link requests from this network. Please wait a few minutes and try again.', 'miniorange-2-factor-authentication' );
+				}
+				wp_send_json_error( $rate_limit_message );
+				return;
+			}
+			set_transient( $rate_limit_key, $attempts + 1, 10 * MINUTE_IN_SECONDS );
+
+			$identifier = isset( $post['mo2f_magic_link_identifier'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_magic_link_identifier'] ) ) : '';
+			if ( empty( $identifier ) ) {
+				wp_send_json_success( $generic_message );
+				return;
+			}
+
+			$user = is_email( $identifier ) ? get_user_by( 'email', $identifier ) : get_user_by( 'login', $identifier );
+			if ( $user instanceof \WP_User ) {
+				$token      = bin2hex( openssl_random_pseudo_bytes( 32 ) );
+				$token_hash = hash( 'sha256', $token );
+				$latest_key = 'mo2f_magic_link_latest_' . $user->ID;
+				$previous   = get_transient( $latest_key );
+				if ( $previous ) {
+					delete_transient( 'mo2f_magic_link_' . $previous ); // Only the latest requested link should work.
+				}
+				set_transient( $latest_key, $token_hash, 15 * MINUTE_IN_SECONDS );
+				set_transient( 'mo2f_magic_link_' . $token_hash, $user->ID, 15 * MINUTE_IN_SECONDS );
+
+				$login_url = add_query_arg( 'mo2f_magic_link', $token, wp_login_url() );
+				$subject   = sprintf(
+					/* translators: %s: site name */
+					__( 'Your login link for %s', 'miniorange-2-factor-authentication' ),
+					get_bloginfo( 'name' )
+				);
+				$message  = '<p>' . esc_html__( 'Click the link below to log in. This link is single-use and expires in 15 minutes.', 'miniorange-2-factor-authentication' ) . '</p>';
+				$message .= '<p><a href="' . esc_url( $login_url ) . '">' . esc_html__( 'Log in', 'miniorange-2-factor-authentication' ) . '</a></p>';
+				$message .= '<p>' . esc_html__( "If you didn't request this, you can safely ignore this email.", 'miniorange-2-factor-authentication' ) . '</p>';
+				MocURL::mo2f_send_cloud_email( $user->user_email, $subject, $message );
+			}
+
+			wp_send_json_success( $generic_message );
+		}
+
+		/**
+		 * Verifies a magic-link token and signs the user in (or hands off to 2FA).
+		 *
+		 * @return void
+		 */
+		public function mo2f_handle_magic_link_login() {
+			if ( isset( $_GET['mo2f_magic_link'] ) && 'expired' === $_GET['mo2f_magic_link'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only token lookup, not a state-changing action; the token itself is the credential.
+				wp_die(
+					esc_html__( 'This login link has expired or was already used. Please request a new one.', 'miniorange-2-factor-authentication' ),
+					esc_html__( 'Link expired', 'miniorange-2-factor-authentication' ),
+					array(
+						'link_url'  => esc_url( wp_login_url() ),
+						'link_text' => esc_html__( 'Back to login', 'miniorange-2-factor-authentication' ),
+					)
+				);
+			}
+			if ( ! isset( $_GET['mo2f_magic_link'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- see above.
+				return;
+			}
+			$token     = sanitize_text_field( wp_unslash( $_GET['mo2f_magic_link'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- see above.
+			$token_key = 'mo2f_magic_link_' . hash( 'sha256', $token );
+			$user_id   = get_transient( $token_key );
+			delete_transient( $token_key );
+			if ( $user_id ) {
+				delete_transient( 'mo2f_magic_link_latest_' . $user_id );
+			}
+
+			$user = $user_id ? get_userdata( $user_id ) : false;
+			if ( ! $user ) {
+				wp_safe_redirect( add_query_arg( 'mo2f_magic_link', 'expired', wp_login_url() ) );
+				exit;
+			}
+
+			$result = $this->miniorange_initiate_2nd_factor( $user, admin_url() );
+			if ( $result instanceof \WP_User ) {
+				wp_set_current_user( $result->ID );
+				wp_set_auth_cookie( $result->ID );
+				do_action( 'wp_login', $result->user_login, $result ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
+				wp_safe_redirect( admin_url() );
+				exit;
 			}
 		}
 
@@ -1106,6 +1453,10 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$session_id_encrypt = isset( $post['session_id'] ) ? sanitize_text_field( wp_unslash( $post['session_id'] ) ) : null;
 			$user_details       = get_transient( $session_id_encrypt . 'mo2f_user_transaction_details' );
 			$redirect_to        = isset( $post['redirect_to'] ) ? esc_url_raw( wp_unslash( $post['redirect_to'] ) ) : '';
+			if ( empty( $user_details ) || empty( $user_details['user_id'] ) ) {
+				wp_safe_redirect( wp_login_url() );
+				exit;
+			}
 			$this->mo2fa_pass2login( $redirect_to, $user_details );
 			exit;
 		}

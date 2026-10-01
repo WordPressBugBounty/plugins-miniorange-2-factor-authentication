@@ -565,8 +565,7 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		 * @return void
 		 */
 		public function wp_mail_send_notification( $to_email, $subject, $content ) {
-			$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-			wp_mail( $to_email, $subject, $content, $headers );
+			MocURL::mo2f_send_cloud_email( $to_email, $subject, $content );
 		}
 
 		/**
@@ -579,28 +578,7 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		 * @return bool
 		 */
 		public static function mo2f_send_html_email( $to_email, $subject, $message, $headers = array() ) {
-			if ( empty( $headers ) ) {
-				$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-			}
-
-			$mail_failed     = false;
-			$on_mail_failed  = static function () use ( &$mail_failed ) {
-				$mail_failed = true;
-			};
-			add_action( 'wp_mail_failed', $on_mail_failed );
-			$sent = wp_mail( $to_email, $subject, $message, $headers );
-			remove_action( 'wp_mail_failed', $on_mail_failed );
-
-			if ( $sent && ! $mail_failed && isset( $GLOBALS['phpmailer'] ) && is_object( $GLOBALS['phpmailer'] ) ) {
-				$phpmailer = $GLOBALS['phpmailer'];
-				if ( is_a( $phpmailer, 'PHPMailer\PHPMailer\PHPMailer' ) || is_a( $phpmailer, 'PHPMailer' ) ) {
-					if ( ! empty( $phpmailer->ErrorInfo ) ) {
-						$sent = false;
-					}
-				}
-			}
-
-			return $sent && ! $mail_failed;
+			return MocURL::mo2f_send_cloud_email( $to_email, $subject, $message );
 		}
 
 		/**
@@ -668,8 +646,10 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 		 * @return array Associative array containing email and SMS transactions.
 		 */
 		public function mo2f_check_remaining_transactions() {
-			$email_transactions = apply_filters( 'mo2f_is_lv_needed', false ) ? 'Unlimited' : get_site_option( 'cmVtYWluaW5nT1RQ', 30 );
-			$sms_transactions   = get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', 0 );
+			// Defaults only apply once an account exists to hold that balance.
+			$mo2f_is_registered  = (bool) get_site_option( 'mo2f_customerKey' );
+			$email_transactions  = apply_filters( 'mo2f_is_lv_needed', false ) ? 'Unlimited' : ( $mo2f_is_registered ? get_site_option( 'cmVtYWluaW5nT1RQ', 30 ) : 0 );
+			$sms_transactions    = $mo2f_is_registered ? get_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', 0 ) : 0;
 			if ( 'Unlimited' !== $email_transactions && ( ! is_numeric( $email_transactions ) || empty( $email_transactions ) || $email_transactions < 0 ) ) {
 				$email_transactions = 0;
 			}

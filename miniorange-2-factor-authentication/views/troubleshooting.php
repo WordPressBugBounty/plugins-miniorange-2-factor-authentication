@@ -285,6 +285,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 									<div class="mo_wpns_help_title">' . esc_html__( 'What is your refund policy & end user license agreement?', 'miniorange-2-factor-authentication' ) . '</div>
 								</div>
 								<div id="mo_wpns_help_refund_desc" class="mo_wpns_help_desc hidden">
+									<ul style="margin:0;padding-left:20px;">
 						            <li>' . sprintf(
 										/* Translators: %s: bold tags */
 										esc_html__( '%1$s%2$s%3$s to read our refund policy.', 'miniorange-2-factor-authentication' ),
@@ -299,9 +300,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 										esc_html__( 'click here', 'miniorange-2-factor-authentication' ),
 										'</a></b>'
 									) . '</li>
+									</ul>
 								</div>
 							</td>
 						</tr>
+					<tr>
+						<td class="mo_wpns_help_cell">
+							<div id="mo_wpns_help_cloud_dependency" class="mo_wpns_title_panel">
+								<div class="mo_wpns_help_title">' . esc_html__( 'Is my 2FA data sent to miniOrange\'s servers?', 'miniorange-2-factor-authentication' ) . '</div>
+							</div>
+							<div id="mo_wpns_help_cloud_dependency_solution" class="mo_wpns_help_desc hidden">
+								' . sprintf(
+									/* Translators: %1$s, %2$s: bold tags */
+									esc_html__( 'No, not for every method. %1$sPasskey (WebAuthn/FIDO2)%2$s and the %1$sAuthenticator app (TOTP)%2$s are verified entirely on your own site — no data is sent to miniOrange for these. %1$sOTP Over Email%2$s and the %1$sEmail Verification Link%2$s are generated and verified locally, but the email itself is delivered through miniOrange\'s servers instead of your site\'s own mail setup. SMS, WhatsApp, Telegram, and Push Notification (Premium methods) route through miniOrange\'s service end-to-end, since delivering an SMS, chat message, or push notification requires it.', 'miniorange-2-factor-authentication' ),
+									'<b>',
+									'</b>'
+								) . '
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td class="mo_wpns_help_cell">
+							<div id="mo_wpns_help_security_disclosure" class="mo_wpns_title_panel">
+								<div class="mo_wpns_help_title">' . esc_html__( 'How do you handle security vulnerability reports?', 'miniorange-2-factor-authentication' ) . '</div>
+							</div>
+							<div id="mo_wpns_help_security_disclosure_solution" class="mo_wpns_help_desc hidden">
+								' . sprintf(
+									/* Translators: %1$s, %2$s: mailto link tags */
+									esc_html__( 'Every security fix is listed in the plugin\'s changelog, including the version it shipped in. If you believe you\'ve found a vulnerability, please report it privately to %1$smfasupport@xecurify.com%2$s (mark the subject "Security") rather than disclosing it publicly, so we can investigate and patch it first.', 'miniorange-2-factor-authentication' ),
+									'<a href="mailto:mfasupport@xecurify.com" target="_blank">',
+									'</a>'
+								) . '
+							</div>
+						</td>
+					</tr>
 					</tbody></table>
 					<h4>' . sprintf(
 						/* Translators: %s: bold tags */

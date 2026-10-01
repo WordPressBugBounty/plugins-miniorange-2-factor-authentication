@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\Mo2f_Common_Helper;
-use TwoFA\Helper\MocURL;
+use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Traits\Instance;
 
 if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
@@ -24,6 +24,15 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 	class Mo2f_2fa_Settings_Handler {
 
 		use Instance;
+
+		/**
+		 * Upper bounds for a grace period value -- block mistyped huge numbers (e.g.
+		 * an extra digit) that would otherwise silently bypass 2FA enforcement for
+		 * years with no indication anything is wrong. Hours gets 365 days' worth so
+		 * both units represent the same real-world maximum duration.
+		 */
+		const MAX_GRACE_PERIOD_DAYS  = 365;
+		const MAX_GRACE_PERIOD_HOURS = 8760;
 
 		/**
 		 * Class Mo2f_Notifications_Save object
@@ -67,33 +76,19 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_download_backup_codes_dashboard() {
-			global $mo2fdb_queries;
-			$current_user         = wp_get_current_user();
-			$generate_backup_code = new MocURL();
-			$mo2f_user_email      = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_user_email', $current_user->ID ) ?? $current_user->user_email;
-			$codes                = $generate_backup_code->mo2f_get_backup_codes( $mo2f_user_email, site_url() );
-			$codes                = apply_filters( 'mo2f_basic_plan_settings_filter', $codes, 'generate_backup_codes', array( 'user_id' => $current_user->ID ) );
-			$show_message         = new MoWpnsMessages();
+			$current_user = wp_get_current_user();
+			$show_message  = new MoWpnsMessages();
 			if ( get_transient( 'mo2f_backupcode_generated' . $current_user->ID ) ) {
 				$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::TRANSIENT_ACTIVE ), 'ERROR' );
+				return;
 			}
-			$common_helper = new Mo2f_Common_Helper();
-			$mo2f_message  = $common_helper->mo2f_check_backupcode_status( $codes, $current_user->ID );
-			if ( $mo2f_message ) {
-				$show_message->mo2f_show_message(
-					sprintf(
-						/* translators: %s: error message */
-						__( 'Error: %s', 'miniorange-2-factor-authentication' ),
-						esc_html( $mo2f_message )
-					),
-					'ERROR'
-				);
-			} else {
-				update_user_meta( $current_user->ID, 'mo_backup_code_generated', 1 );
-				update_user_meta( $current_user->ID, 'mo_backup_code_downloaded', 1 );
-				set_transient( 'mo2f_backupcode_generated' . $current_user->ID, 1, 30 );
-				MO2f_Utility::mo2f_download_backup_codes( $current_user->ID, $codes );
-			}
+			$backup_code_handler = new Mo2f_Backup_Codes();
+			$codes                = $backup_code_handler->mo2f_generate_local_backup_codes( $current_user->ID );
+			$codes                = apply_filters( 'mo2f_basic_plan_settings_filter', $codes, 'generate_backup_codes', array( 'user_id' => $current_user->ID ) );
+			update_user_meta( $current_user->ID, 'mo_backup_code_generated', 1 );
+			update_user_meta( $current_user->ID, 'mo_backup_code_downloaded', 1 );
+			set_transient( 'mo2f_backupcode_generated' . $current_user->ID, 1, 30 );
+			MO2f_Utility::mo2f_download_backup_codes( $current_user->ID, $codes );
 		}
 
 		/**
@@ -134,6 +129,22 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 					break;
 				case 'mo2f_disable_inline_2fa_option':
 					$this->mo2f_disable_inline_2fa( $_POST );
+					break;
+				case 'mo2f_magic_link_login_save_option':
+					$this->mo2f_magic_link_login_save_option( $_POST );
+					break;
+				case 'mo2f_enable_magic_link_login_disable':
+					update_site_option( 'mo2f_enable_magic_link_login', 0 );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+					break;
+				case 'mo2f_enable_trusted_device_option':
+					$this->mo2f_enable_trusted_device( $_POST );
+					break;
+				case 'mo2f_enable_2fa_change_alerts_option':
+					$this->mo2f_enable_2fa_change_alerts( $_POST );
+					break;
+				case 'mo2f_enable_2fa_reminder_emails_option':
+					$this->mo2f_enable_2fa_reminder_emails( $_POST );
 					break;
 				case 'mo2f_mfa_login_option':
 					$this->mo2f_mfa_login( $_POST );
@@ -237,19 +248,129 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_graceperiod_save_option( $post ) {
+			$raw_graceperiod_value = isset( $post['mo2f_graceperiod_value'] ) ? trim( sanitize_text_field( wp_unslash( $post['mo2f_graceperiod_value'] ) ) ) : '1';
+			if ( '' !== $raw_graceperiod_value && ! $this->mo2f_is_whole_number( $raw_graceperiod_value ) ) {
+				// floor()/(int) below would otherwise silently turn e.g. "3.6" into 3 with no indication to the admin.
+				wp_send_json_error( __( 'Please enter a whole number for the grace period value.', 'miniorange-2-factor-authentication' ) );
+			}
+			$raw_graceperiod_type = isset( $post['mo2f_graceperiod_type'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_graceperiod_type'] ) ) : MoWpnsConstants::GRACE_PERIOD_UNIT_HOURS;
+			$max_graceperiod_value = MoWpnsConstants::GRACE_PERIOD_UNIT_HOURS === $raw_graceperiod_type ? self::MAX_GRACE_PERIOD_HOURS : self::MAX_GRACE_PERIOD_DAYS;
+			if ( (float) $raw_graceperiod_value > $max_graceperiod_value ) {
+				/* translators: %d: maximum allowed grace period value. */
+				wp_send_json_error( sprintf( __( 'Please enter a grace period value of %d or less.', 'miniorange-2-factor-authentication' ), $max_graceperiod_value ) );
+			}
 			$enable_2fa_settings = array(
 				'mo2f_grace_period'       => isset( $post['mo2f_enable_graceperiod_settings'] ) ? 'true' === sanitize_text_field( wp_unslash( $post['mo2f_enable_graceperiod_settings'] ) ) : null,
 				'mo2f_grace_period_value' => isset( $post['mo2f_graceperiod_value'] ) ? floor( sanitize_text_field( wp_unslash( $post['mo2f_graceperiod_value'] ) ) ) : 1,
-				'mo2f_grace_period_type'  => isset( $post['mo2f_graceperiod_type'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_graceperiod_type'] ) ) : 'hours',
-				'mo2f_graceperiod_action' => isset( $post['mo2f_graceperiod_action'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_graceperiod_action'] ) ) : 'enforce_2fa',
+				'mo2f_grace_period_type'  => isset( $post['mo2f_graceperiod_type'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_graceperiod_type'] ) ) : MoWpnsConstants::GRACE_PERIOD_UNIT_HOURS,
+				'mo2f_graceperiod_action' => isset( $post['mo2f_graceperiod_action'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_graceperiod_action'] ) ) : MoWpnsConstants::GRACE_PERIOD_ACTION_ENFORCE_2FA,
 			);
 			if ( 1 > (int) $enable_2fa_settings['mo2f_grace_period_value'] ) {
 				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::EXPECTED_GRACE_PERIOD_VALUE ) );
 			}
+			$role_graceperiod_error = $this->mo2f_validate_role_graceperiod_overrides( $post );
+			if ( null !== $role_graceperiod_error ) {
+				wp_send_json_error( $role_graceperiod_error );
+			}
 			foreach ( $enable_2fa_settings as $option_to_be_updated => $value ) {
 				update_site_option( $option_to_be_updated, $value );
 			}
+			$this->mo2f_save_role_graceperiod_overrides( $post );
 			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+		}
+
+		/**
+		 * True if $value is numeric with no fractional part -- used to reject decimal grace
+		 * period input instead of letting floor()/(int) casts silently truncate it to a
+		 * different number than what the admin typed.
+		 *
+		 * @param string $value Raw, trimmed numeric string.
+		 * @return bool
+		 */
+		private function mo2f_is_whole_number( $value ) {
+			return is_numeric( $value ) && (float) $value === floor( (float) $value );
+		}
+
+		/**
+		 * Validates $post['mo2f_role_graceperiod'] before anything is saved. Catches mistakes
+		 * that were previously silently ignored instead of erroring, leaving the "Settings
+		 * saved" response not reflecting what was actually persisted:
+		 * - a role's override checkbox is checked but its value is empty/zero/negative/decimal.
+		 * - a value was entered for a role but its override checkbox isn't checked, so the
+		 *   value would be discarded without the admin realizing it never took effect.
+		 *
+		 * @param array $post $_POST data.
+		 * @return string|null Error message if any row is invalid, else null.
+		 */
+		private function mo2f_validate_role_graceperiod_overrides( $post ) {
+			if ( ! isset( $post['mo2f_role_graceperiod'] ) || ! is_array( $post['mo2f_role_graceperiod'] ) ) {
+				return null;
+			}
+			global $wp_roles;
+			$role_names = $wp_roles ? $wp_roles->role_names : array();
+			foreach ( wp_unslash( $post['mo2f_role_graceperiod'] ) as $role_id => $row ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Unslashed above; fields sanitized individually below.
+				$role_id = sanitize_text_field( $role_id );
+				if ( ! is_array( $row ) || ! isset( $role_names[ $role_id ] ) ) {
+					continue;
+				}
+				$enabled   = isset( $row['enabled'] ) && 'true' === sanitize_text_field( $row['enabled'] );
+				$raw_value = isset( $row['value'] ) ? trim( sanitize_text_field( $row['value'] ) ) : '';
+				if ( $enabled && '' !== $raw_value && ! $this->mo2f_is_whole_number( $raw_value ) ) {
+					/* translators: %s: WordPress role name. */
+					return sprintf( __( 'Please enter a whole number for the %s role grace period value.', 'miniorange-2-factor-authentication' ), $role_names[ $role_id ] );
+				}
+				if ( $enabled && 1 > (int) $raw_value ) {
+					/* translators: %s: WordPress role name. */
+					return sprintf( __( 'Please enter a grace period value greater than 0 for the %s role.', 'miniorange-2-factor-authentication' ), $role_names[ $role_id ] );
+				}
+				$role_max_value = isset( $row['type'] ) && MoWpnsConstants::GRACE_PERIOD_UNIT_HOURS === sanitize_text_field( $row['type'] ) ? self::MAX_GRACE_PERIOD_HOURS : self::MAX_GRACE_PERIOD_DAYS;
+				if ( $enabled && (float) $raw_value > $role_max_value ) {
+					/* translators: 1: WordPress role name, 2: maximum allowed grace period value. */
+					return sprintf( __( 'Please enter a grace period value of %2$d or less for the %1$s role.', 'miniorange-2-factor-authentication' ), $role_names[ $role_id ], $role_max_value );
+				}
+				if ( ! $enabled && '' !== $raw_value ) {
+					/* translators: %s: WordPress role name. */
+					return sprintf( __( 'A grace period value was entered for the %s role, but its checkbox isn\'t checked, so it won\'t be saved. Check the box to apply it, or clear the value.', 'miniorange-2-factor-authentication' ), $role_names[ $role_id ] );
+				}
+			}
+			return null;
+		}
+
+		/**
+		 * Saves per-role grace period overrides from $post['mo2f_role_graceperiod'].
+		 *
+		 * @param array $post $_POST data.
+		 * @return void
+		 */
+		private function mo2f_save_role_graceperiod_overrides( $post ) {
+			if ( ! isset( $post['mo2f_role_graceperiod'] ) || ! is_array( $post['mo2f_role_graceperiod'] ) ) {
+				return;
+			}
+			global $wp_roles;
+			$valid_roles = $wp_roles ? array_keys( $wp_roles->role_names ) : array();
+			$overrides   = array();
+			foreach ( wp_unslash( $post['mo2f_role_graceperiod'] ) as $role_id => $row ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Unslashed above; each field is sanitized individually below.
+				$role_id = sanitize_text_field( $role_id );
+				if ( ! in_array( $role_id, $valid_roles, true ) || ! is_array( $row ) ) {
+					continue;
+				}
+				$enabled = isset( $row['enabled'] ) && 'true' === sanitize_text_field( $row['enabled'] );
+				$value   = isset( $row['value'] ) ? (int) $row['value'] : 0;
+				$type    = isset( $row['type'] ) && MoWpnsConstants::GRACE_PERIOD_UNIT_HOURS === sanitize_text_field( $row['type'] ) ? MoWpnsConstants::GRACE_PERIOD_UNIT_HOURS : MoWpnsConstants::GRACE_PERIOD_UNIT_DAYS;
+				if ( $enabled && $value > 0 ) {
+					$override = array(
+						'value' => $value,
+						'type'  => $type,
+					);
+					if ( isset( $row['action'] ) && MoWpnsConstants::GRACE_PERIOD_ACTION_BLOCK === sanitize_text_field( $row['action'] ) ) {
+						$override['action'] = MoWpnsConstants::GRACE_PERIOD_ACTION_BLOCK;
+					} elseif ( isset( $row['action'] ) && MoWpnsConstants::GRACE_PERIOD_ACTION_ENFORCE_2FA === sanitize_text_field( $row['action'] ) ) {
+						$override['action'] = MoWpnsConstants::GRACE_PERIOD_ACTION_ENFORCE_2FA;
+					}
+					$overrides[ $role_id ] = $override;
+				}
+			}
+			update_site_option( 'mo2f_role_grace_period_overrides', $overrides );
 		}
 
 		/**
@@ -282,6 +403,24 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 		}
 
 		/**
+		 * Saves the Email Magic Link Login setting: whether it is enabled, and
+		 * whether it runs alongside password login ('optional') or replaces it
+		 * ('mandatory').
+		 *
+		 * @param array $post $_POST array.
+		 * @return void
+		 */
+		public function mo2f_magic_link_login_save_option( $post ) {
+			$mode = isset( $post['mo2f_magic_link_login_mode'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_magic_link_login_mode'] ) ) : 'optional';
+			if ( ! in_array( $mode, array( 'optional', 'mandatory' ), true ) ) {
+				$mode = 'optional';
+			}
+			update_site_option( 'mo2f_enable_magic_link_login', isset( $post['mo2f_enable_magic_link_login'] ) ? 'true' === sanitize_text_field( wp_unslash( $post['mo2f_enable_magic_link_login'] ) ) : false );
+			update_site_option( 'mo2f_magic_link_login_mode', $mode );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+		}
+
+		/**
 		 * Disable Inline 2FA
 		 *
 		 * @param array $post $_POST array.
@@ -290,6 +429,42 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 		public function mo2f_disable_inline_2fa( $post ) {
 			$mo2f_disable_inline_2fa = isset( $post['mo2f_disable_inline_2fa'] ) ? ( 'true' === sanitize_text_field( wp_unslash( $post['mo2f_disable_inline_2fa'] ) ) ? 1 : null ) : null;
 			update_site_option( 'mo2f_disable_inline_registration', $mo2f_disable_inline_2fa );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+		}
+
+		/**
+		 * Saves the free-tier "Trust This Device After Successful 2FA" setting.
+		 *
+		 * @param array $post $_POST array.
+		 * @return void
+		 */
+		public function mo2f_enable_trusted_device( $post ) {
+			$enabled = isset( $post['mo2f_enable_trusted_device'] ) ? ( 'true' === sanitize_text_field( wp_unslash( $post['mo2f_enable_trusted_device'] ) ) ? 1 : null ) : null;
+			update_site_option( 'mo2f_enable_trusted_device', $enabled );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+		}
+
+		/**
+		 * Saves the "Security Alert on 2FA Change" setting.
+		 *
+		 * @param array $post $_POST array.
+		 * @return void
+		 */
+		public function mo2f_enable_2fa_change_alerts( $post ) {
+			$enabled = isset( $post['mo2f_enable_2fa_change_alerts'] ) ? ( 'true' === sanitize_text_field( wp_unslash( $post['mo2f_enable_2fa_change_alerts'] ) ) ? 1 : null ) : null;
+			update_site_option( 'mo2f_enable_2fa_change_alerts', $enabled );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+		}
+
+		/**
+		 * Saves the "Remind Users to Set Up 2FA" setting.
+		 *
+		 * @param array $post $_POST array.
+		 * @return void
+		 */
+		public function mo2f_enable_2fa_reminder_emails( $post ) {
+			$enabled = isset( $post['mo2f_enable_2fa_reminder_emails'] ) ? ( 'true' === sanitize_text_field( wp_unslash( $post['mo2f_enable_2fa_reminder_emails'] ) ) ? 1 : null ) : null;
+			update_site_option( 'mo2f_enable_2fa_reminder_emails', $enabled );
 			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 		}
 

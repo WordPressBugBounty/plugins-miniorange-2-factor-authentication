@@ -22,9 +22,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 		<div class="test_auth_button">
 		<?php
-		if ( isset( $mo2f_two_fa_method ) && ! empty( $mo2f_two_fa_method ) && ! get_user_meta( $mo2f_user_id, 'mo_backup_code_limit_reached', true ) && $mo2f_can_display_admin_features ) {
+		if ( isset( $mo2f_selected_method ) && ! empty( $mo2f_selected_method ) && $mo2f_backup_codes_enabled && ! get_user_meta( $mo2f_user_id, 'mo_backup_code_limit_reached', true ) ) {
 			?>
-			<button class="mo2f-tw-test-button" id="mo_2f_generate_codes">Download Backup Codes</button>
+			<button class="mo2f-tw-test-button" id="mo_2f_generate_codes" data-has-codes="<?php echo esc_attr( $mo2f_has_unused_backup_codes ? '1' : '' ); ?>">Download Backup Codes</button>
 			<?php
 		}
 		$mo2f_sms_user_count       = $mo2fdb_queries->mo2f_get_specific_method_users_count( MoWpnsConstants::OTP_OVER_SMS );
@@ -52,24 +52,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		$mo2f_is_customer_registered        = 'SUCCESS' === $mo2fdb_queries->mo2f_get_user_detail( 'user_registration_with_miniorange', $mo2f_user->ID );
 		$mo2f_limit_exceeded                = apply_filters( 'mo2f_basic_plan_settings_filter', $mo2fdb_queries->check_alluser_limit_exceeded( $mo2f_user->ID ), 'is_user_limit_exceeded', array() );
-		$mo2f_can_user_configure_2fa_method = ( $mo2f_can_display_admin_features || $mo2f_is_customer_registered ) && ( ! $mo2f_limit_exceeded || ! empty( $mo2f_selected_method ) );
+		$mo2f_can_user_configure_2fa_method = ! $mo2f_limit_exceeded || ! empty( $mo2f_selected_method );
 
 		echo '<div class="overlay1" id="overlay" hidden ></div>';
 		echo '<form name="f" method="post" action="" id="mo2f_save_free_plan_auth_methods_form">
                 <div id="mo2f_free_plan_auth_methods" >
                     <br>';
 		if ( $mo2f_limit_exceeded ) {
-			echo '<div class="notice notice-warning inline" style="margin:0 0 12px;padding:10px 12px;"><p style="margin:0;">';
+			echo '<div class="notice notice-warning inline MOWrn" style="margin:0 0 12px;padding:10px 12px;"><p style="margin:0;">';
 			echo wp_kses_post( MoWpnsMessages::mo2f_user_limit_exceeded_message_html() );
 			echo '</p></div>';
 		}
-		echo '<div class="mo2f_auth_methods_table mo2f_auth_methods_grid" role="list">';
 		$mo2f_is_all_inclusive_file = file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-all-inclusive-premium-settings.php' );
+		// Free methods first, premium last, so the divider below drops in exactly once.
+		usort(
+			$mo2f_methods_on_dashboard,
+			static function ( $mo2f_a, $mo2f_b ) use ( $mo2f_two_factor_methods_details, $mo2f_is_all_inclusive_file ) {
+				$mo2f_a_locked = ! empty( $mo2f_two_factor_methods_details[ $mo2f_a ]['crown'] ) || ( ! $mo2f_is_all_inclusive_file && MoWpnsConstants::OTP_OVER_WHATSAPP === $mo2f_a );
+				$mo2f_b_locked = ! empty( $mo2f_two_factor_methods_details[ $mo2f_b ]['crown'] ) || ( ! $mo2f_is_all_inclusive_file && MoWpnsConstants::OTP_OVER_WHATSAPP === $mo2f_b );
+				return $mo2f_a_locked <=> $mo2f_b_locked;
+			}
+		);
+		echo '<div class="mo2f_auth_methods_table mo2f_auth_methods_grid" role="list">';
+		$mo2f_shown_premium_divider = false;
 
 		foreach ( $mo2f_methods_on_dashboard as $mo2f_auth_method ) {
 			$mo2f_is_premium_feature        = isset( $mo2f_two_factor_methods_details[ $mo2f_auth_method ]['crown'] ) && $mo2f_two_factor_methods_details[ $mo2f_auth_method ]['crown'];
 			$mo2f_is_whatsapp_premium_locked = ! $mo2f_is_all_inclusive_file && MoWpnsConstants::OTP_OVER_WHATSAPP === $mo2f_auth_method;
 			$mo2f_is_method_premium_locked   = $mo2f_is_premium_feature || $mo2f_is_whatsapp_premium_locked;
+			if ( $mo2f_is_method_premium_locked && ! $mo2f_shown_premium_divider ) {
+				echo '</div>';
+				echo '<div class="mo2f-method-group-divider"><span>' . esc_html__( 'Premium Methods', 'miniorange-2-factor-authentication' ) . '</span></div>';
+				echo '<div class="mo2f_auth_methods_table mo2f_auth_methods_grid" role="list">';
+				$mo2f_shown_premium_divider = true;
+			}
 			$mo2f_auth_method_abbr          = str_replace( ' ', '', MoWpnsConstants::mo2f_convert_method_name( $mo2f_auth_method, 'cap_to_small' ) );
 			$mo2f_auth_method_abbr          = empty( $mo2f_auth_method_abbr ) ? 'NoMethod' : $mo2f_auth_method_abbr;
 			$mo2f_is_auth_method_selected   = ( $mo2f_auth_method === $mo2f_selected_method ? true : false );
@@ -120,7 +136,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			echo '</div>';
 			echo '</div>';
 			echo '<div class="mo2f-thumbnail-method-desc">';
-			echo wp_kses_post( __( $mo2f_two_factor_methods_details[ $mo2f_auth_method ]['desc'], 'miniorange-2-factor-authentication' ) ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal 
+			echo wp_kses_post( __( $mo2f_two_factor_methods_details[ $mo2f_auth_method ]['desc'], 'miniorange-2-factor-authentication' ) ); //phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- The $text is a single string literal
 			echo '</div>';
 			if ( $mo2f_is_method_premium_locked ) {
 				echo '<div class="mo2f_settings_overlay"></div>';

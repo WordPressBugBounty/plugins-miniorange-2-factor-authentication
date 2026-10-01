@@ -9,6 +9,7 @@
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsHandler;
 use TwoFA\Handler\Mo2fa_Security_Features;
+use TwoFA\Handler\Mo2f_Admin_Action_Handler;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -30,7 +31,13 @@ if ( ! wp_verify_nonce( $mo2f_nonce, 'mo_2fa_security_features_nonce' ) ) {
 	}
 }
 $mo2f_network_security_features = get_site_option( 'mo_wpns_2fa_with_network_security' ) ? 'checked' : '';
-$mo2f_remaining_transaction     = $mo2f_mo_wpns_utility->mo2f_check_remaining_transactions();
+
+// Throttled sync of the header's transaction counts with the miniOrange account.
+if ( current_user_can( 'manage_options' ) && get_site_option( 'mo2f_customerKey' ) && false === get_transient( 'mo2f_transactions_synced' ) ) {
+	set_transient( 'mo2f_transactions_synced', 1, 60 );
+	Mo2f_Admin_Action_Handler::instance()->mo2f_sync_transactions_from_account();
+}
+$mo2f_remaining_transaction = $mo2f_mo_wpns_utility->mo2f_check_remaining_transactions();
 
 if ( isset( $_GET['page'] ) ) {
 	$mo2f_tab_count = get_site_option( 'mo2f_tab_count', 0 );

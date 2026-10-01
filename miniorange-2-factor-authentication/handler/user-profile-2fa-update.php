@@ -69,8 +69,11 @@ if ( ! wp_verify_nonce( $mo2f_nonce, 'mo2f-update-mobile-nonce' ) || ! current_u
 				if ( ! MO2F_IS_ONPREM ) {
 					update_user_meta( $user_id, 'mo2f_external_app_type', MoWpnsConstants::GOOGLE_AUTHENTICATOR );
 				}
+				if ( $mo2f_userid === $user_id ) {
+					\TwoFA\Helper\Mo2f_Common_Helper::mo2f_notify_user_2fa_method_changed( $user_id, $mo2f_method );
+				}
 			} else {
-				update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_PROFILE_SETUP_SMTP ) );
+				update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_PROFILE_SETUP_EMAIL_FAILED ) );
 			}
 			break;
 		case MoWpnsConstants::OTP_OVER_SMS:
@@ -80,12 +83,13 @@ if ( ! wp_verify_nonce( $mo2f_nonce, 'mo2f-update-mobile-nonce' ) || ! current_u
 			}
 			if ( $mo2f_userid === $user_id ) {
 				$mo2f_pass2flogin->mo2fa_update_user_details( $user_id, true, $mo2f_method, MoWpnsConstants::SUCCESS_RESPONSE, MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS, 1, $mo2f_email );
+				\TwoFA\Helper\Mo2f_Common_Helper::mo2f_notify_user_2fa_method_changed( $user_id, $mo2f_method );
 			} else {
 				$mo2f_content = mo2f_send_twofa_setup_link_on_email( $mo2f_email, $user_id, $mo2f_method );
 				if ( 'SUCCESS' === $mo2f_content['status'] ) {
 					$mo2f_pass2flogin->mo2fa_update_user_details( $user_id, true, $mo2f_method, MoWpnsConstants::SUCCESS_RESPONSE, MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS, 1, $mo2f_email );
 				} else {
-					update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_PROFILE_SETUP_SMTP ) );
+					update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_PROFILE_SETUP_EMAIL_FAILED ) );
 				}
 			}
 			break;
@@ -96,12 +100,13 @@ if ( ! wp_verify_nonce( $mo2f_nonce, 'mo2f-update-mobile-nonce' ) || ! current_u
 			}
 			if ( $mo2f_userid === $user_id ) {
 				$mo2f_pass2flogin->mo2fa_update_user_details( $user_id, true, $mo2f_method, MoWpnsConstants::SUCCESS_RESPONSE, MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS, 1, $mo2f_email );
+				\TwoFA\Helper\Mo2f_Common_Helper::mo2f_notify_user_2fa_method_changed( $user_id, $mo2f_method );
 			} else {
 				$mo2f_content = mo2f_send_twofa_setup_link_on_email( $mo2f_email, $user_id, $mo2f_method );
 				if ( 'SUCCESS' === $mo2f_content['status'] ) {
 					$mo2f_pass2flogin->mo2fa_update_user_details( $user_id, true, $mo2f_method, MoWpnsConstants::SUCCESS_RESPONSE, MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS, 1, $mo2f_email );
 				} else {
-					update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_PROFILE_SETUP_SMTP ) );
+					update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_PROFILE_SETUP_EMAIL_FAILED ) );
 				}
 			}
 			break;
@@ -131,8 +136,11 @@ if ( ! wp_verify_nonce( $mo2f_nonce, 'mo2f-update-mobile-nonce' ) || ! current_u
 			if ( json_last_error() === JSON_ERROR_NONE ) {
 				if ( 'SUCCESS' === $mo2f_content['status'] ) {
 					$mo2f_pass2flogin->mo2fa_update_user_details( $user_id, true, $mo2f_method, MoWpnsConstants::SUCCESS_RESPONSE, $mo2f_tfastatus, 1, $mo2f_email );
+					if ( $mo2f_userid === $user_id ) {
+						\TwoFA\Helper\Mo2f_Common_Helper::mo2f_notify_user_2fa_method_changed( $user_id, $mo2f_method );
+					}
 				} else {
-					update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_PROFILE_SETUP_SMTP ) );
+					update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_PROFILE_SETUP_EMAIL_FAILED ) );
 				}
 			}
 			break;
@@ -143,7 +151,7 @@ if ( ! wp_verify_nonce( $mo2f_nonce, 'mo2f-update-mobile-nonce' ) || ! current_u
 				delete_user_meta( $user_id, 'mo2f_configure_2FA' );
 				delete_user_meta( $user_id, 'test_2FA' );
 			} else {
-				update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_PROFILE_SETUP_SMTP ) );
+				update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_PROFILE_SETUP_EMAIL_FAILED ) );
 			}
 			break;
 		case MoWpnsConstants::OUT_OF_BAND_EMAIL:
@@ -151,7 +159,7 @@ if ( ! wp_verify_nonce( $mo2f_nonce, 'mo2f-update-mobile-nonce' ) || ! current_u
 			if ( 'SUCCESS' === $mo2f_content['status'] ) {
 				$mo2f_pass2flogin->mo2fa_update_user_details( $user_id, true, $mo2f_method, MoWpnsConstants::SUCCESS_RESPONSE, MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS, 1, $mo2f_email );
 			} else {
-				update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_PROFILE_SETUP_SMTP ) );
+				update_user_meta( $user_id, 'mo2f_userprofile_error_message', MoWpnsMessages::mo2f_get_message( MoWpnsMessages::USER_PROFILE_SETUP_EMAIL_FAILED ) );
 			}
 			break;
 	}
@@ -182,7 +190,6 @@ function mo2f_send_twofa_setup_link_on_email( $email, $user_id, $tfa_method ) {
 	update_site_option( $txid, get_current_user_id() );
 	update_user_meta( $user_id, 'mo2f_transactionId', $txid );
 	$subject = '2FA-Configuration';
-	$headers = array( 'Content-Type: text/html; charset=UTF-8' );
 	$path    = plugins_url( DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'qr_over_email.php', __DIR__ ) . '?email=' . $email . '&amp;user_id=' . $user_id;
 	$url     = get_site_option( 'siteurl' ) . '/wp-login.php?';
 	$path    = $url . '&amp;reconfigureMethod=' . $reconfiguraion_method . '&amp;transactionId=' . $txid;
@@ -217,7 +224,7 @@ function mo2f_send_twofa_setup_link_on_email( $email, $user_id, $tfa_method ) {
     </tr>
     </tbody>
     </table>';
-	$result  = wp_mail( $email, $subject, $message, $headers );
+	$result  = MocURL::mo2f_send_cloud_email( $email, $subject, $message );
 	if ( $result ) {
 		$arr = array(
 			'status'  => 'SUCCESS',

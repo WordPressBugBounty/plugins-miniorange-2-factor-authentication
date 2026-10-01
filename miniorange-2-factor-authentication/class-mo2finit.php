@@ -25,7 +25,6 @@ use TwoFA\Handler\Twofa\Miniorange_Authentication;
 use TwoFA\Helper\MocURL;
 use TwoFA\Helper\MoWpnsHandler;
 use TwoFA\Helper\Mo2f_Premium_Common_Helper;
-use TwoFA\Cloud\Two_Factor_Setup;
 use TwoFA\Database\Mo2fDB;
 use TwoFA\Database\MoWpnsDB;
 use TwoFA\Traits\Instance;
@@ -51,7 +50,6 @@ if ( ! class_exists( 'Mo2fInit' ) ) {
 		 * Mo2fInit classs constructor
 		 */
 		private function __construct() {
-			$this->mo2f_initialize_clouds();
 			$this->mo2f_initialize_handlers();
 			$this->mo2f_initialize_helpers();
 			$this->mo2f_initialize_globals();
@@ -104,14 +102,7 @@ if ( ! class_exists( 'Mo2fInit' ) ) {
 		}
 
 		/**
-		 * Initialize Clouds
-		 */
-		private function mo2f_initialize_clouds() {
-			Two_Factor_Setup::instance();
-		}
-
-		/**
-		 * Initialize Clouds
+		 * Initialize Controllers
 		 */
 		private function mo2f_initialize_controllers() {
 			Mo_2f_Ajax::instance();

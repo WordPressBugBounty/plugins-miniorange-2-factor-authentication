@@ -200,11 +200,10 @@ a[x-apple-data-detectors=\'true\'] {
         
   <div>
     <div class="mo_2fa_email_feature_details" style="background-color: white;text-align: center;min-height: 160px;color: black;font-family: \'poppins\';border-radius: 15px; border: 1px solid rgb(232, 234, 237);font-size: 12px;">
-						<h2 class="mo_2fa_email_feature_title">Discover our product\'s new look!</h2>
+						<h2 class="mo_2fa_email_feature_title">Compliance Log</h2>
 						<ul class="mo_2fa_feature_ul" style="padding:1em; text-align: left; max-width: 25em;">
-            <li> UI/UX have been completely revamped to enhance it\'s usability. </li>
-            <li> More intutive design.</li>
-            <li> Seamless user journey. </li>
+            <li> New Reports tab tracking admin-initiated 2FA changes -- who, whom, when. </li>
+            <li> Useful as MFA evidence for PCI DSS 4.0, GDPR, or cyber-insurance documentation.</li>
 						</ul>
 					</div>.
   </div>
@@ -229,11 +228,10 @@ a[x-apple-data-detectors=\'true\'] {
       <td style="overflow-wrap:break-word;word-break:break-word;padding:10px;font-family:\'poppins\',sans-serif;" align="center";background-color:white; border-radius:15px; border: 1px solid rgb(232, 234, 237)">
       <div>
       <div class="mo_2fa_email_feature_details" style="background-color: white;text-align: center;min-height: 160px;color: black;font-family: inherit;border-radius: 15px;border: 1px solid rgb(232, 234, 237);font-size: 12px;">
-              <h2 class="mo_2fa_email_feature_title">Additional Backup Login Methods</h2>
+              <h2 class="mo_2fa_email_feature_title">Per-Role Grace Periods</h2>
             <ul class="mo_2fa_feature_ul" style="padding:1em;text-align: left; max-width: 25em;">
-            <li> Like backup codes and reconfiguration link </li>
-            <li  style="list-style-type: none;"
-            ><br></li>
+            <li> Give each WordPress role its own grace period. </li>
+            <li> Choose enforce-2FA or block-login per role when it expires. </li>
             </ul> 
             </div>
     </div>
@@ -271,10 +269,10 @@ a[x-apple-data-detectors=\'true\'] {
         
   <div>
     <div class="mo_2fa_email_feature_details" style="background-color: white;text-align: center;min-height: 160px;color: black;font-family: inherit;border-radius: 15px;border: 1px solid rgb(232, 234, 237);font-size: 12px;">
-						<h2 class="mo_2fa_email_feature_title">Custom Redirection Link For All Users</h2>
+						<h2 class="mo_2fa_email_feature_title">WooCommerce: Protect Staff, Not Shoppers</h2>
 					<ul class="mo_2fa_feature_ul" style="padding:1em;text-align: left; max-width: 25em;">
-          <li>Redirect your users to the desired location after login.</li>
-          <li>Custom redirect link can be set for all users.</li>
+          <li>One click on Quick Setup requires 2FA for your WooCommerce staff.</li>
+          <li>Customer role stays unchecked, so checkout stays frictionless.</li>
 
 					</ul>
 					</div>
@@ -301,10 +299,10 @@ a[x-apple-data-detectors=\'true\'] {
         
   <div>
     <div class="mo_2fa_email_feature_details" style="background-color: white;text-align: center;min-height: 160px;color: black;font-family: inherit;border-radius: 15px;border: 1px solid rgb(232, 234, 237);font-size: 12px;">
-						<h2 class="mo_2fa_email_feature_title">Customizable Email Templates</h2>
+						<h2 class="mo_2fa_email_feature_title">Security, Verified</h2>
 					<ul class="mo_2fa_feature_ul" style="padding:1em;text-align: left; max-width: 25em;">
-						<li>Give personalised touch to your messages.</li>
-						<li>Customize it to match you communication style.</li> 
+						<li>Passkey and Authenticator app are verified entirely on your own server.</li>
+						<li>Plus 4 more issues found and fixed via our own internal security audit.</li>
 
 					</ul>
 					</div>

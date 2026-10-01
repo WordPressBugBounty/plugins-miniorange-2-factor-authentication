@@ -9,7 +9,7 @@
  * Plugin Name: miniOrange 2FA – Two Factor Authentication for WordPress (OTP, SMS, Email, Google Authenticator)
  * Plugin URI: https://miniorange.com
  * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. Free plan: unlimited users with Google Authenticator, Email OTP, Security Questions (KBA), and Passkey; premium unlocks SMS/WhatsApp OTP, Authy/LastPass/Microsoft Authenticator, and advanced policies.
- * Version: 6.3.2
+ * Version: 6.4.0
  * Author: miniOrange
  * Author URI: https://miniorange.com
  * Text Domain: miniorange-2-factor-authentication
@@ -21,6 +21,8 @@ namespace TwoFA;
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsMessages;
+use TwoFA\Helper\Mo2f_Common_Helper;
+use TwoFA\Helper\MocURL;
 use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Handler\Twofa\Miniorange_Authentication;
 use TwoFA\Views\Mo2f_Setup_Wizard;
@@ -42,7 +44,7 @@ require __DIR__ . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'new-
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
 define( 'MO_HOST_NAME', 'https://login.xecurify.com' );
-define( 'MO2F_VERSION', '6.3.2' );
+define( 'MO2F_VERSION', '6.4.0' );
 define( 'MO2F_PLUGIN_URL', ( plugin_dir_url( __FILE__ ) ) );
 define( 'MO2F_TEST_MODE', false );
 define( 'MO2F_IS_ONPREM', get_option( 'is_onprem', 1 ) );
@@ -99,6 +101,71 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			add_action( 'admin_init', array( $this, 'mo2f_handle_first_setup_nudge_dismiss' ) );
 			add_action( 'admin_init', array( $this, 'mo2f_handle_user_limit_notice_dismiss' ) );
 			add_action( 'admin_init', array( $this, 'mo2f_remove_telegram_otp_method' ) );
+			add_action( 'admin_init', array( $this, 'mo2f_reset_premium_only_2fa_methods' ) );
+			add_action( 'admin_init', array( $this, 'mo2f_force_visual_editor_for_email_templates' ) );
+			add_action( 'init', array( $this, 'mo2f_maybe_schedule_2fa_reminder_cron' ) );
+			add_action( 'mo2f_daily_2fa_reminder_check', array( $this, 'mo2f_send_2fa_reminder_emails' ) );
+		}
+
+		/**
+		 * Self-healing cron scheduler for the 2FA enrollment reminder email --
+		 * runs on init rather than relying only on the activation hook, so it
+		 * also self-schedules for sites that were already active before this
+		 * feature shipped (this hook is also cleared in mo_wpns_deactivate()).
+		 *
+		 * @return void
+		 */
+		public function mo2f_maybe_schedule_2fa_reminder_cron() {
+			if ( ! wp_next_scheduled( 'mo2f_daily_2fa_reminder_check' ) ) {
+				wp_schedule_event( time(), 'daily', 'mo2f_daily_2fa_reminder_check' );
+			}
+		}
+
+		/**
+		 * Sends a reminder email, at most once every 7 days per user, to users
+		 * who are required to have 2FA (per Mo2f_Main_Handler::mo2f_check_if_twofa_is_enabled(),
+		 * which already respects role-based enforcement and grace period
+		 * settings) but haven't configured a method yet. Off by default -- see
+		 * the mo2f_enable_2fa_reminder_emails site option.
+		 *
+		 * @return void
+		 */
+		public function mo2f_send_2fa_reminder_emails() {
+			if ( ! get_site_option( 'mo2f_enable_2fa_reminder_emails' ) ) {
+				return;
+			}
+			global $mo2fdb_queries;
+			$main_handler = new \TwoFA\Handler\Mo2f_Main_Handler();
+			foreach ( get_users() as $mo2f_reminder_user ) {
+				if ( ! is_email( $mo2f_reminder_user->user_email ) ) {
+					continue;
+				}
+				if ( ! $main_handler->mo2f_check_if_twofa_is_enabled( $mo2f_reminder_user ) ) {
+					continue; // 2FA isn't required for this user -- don't nag them.
+				}
+				$configured_method    = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $mo2f_reminder_user->ID );
+				$registration_status  = $mo2fdb_queries->mo2f_get_user_detail( 'mo_2factor_user_registration_status', $mo2f_reminder_user->ID );
+				if ( ! empty( $configured_method ) && MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $registration_status ) {
+					continue; // already configured.
+				}
+				$last_reminded = (int) get_user_meta( $mo2f_reminder_user->ID, 'mo2f_last_2fa_reminder_sent', true );
+				if ( $last_reminded && ( time() - $last_reminded ) < 7 * DAY_IN_SECONDS ) {
+					continue; // reminded within the last week, don't spam.
+				}
+				$subject  = sprintf(
+					/* Translators: %s: site name. */
+					__( 'Action required: set up two-factor authentication on %s', 'miniorange-2-factor-authentication' ),
+					get_bloginfo( 'name' )
+				);
+				$message  = '<p>' . sprintf(
+					/* Translators: %s: site name. */
+					esc_html__( "Your account on %s requires two-factor authentication, but you haven't set it up yet.", 'miniorange-2-factor-authentication' ),
+					esc_html( get_bloginfo( 'name' ) )
+				) . '</p>';
+				$message .= '<p><a href="' . esc_url( admin_url( 'profile.php' ) ) . '">' . esc_html__( 'Set up two-factor authentication now', 'miniorange-2-factor-authentication' ) . '</a></p>';
+				MocURL::mo2f_send_cloud_email( $mo2f_reminder_user->user_email, $subject, $message );
+				update_user_meta( $mo2f_reminder_user->ID, 'mo2f_last_2fa_reminder_sent', time() );
+			}
 		}
 
 		/**
@@ -307,9 +374,9 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 					),
 					'mo2f-dismiss-user-limit-notice'
 				);
-				echo '<div class="notice notice-warning"><p style="margin:0.75em 0;">';
+				echo '<div class="notice notice-warning MOWrn"><p style="margin:0.75em 0;">';
 				echo wp_kses_post( MoWpnsMessages::mo2f_user_limit_exceeded_message_html() );
-				echo '</p><p><a class="button" href="' . esc_url( $mo2f_limit_dismiss_url ) . '">' . esc_html__( 'Dismiss', 'miniorange-2-factor-authentication' ) . '</a></p></div>';
+				echo '</p><p><a class="button" style="color:#2271b1;border-color:#2271b1;" href="' . esc_url( $mo2f_limit_dismiss_url ) . '">' . esc_html__( 'Dismiss', 'miniorange-2-factor-authentication' ) . '</a></p></div>';
 			}
 
 			// Nudge admins to finish initial 2FA setup when nobody has completed setup yet.
@@ -331,11 +398,12 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 				'mo2f-dismiss-first-setup-nudge'
 			);
 
-			echo '<div class="notice notice-info is-dismissible">';
+			echo '<div class="notice notice-info is-dismissible MOWrn">';
 			echo '<p><strong>' . esc_html__( 'Secure your site: complete your first 2FA setup', 'miniorange-2-factor-authentication' ) . '</strong></p>';
 			echo '<p>' . esc_html__( 'No users have completed 2FA setup yet. Configure 2FA now to protect WordPress logins from unauthorized access.', 'miniorange-2-factor-authentication' ) . '</p>';
-			echo '<p><a class="button button-primary" href="' . esc_url( $setup_url ) . '">' . esc_html__( 'Finish 2FA Setup', 'miniorange-2-factor-authentication' ) . '</a> ';
-			echo '<a class="button" href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss for 7 days', 'miniorange-2-factor-authentication' ) . '</a></p>';
+			// Inline colors since this notice can render on pages that never load the plugin's CSS.
+			echo '<p><a class="button button-primary" style="background:#2271b1;border-color:#2271b1;color:#fff;" href="' . esc_url( $setup_url ) . '">' . esc_html__( 'Finish 2FA Setup', 'miniorange-2-factor-authentication' ) . '</a> ';
+			echo '<a class="button" style="color:#2271b1;border-color:#2271b1;" href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss for 7 days', 'miniorange-2-factor-authentication' ) . '</a></p>';
 			echo '</div>';
 		}
 
@@ -399,6 +467,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			}
 			delete_site_option( 'mo2f_wizard_selected_method' );
 			delete_site_option( 'mo2f_wizard_skipped' );
+			wp_clear_scheduled_hook( 'mo2f_daily_2fa_reminder_check' );
 			$two_fa_settings = new Miniorange_Authentication();
 			$two_fa_settings->mo2f_auth_deactivate();
 		}
@@ -410,7 +479,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		 */
 		public function mo_wpns_settings_style( $hook ) {
 			global $mo2f_dir_name;
-			if ( strpos( $hook, 'page_mo_2fa' ) ) {
+			if ( false !== strpos( $hook, 'page_mo_2fa' ) ) {
 				wp_enqueue_style( 'mo_wpns_main_style', plugins_url( 'includes/css/mo2f-main.min.css', __FILE__ ), array( 'dashicons' ), MO2F_VERSION );
 				wp_enqueue_style( 'mo_2fa_admin_settings_jquery_style', plugins_url( 'includes/css/jquery.ui.min.css', __FILE__ ), array(), MO2F_VERSION );
 				wp_enqueue_style( 'mo_2fa_admin_settings_phone_style', plugins_url( 'includes/css/phone.min.css', __FILE__ ), array(), MO2F_VERSION );
@@ -434,6 +503,17 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 				if ( ! $pp_addon_installed ) {
 					wp_enqueue_style( 'mo_2f_all_inclusive_plan_div_style', plugins_url( 'includes/css/mo2f-disable-div.css', __FILE__ ), array(), MO2F_VERSION );
 				}
+				wp_enqueue_style(
+					'mo_2f_admin_wp_skin_style',
+					plugins_url( 'includes/css/mo2f-admin-wp-skin.css', __FILE__ ),
+					array( 'mo_wpns_main_style', 'mo_wpns_admin_settings_style', 'mo_2f_twofa_settings_style' ),
+					MO2F_VERSION
+				);
+				// Loaded last so it wins the cascade over the styles above.
+				wp_enqueue_style( 'mo2f_tokens', plugins_url( 'includes/css/mo2f-tokens.min.css', __FILE__ ), array(), MO2F_VERSION );
+				wp_enqueue_style( 'mo2f_redesign_admin', plugins_url( 'includes/css/mo2f-redesign-admin.min.css', __FILE__ ), array( 'mo2f_tokens' ), MO2F_VERSION );
+				// Covers the account-setup popups (GA/KBA/phone setup wizard) that can render on these admin pages.
+				wp_enqueue_style( 'mo2f_responsive_popup', plugins_url( 'includes/css/mo2f-responsive-popup.css', __FILE__ ), array( 'mo2f_tokens' ), MO2F_VERSION );
 			}
 		}
 		/**
@@ -628,6 +708,8 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 					if ( current_user_can( 'edit_users' ) || ( isset( $capabilities['edit_users'] ) && $capabilities['edit_users'] ) ) {
 
 						global $mo2fdb_queries;
+						$mo2f_reset_target = get_userdata( $user_id );
+						$mo2f_prior_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id );
 						delete_user_meta( $user_id, 'mo2f_kba_challenge' );
 						delete_user_meta( $user_id, 'mo2f_2FA_method_to_configure' );
 						delete_user_meta( $user_id, MoWpnsConstants::SECURITY_QUESTIONS );
@@ -636,6 +718,20 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 						delete_user_meta( $user_id, 'mo2f_whatsapp_id' );
 						delete_user_meta( $user_id, 'mo2f_configure_2FA' );
 						$mo2fdb_queries->mo2f_delete_user_details( $user_id );
+
+						global $mo2f_wpns_db_queries;
+						$mo2f_wpns_db_queries->mo2f_insert_transaction_audit(
+							MoWpnsUtility::get_client_ip(),
+							$mo2f_reset_target ? $mo2f_reset_target->user_login : $user_id,
+							MoWpnsConstants::ADMIN_2FA_RESET,
+							MoWpnsConstants::SUCCESS,
+							MoWpnsUtility::get_current_url(),
+							$user_object->ID,
+							$mo2f_prior_method ? $mo2f_prior_method : null
+						);
+						if ( $mo2f_prior_method ) {
+							\TwoFA\Helper\Mo2f_Common_Helper::mo2f_notify_user_2fa_reset_by_admin( $user_id );
+						}
 						delete_user_meta( $user_id, 'mo2f_2FA_method_to_test' );
 						delete_site_option( 'mo2f_user_login_status_' . $user_id );
 						delete_site_option( 'mo2f_grace_period_status_' . $user_id );
@@ -701,7 +797,6 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 		public function mo2f_email_send() {
 			$subject  = 'miniOrange 2FA V' . MO2F_VERSION . ' | What\'s New?';
 			$messages = mo2f_mail_tem();
-			$headers  = array( 'Content-Type: text/html; charset=UTF-8' );
 			$email    = get_site_option( 'admin_email' );
 
 			update_site_option( 'mo2f_feature_vers', MoWpnsConstants::DB_FEATURE_MAIL );
@@ -710,7 +805,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 				$email = $user->user_email;
 			}
 			if ( is_email( $email ) ) {
-				wp_mail( $email, $subject, $messages, $headers );
+				MocURL::mo2f_send_cloud_email( $email, $subject, $messages );
 			}
 		}
 
@@ -912,6 +1007,69 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			}
 
 			update_site_option( 'mo2f_telegram_method_removed', true );
+		}
+		/**
+		 * OTP Over SMS and Email Verification moved to premium-only; reset users who had
+		 * either configured as their active 2FA method so they set up a new method on login.
+		 *
+		 * @global wpdb $wpdb WordPress database abstraction object.
+		 * @return void
+		 */
+		public function mo2f_reset_premium_only_2fa_methods() {
+			global $wpdb;
+
+			if ( get_site_option( 'mo2f_premium_only_methods_reset' ) ) {
+				return;
+			}
+
+			$mo2f_legacy_free_methods = array(
+				MoWpnsConstants::OTP_OVER_SMS      => 'mo2f_OTPOverSMS_config_status',
+				MoWpnsConstants::OUT_OF_BAND_EMAIL => 'mo2f_EmailVerification_config_status',
+			);
+
+			foreach ( $mo2f_legacy_free_methods as $mo2f_method => $mo2f_config_status_key ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time admin migration; targets only users on a now-premium-only method.
+				$user_ids = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value LIKE %s",
+						MoWpnsConstants::USER_DEATIL_META_KEY,
+						'%"mo2f_configured_2FA_method";s:' . strlen( $mo2f_method ) . ':"' . $mo2f_method . '"%'
+					)
+				);
+
+				if ( empty( $user_ids ) ) {
+					continue;
+				}
+
+				foreach ( $user_ids as $user_id ) {
+					$user_data = get_user_meta( (int) $user_id, MoWpnsConstants::USER_DEATIL_META_KEY, true );
+					if ( ! is_array( $user_data ) || ! isset( $user_data['mo2f_configured_2FA_method'] ) || $mo2f_method !== $user_data['mo2f_configured_2FA_method'] ) {
+						continue;
+					}
+					$user_data['mo2f_configured_2FA_method']          = '';
+					$user_data[ $mo2f_config_status_key ]             = false;
+					$user_data['mo_2factor_user_registration_status'] = MoWpnsConstants::MO_2_FACTOR_INITIALIZE_TWO_FACTOR;
+					update_user_meta( (int) $user_id, MoWpnsConstants::USER_DEATIL_META_KEY, $user_data );
+				}
+			}
+			wp_cache_delete( 'mo2f_all_user_2fa_meta', 'mo2f_user_2fa_meta_cache' );
+
+			update_site_option( 'mo2f_premium_only_methods_reset', true );
+		}
+		/**
+		 * Forces the email-template editors to open in Visual mode by pre-seeding the
+		 * in-memory (not persisted) user-settings cache, since Visual/Code is one
+		 * global per-user setting shared by every wp_editor() instance.
+		 *
+		 * @return void
+		 */
+		public function mo2f_force_visual_editor_for_email_templates() {
+			if ( ! isset( $_GET['page'] ) || 'mo_2fa_white_labelling' !== $_GET['page'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only page-slug check, no state change.
+				return;
+			}
+			global $_updated_user_settings;
+			$_updated_user_settings           = get_all_user_settings();
+			$_updated_user_settings['editor'] = 'tinymce';
 		}
 
 		/**

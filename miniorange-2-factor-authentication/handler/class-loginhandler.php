@@ -41,6 +41,35 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 			if ( get_site_option( 'mo_wpns_activate_recaptcha_for_woocommerce_registration' ) ) {
 				add_action( 'woocommerce_register_post', array( $this, 'wooc_validate_user_captcha_register' ), 1, 3 );
 			}
+
+			add_action( 'woocommerce_account_dashboard', array( $this, 'mo2f_render_wc_account_trust_badge' ) );
+		}
+
+		/**
+		 * Shows a short 2FA status note on the WooCommerce "My Account" dashboard.
+		 *
+		 * @return void
+		 */
+		public function mo2f_render_wc_account_trust_badge() {
+			$current_user = wp_get_current_user();
+			if ( ! $current_user || 0 === $current_user->ID ) {
+				return;
+			}
+			$main_handler   = new Mo2f_Main_Handler();
+			$twofa_required = $main_handler->mo2f_check_if_twofa_is_enabled( $current_user );
+			$account_url    = admin_url( 'admin.php?page=mo_2fa_my_account' );
+			$box_style      = 'margin:0 0 20px;padding:12px 16px;border:1px solid #d9dde1;border-left:4px solid #1f6f64;border-radius:4px;background:#f7faf9;font-size:14px;line-height:1.5;';
+
+			if ( $twofa_required ) {
+				$message = esc_html__( 'Your account requires two-factor authentication for sign-in.', 'miniorange-2-factor-authentication' );
+			} else {
+				$message = esc_html__( 'Want extra security? You can turn on optional two-factor authentication for your account.', 'miniorange-2-factor-authentication' );
+			}
+
+			echo '<div class="mo2f-wc-trust-badge" style="' . esc_attr( $box_style ) . '">'
+				. '&#x1F512; ' . $message . ' ' // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $message is esc_html__() output, escaped at assignment above.
+				. '<a href="' . esc_url( $account_url ) . '">' . esc_html__( 'Manage two-factor authentication', 'miniorange-2-factor-authentication' ) . '</a>'
+				. '</div>';
 		}
 
 		/**
@@ -63,6 +92,7 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 		public function mo_wpns_init() {
 			add_action( 'show_user_profile', array( $this, 'twofa_on_user_profile' ), 10, 3 );
 			add_action( 'edit_user_profile', array( $this, 'twofa_on_user_profile' ), 10, 3 );
+			add_action( 'show_user_profile', array( $this, 'mo2f_render_recent_logins_on_profile' ), 10, 3 );
 			add_action( 'personal_options_update', array( $this, 'user_two_factor_options_update' ), 10, 3 );
 			add_action( 'edit_user_profile_update', array( $this, 'user_two_factor_options_update' ), 10, 3 );
 			global $mo2f_mo_wpns_utility, $mo2f_dir_name;
@@ -102,6 +132,22 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 			$twofa_enabled = $main_handler->mo2f_check_if_twofa_is_enabled( $user );
 			if ( $twofa_enabled && file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'user-profile-2fa.php' ) ) {
 				include_once $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'user-profile-2fa.php';
+			}
+		}
+
+		/**
+		 * Renders a "Recent Logins" panel on a user's profile page.
+		 *
+		 * @param \WP_User $user Profile being viewed.
+		 * @return void
+		 */
+		public function mo2f_render_recent_logins_on_profile( $user ) {
+			global $mo2f_dir_name;
+			if ( ! current_user_can( 'edit_user', $user->ID ) ) {
+				return;
+			}
+			if ( file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'user-profile-recent-logins.php' ) ) {
+				include $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'user-profile-recent-logins.php';
 			}
 		}
 

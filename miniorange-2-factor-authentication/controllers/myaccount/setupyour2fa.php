@@ -12,12 +12,14 @@ use TwoFA\Helper\Mo2f_Common_Helper;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-global $mo2fdb_queries, $mo2f_onprem_cloud_obj;
+global $mo2fdb_queries, $mo2f_onprem_cloud_obj, $mo2f_dir_name;
 
 $mo2f_user                         = wp_get_current_user();
 $mo2f_user_id                      = $mo2f_user->ID;
 $mo2f_selected_method              = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $mo2f_user_id );
 $mo2f_is_customer_admin_registered = get_site_option( 'mo_2factor_admin_registration_status' );
+$mo2f_backup_codes_enabled         = get_site_option( 'mo2f_enable_backup_methods' ) && in_array( 'mo2f_back_up_codes', (array) get_site_option( 'mo2f_enabled_backup_methods' ), true );
+$mo2f_has_unused_backup_codes      = ! empty( get_user_meta( $mo2f_user_id, 'mo2f_backup_codes', true ) );
 
 update_site_option( 'mo2f_show_sms_transaction_message', MoWpnsConstants::OTP_OVER_SMS === $mo2f_selected_method );
 
@@ -27,11 +29,15 @@ $mo2f_methods_on_dashboard       = array_keys( $mo2f_two_factor_methods_details 
 
 if ( ! $mo2f_can_display_admin_features ) {
 	$mo2f_end_user_customer_registered = Miniorange_Authentication::mo2f_is_customer_registered();
-	$mo2f_methods_on_dashboard         = array_values(
+	$mo2f_whatsapp_premium_locked      = ! file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-all-inclusive-premium-settings.php' );
+	$mo2f_methods_on_dashboard          = array_values(
 		array_filter(
 			$mo2f_methods_on_dashboard,
-			static function ( $method ) use ( $mo2f_end_user_customer_registered, $mo2f_two_factor_methods_details ) {
+			static function ( $method ) use ( $mo2f_end_user_customer_registered, $mo2f_two_factor_methods_details, $mo2f_whatsapp_premium_locked ) {
 				if ( ! empty( $mo2f_two_factor_methods_details[ $method ]['crown'] ) ) {
+					return false;
+				}
+				if ( $mo2f_whatsapp_premium_locked && MoWpnsConstants::OTP_OVER_WHATSAPP === $method ) {
 					return false;
 				}
 				if ( ! $mo2f_end_user_customer_registered && MoWpnsConstants::OTP_OVER_SMS === $method ) {

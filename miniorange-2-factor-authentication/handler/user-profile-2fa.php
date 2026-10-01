@@ -7,7 +7,6 @@
 
 use TwoFA\Handler\Twofa\MO2f_Cloud_Onprem_Interface;
 use TwoFA\Handler\Twofa\MO2f_Utility;
-use TwoFA\Onprem\Two_Factor_Setup_Onprem_Cloud;
 use TwoFA\Database\Mo2fDB;
 use TwoFA\Helper\Mo2f_Common_Helper;
 use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;

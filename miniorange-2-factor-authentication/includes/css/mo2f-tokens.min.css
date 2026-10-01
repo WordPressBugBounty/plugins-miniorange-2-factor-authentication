@@ -1,0 +1,26 @@
+/* mo2f design tokens — shared by admin + login-popup stylesheets. One palette, reused everywhere, built from WordPress's own admin colors so the plugin reads as part of wp-admin rather than a separate app. */
+:root{
+	--mo2f-blue:#2271b1;
+	--mo2f-blue-hover:#135e96;
+	--mo2f-blue-tint:#f0f6fc;
+	--mo2f-ink:#1d2327;
+	--mo2f-ink-2:#50575e;
+	--mo2f-ink-3:#787c82;
+	--mo2f-border:#dcdcde;
+	--mo2f-border-strong:#c3c4c7;
+	--mo2f-surface:#ffffff;
+	--mo2f-canvas:#f0f0f1;
+	--mo2f-success:#00a32a;
+	--mo2f-success-tint:#edfaef;
+	--mo2f-warn:#996800;
+	--mo2f-warn-tint:#fcf9e8;
+	--mo2f-danger:#d63638;
+	--mo2f-danger-tint:#fcf0f1;
+	--mo2f-guard:#0a5c53;
+	--mo2f-guard-tint:#e9f5f3;
+	--mo2f-radius:4px;
+	--mo2f-radius-lg:6px;
+	--mo2f-shadow:0 1px 2px rgba(0,0,0,.06),0 1px 1px rgba(0,0,0,.04);
+	--mo2f-shadow-lg:0 8px 28px rgba(0,0,0,.16);
+	--mo2f-font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}

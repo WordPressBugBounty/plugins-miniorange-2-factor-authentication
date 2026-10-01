@@ -72,8 +72,25 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 					case 'mo2f_delete_log_file':
 						$this->mo2f_delete_log_file();
 						break;
+					case 'mo2f_reports_datatable':
+						$this->mo2f_reports_datatable( $_POST );
+						break;
 				}
 			}
+		}
+
+		/**
+		 * Handles server-side report table pagination (login report and
+		 * registered/unregistered user status), so DataTables fetches one
+		 * page of rows via ajax instead of every row being rendered into
+		 * the page on load.
+		 *
+		 * @param array $post Post data.
+		 * @return void
+		 */
+		public function mo2f_reports_datatable( $post ) {
+			$common_helper = new Mo2f_Common_Helper();
+			$common_helper->mo2f_reports_datatable_response( $post );
 		}
 
 		/**
@@ -180,11 +197,10 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 		 *
 		 * @return void
 		 */
-		public function mo2f_check_transactions() {
-			global $mo2f_mo_wpns_utility;
+		public function mo2f_sync_transactions_from_account() {
 			$mocurl  = new MocURL();
 			$content = json_decode( $mocurl->get_customer_transactions( 'otp_recharge_plan', 'WP_OTP_VERIFICATION_PLUGIN' ), true );
-			if ( 'SUCCESS' === $content['status'] ) {
+			if ( isset( $content['status'] ) && 'SUCCESS' === $content['status'] ) {
 				update_site_option( 'mo2f_license_type', 'PREMIUM' );
 			} else {
 				update_site_option( 'mo2f_license_type', 'DEMO' );
@@ -192,30 +208,24 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 			}
 			if ( isset( $content['smsRemaining'] ) ) {
 				update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', $content['smsRemaining'] );
-			} elseif ( 'SUCCESS' === $content['status'] ) {
+			} elseif ( isset( $content['status'] ) && 'SUCCESS' === $content['status'] ) {
 				update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', 0 );
 			}
 
 			if ( isset( $content['emailRemaining'] ) ) {
-				if ( MO2F_IS_ONPREM ) {
-					$available_transaction = get_site_option( 'EmailTransactionCurrent', 30 );
-					if ( $content['emailRemaining'] > $available_transaction && $content['emailRemaining'] > 10 ) {
-						$current_transaction = $content['emailRemaining'] + get_site_option( 'cmVtYWluaW5nT1RQ' );
-						update_site_option( 'bGltaXRSZWFjaGVk', 0 );
-						if ( $available_transaction > 30 ) {
-							$current_transaction = $current_transaction - $available_transaction;
-						}
-
-						update_site_option( 'cmVtYWluaW5nT1RQ', $current_transaction );
-						update_site_option( 'EmailTransactionCurrent', $content['emailRemaining'] );
-					}
-				} else {
-					update_site_option( 'cmVtYWluaW5nT1RQ', $content['emailRemaining'] );
-					if ( $content['emailRemaining'] > 0 ) {
-						update_site_option( 'bGltaXRSZWFjaGVk', 0 );
-					}
-				}
+				update_site_option( 'cmVtYWluaW5nT1RQ', $content['emailRemaining'] );
+				update_site_option( 'bGltaXRSZWFjaGVk', $content['emailRemaining'] > 0 ? 0 : 1 );
 			}
+		}
+
+		/**
+		 * AJAX handler to check customer transactions.
+		 *
+		 * @return void
+		 */
+		public function mo2f_check_transactions() {
+			global $mo2f_mo_wpns_utility;
+			$this->mo2f_sync_transactions_from_account();
 			$remaining_transaction = $mo2f_mo_wpns_utility->mo2f_check_remaining_transactions();
 			wp_send_json_success(
 				array(

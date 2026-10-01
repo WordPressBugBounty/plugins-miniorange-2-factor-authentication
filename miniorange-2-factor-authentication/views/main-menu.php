@@ -27,6 +27,9 @@ if ( isset( $mo2f_tab_details->tab_details ) ) {
 			$mo2f_icon         = '';
 			$mo2f_is_html_icon = false;
 			switch ( $mo2f_side_tabs->page_title ) {
+				case 'Dashboard':
+					$mo2f_icon = '🏠';
+					break;
 				case 'Quick Setup':
 					$mo2f_icon = '⚡';
 					break;

@@ -13,7 +13,6 @@ use TwoFA\Helper\MocURL;
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsMessages;
-use TwoFA\Onprem\Two_Factor_Setup_Onprem_Cloud;
 
 /**
  * Description: Save all required fields on customer registration/retrieval complete.
@@ -117,13 +116,13 @@ function mo2fa_get_current_customer( $email, $password ) {
 			$app_secret = isset( $customer_key['appSecret'] ) ? $customer_key['appSecret'] : '';
 			mo2fa_save_success_customer_config( $email, $id, $api_key, $token, $app_secret );
 			update_site_option( base64_encode( 'totalUsersCloud' ), get_site_option( base64_encode( 'totalUsersCloud' ) ) + 1 ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- We need to obfuscate the option as it will be stored in database.
-			$customer_t = new Two_Factor_Setup_Onprem_Cloud();
-			$content    = json_decode( $customer_t->get_customer_transactions( get_option( 'mo2f_customerKey' ), get_option( 'mo2f_api_key' ), 'PREMIUM' ), true );
-			if ( 'SUCCESS' === $content['status'] ) {
+			$customer_t = new MocURL();
+			$content    = json_decode( $customer_t->get_customer_transactions( 'otp_recharge_plan', 'PREMIUM' ), true );
+			if ( isset( $content['status'] ) && 'SUCCESS' === $content['status'] ) {
 				update_site_option( 'mo2f_license_type', 'PREMIUM' );
 			} else {
 				update_site_option( 'mo2f_license_type', 'DEMO' );
-				$content = json_decode( $customer_t->get_customer_transactions( get_option( 'mo2f_customerKey' ), get_option( 'mo2f_api_key' ), 'DEMO' ), true );
+				$content = json_decode( $customer_t->get_customer_transactions( '-1', 'DEMO' ), true );
 			}
 			if ( isset( $content['smsRemaining'] ) ) {
 				update_site_option( 'cmVtYWluaW5nT1RQVHJhbnNhY3Rpb25z', $content['smsRemaining'] );

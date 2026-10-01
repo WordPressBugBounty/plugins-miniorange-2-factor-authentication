@@ -68,7 +68,8 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 			$current_step       = ( isset( $_GET['current-step'] ) ) ? sanitize_text_field( wp_unslash( $_GET['current-step'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended -- Reading GET parameter from the URL for checking the tab name, doesn't require nonce verification.
 			$this->current_step = ! empty( $current_step ) ? $current_step : current( array_keys( $this->wizard_steps ) );
 			wp_register_style( 'mo_2fa_admin_setupWizard', plugins_url( 'includes' . DIRECTORY_SEPARATOR . 'css' . DIRECTORY_SEPARATOR . 'setup-wizard.min.css', __DIR__ ), array(), MO2F_VERSION );
-			wp_enqueue_script( 'mo2f_setup_wizard', plugins_url( 'includes' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'setup-wizard.min.js', __DIR__ ), array(), MO2F_VERSION, false );
+			wp_register_style( 'mo_2fa_admin_wp_skin_style', plugins_url( 'includes' . DIRECTORY_SEPARATOR . 'css' . DIRECTORY_SEPARATOR . 'mo2f-admin-wp-skin.css', __DIR__ ), array( 'mo_2fa_admin_setupWizard' ), MO2F_VERSION );
+			wp_enqueue_script( 'mo2f_setup_wizard', plugins_url( 'includes' . DIRECTORY_SEPARATOR . 'js' . DIRECTORY_SEPARATOR . 'setup-wizard.min.js', __DIR__ ), array( 'jquery' ), MO2F_VERSION, false );
 			$save_step = ( isset( $_POST['save_step'] ) ) ? sanitize_text_field( wp_unslash( $_POST['save_step'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Reading POST parameter for checking the saved step, doesn't require nonce verification for the 1st window.
 			if ( ! empty( $save_step ) && ! empty( $this->wizard_steps[ $this->current_step ]['save'] ) ) {
 				call_user_func( $this->wizard_steps[ $this->current_step ]['save'] );
@@ -99,19 +100,17 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 		 */
 		public function mo_2fa_setup_wizard_completed() {
 			?>
-			<p class="mo2f-step-show"> <?php esc_html_e( 'Step 4 of 4', 'miniorange-2-factor-authentication' ); ?></p>
-			<div style="text-align: center;">
-				<h3 style="text-align:center;font-size: xx-large;"> <?php esc_html_e( 'Congratulations!', 'miniorange-2-factor-authentication' ); ?> </h3>
-				<br>
-				<?php esc_html_e( 'You have successfully configured the two-factor authentication.', 'miniorange-2-factor-authentication' ); ?>
-				<br><br><br>
+			<div class="mo2f-wizard-finish">
+				<p class="mo2f-step-show"> <?php esc_html_e( 'Setup complete', 'miniorange-2-factor-authentication' ); ?></p>
+				<h3><?php esc_html_e( 'Congratulations!', 'miniorange-2-factor-authentication' ); ?></h3>
+				<p><?php esc_html_e( 'You have successfully configured two-factor authentication.', 'miniorange-2-factor-authentication' ); ?></p>
 				<input type="button" name="mo2f_next_step4" id="mo2f_next_step4" class="mo2f-modal__btn button button-primary" value="<?php echo esc_attr__( 'Go to plugin dashboard', 'miniorange-2-factor-authentication' ); ?>" />
 			</div>
 			<script>
 				jQuery('#mo2f_next_step4').click(function(e) {
 
 					localStorage.setItem("last_tab", 'unlimittedUser_2fa');
-					window.location.href = '<?php echo esc_js( admin_url() ); ?>' + 'admin.php?page=mo_2fa_two_fa';
+					window.location.href = '<?php echo esc_js( admin_url() ); ?>' + 'admin.php?page=mo_2fa_dashboard';
 				});
 			</script>
 			<?php
@@ -155,11 +154,12 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 			<title><?php esc_html_e( 'miniOrange 2FA &rsaquo; Setup Wizard', 'miniorange-2-factor-authentication' ); ?></title>
 			<?php
 			wp_print_styles( 'mo_2fa_admin_setupWizard' );
+			wp_print_styles( 'mo_2fa_admin_wp_skin_style' );
 			wp_print_scripts( 'jquery' );
 			wp_print_scripts( 'jquery-ui-core' );
 			wp_print_scripts( 'mo2f_setup_wizard' );
 			?>
-		<head>
+		</head>
 		<body class="mo2f_body">
 				<header class="mo2f-setup-wizard-header">
 					<img width="70px" height="auto" src="<?php echo esc_url( plugin_dir_url( __DIR__ ) . 'includes/images/miniorange-new-logo.png' ); ?>" alt="<?php esc_attr_e( 'miniOrange 2-factor Logo', 'miniorange-2-factor-authentication' ); ?>" >
@@ -176,7 +176,7 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 		private function mo2f_redirect_to_2fa_dashboard() {
 			wp_safe_redirect(
 				add_query_arg(
-					array( 'page' => 'mo_2fa_two_fa' ),
+					array( 'page' => 'mo_2fa_dashboard' ),
 					admin_url( 'admin.php' )
 				)
 			);
@@ -238,7 +238,7 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 		 */
 		public function mo2f_welcome_step( $next_step ) {
 			$redirect  = 'enforce-2fa';
-			$admin_url = is_network_admin() ? network_admin_url() . 'admin.php?page=mo_2fa_two_fa' : admin_url() . 'admin.php?page=mo_2fa_two_fa';
+			$admin_url = is_network_admin() ? network_admin_url() . 'admin.php?page=mo_2fa_dashboard' : admin_url() . 'admin.php?page=mo_2fa_dashboard';
 
 			?>
 		<h3><?php esc_html_e( 'Let us help you get started', 'miniorange-2-factor-authentication' ); ?></h3>
@@ -269,7 +269,7 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 			<div class="mo2f-step-setting-wrapper active" data-step-title="<?php esc_html_e( 'Inline Registration', 'miniorange-2-factor-authentication' ); ?>">
 				<?php $this->mo2f_inline_registration(); ?>
 				<div class="mo2f-setup-actions">
-					<a class="button button-primary" style="margin-left:100px;" name="next_step_setting" onclick="mo2f_change_settings()" value="<?php esc_attr_e( 'Continue Setup', 'miniorange-2-factor-authentication' ); ?>"><?php esc_html_e( 'Continue Setup', 'miniorange-2-factor-authentication' ); ?></a>
+					<button class="button button-primary" type="button" name="next_step_setting" onclick="mo2f_change_settings()" value="<?php esc_attr_e( 'Continue Setup', 'miniorange-2-factor-authentication' ); ?>"><?php esc_html_e( 'Continue Setup', 'miniorange-2-factor-authentication' ); ?></button>
 					<a href="#skipwizard" class="mo2f_setup_wizard_footer_buttons" style="float:right;"><?php esc_html_e( 'Skip Setup', 'miniorange-2-factor-authentication' ); ?></a>
 				</div>
 			</div>
@@ -283,7 +283,7 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 							</svg> <?php esc_html_e( 'Go Back', 'miniorange-2-factor-authentication' ); ?>
 						</span>
 					</a>
-					<a class="button button-primary" name="next_step_setting" onclick="mo2f_change_settings()" value="<?php esc_attr_e( 'Continue Setup', 'miniorange-2-factor-authentication' ); ?>"><?php esc_html_e( 'Continue Setup', 'miniorange-2-factor-authentication' ); ?></a>
+					<button class="button button-primary" type="button" name="next_step_setting" onclick="mo2f_change_settings()" value="<?php esc_attr_e( 'Continue Setup', 'miniorange-2-factor-authentication' ); ?>"><?php esc_html_e( 'Continue Setup', 'miniorange-2-factor-authentication' ); ?></button>
 					<a href="#skipwizard" class="mo2f_setup_wizard_footer_buttons" style="float:right;"><?php esc_html_e( 'Skip Setup', 'miniorange-2-factor-authentication' ); ?></a>
 				</div>
 			</div>
@@ -316,7 +316,7 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 					};
 					var ajax_url = "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>";
 					jQuery.post(ajax_url, data, function(response) {
-						window.location.href = "<?php echo esc_url( admin_url() . 'admin.php?page=mo_2fa_two_fa' ); ?>";
+						window.location.href = "<?php echo esc_url( admin_url() . 'admin.php?page=mo_2fa_dashboard' ); ?>";
 					});
 				});
 			</script>
@@ -447,10 +447,17 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 		private function mo2f_step_global_2fa_methods_save() {
 			// Check nonce.
 			check_admin_referer( 'mo2f-step-choose-method' );
-			$array                                     = isset( $_POST['mo2f_policy'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['mo2f_policy'] ) ) : array();
-			$array['mo2f-enforce-roles']               = isset( $_POST['mo2f_policy']['mo2f-enforce-roles'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['mo2f_policy']['mo2f-enforce-roles'] ) ) : array();
+			$posted_policy = isset( $_POST['mo2f_policy'] ) && is_array( $_POST['mo2f_policy'] ) ? wp_unslash( $_POST['mo2f_policy'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Values are sanitized below by key.
+			$array         = array();
+			foreach ( $posted_policy as $setting => $value ) {
+				if ( is_array( $value ) ) {
+					continue;
+				}
+				$array[ sanitize_key( $setting ) ] = sanitize_text_field( $value );
+			}
+			$array['mo2f-enforce-roles']               = isset( $posted_policy['mo2f-enforce-roles'] ) && is_array( $posted_policy['mo2f-enforce-roles'] ) ? array_map( 'sanitize_text_field', $posted_policy['mo2f-enforce-roles'] ) : array();
 			$array['mo2f_admin_login_bypass_2fa']      = ! empty( $_POST['mo2f_policy']['mo2f_admin_login_bypass_2fa'] ) ? '1' : '0';
-			$inline_reg_post                           = isset( $_POST['mo2f_policy']['mo2f_disable_inline_registration'] ) ? sanitize_text_field( wp_unslash( $_POST['mo2f_policy']['mo2f_disable_inline_registration'] ) ) : '1';
+			$inline_reg_post                           = isset( $posted_policy['mo2f_disable_inline_registration'] ) ? sanitize_text_field( $posted_policy['mo2f_disable_inline_registration'] ) : '1';
 			$array['mo2f_disable_inline_registration'] = ( '0' === $inline_reg_post ) ? '0' : '1';
 			$this->mo2f_update_plugin_settings( $array );
 			wp_safe_redirect( esc_url_raw( $this->mo2f_get_next_step() ) );
@@ -465,6 +472,9 @@ if ( ! class_exists( 'Mo2f_Setup_Wizard' ) ) {
 		private function mo2f_update_plugin_settings( $settings ) {
 			global $wp_roles;
 			foreach ( $settings as $setting => $value ) {
+				if ( is_array( $value ) ) {
+					continue;
+				}
 				$setting = sanitize_text_field( $setting );
 				$value   = sanitize_text_field( $value );
 				if ( 'mo2f_grace_period_value' === $setting ) {

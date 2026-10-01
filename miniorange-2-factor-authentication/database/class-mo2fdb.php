@@ -281,6 +281,27 @@ if ( ! class_exists( 'Mo2FDB' ) ) {
 		}
 
 		/**
+		 * Gets the count of users who have completed 2FA setup (any method).
+		 *
+		 * @return int
+		 */
+		public function mo2f_get_configured_2fa_users_count() {
+			$count = 0;
+			foreach ( $this->mo2f_get_all_user_2fa_meta_cached() as $user_meta ) {
+				$meta_value = maybe_unserialize( $user_meta->meta_value );
+				if (
+					is_array( $meta_value )
+					&& isset( $meta_value['mo_2factor_user_registration_status'] )
+					&& MoWpnsConstants::MO_2_FACTOR_PLUGIN_SETTINGS === $meta_value['mo_2factor_user_registration_status']
+					&& ! empty( $meta_value['mo2f_configured_2FA_method'] )
+				) {
+					++$count;
+				}
+			}
+			return $count;
+		}
+
+		/**
 		 * Deletes the user details for corresponding user id from user details table.
 		 *
 		 * @param integer $user_id User ID whose details will be deleted.

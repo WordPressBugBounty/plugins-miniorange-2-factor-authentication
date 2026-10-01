@@ -1,0 +1,184 @@
+/* mo2f login-popup redesign — this file previously existed but was empty and unused. It's now
+ * registered and printed last in Mo2f_Common_Helper::mo2f_inline_css_and_js(), after bootstrap,
+ * front_end_login, style_settings and phone, so it overrides the patched-Bootstrap modal look
+ * with the same tokens the admin screens use (see mo2f-tokens.min.css) — and, unlike the old
+ * front_end_login.min.css it complements, it actually has responsive rules. */
+
+.mo2f_modal,
+.mo2f_modal * {
+	font-family: var(--mo2f-font, -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif) !important;
+	box-sizing: border-box;
+}
+
+/* ---------- backdrop + dialog ---------- */
+.mo2f-modal-backdrop {
+	background-color: rgba(29,35,39,.5) !important;
+	opacity: 1 !important;
+}
+.mo_customer_validation-modal-dialog {
+	max-width: 380px !important;
+	margin: 8vh auto !important;
+	padding: 0 16px;
+}
+.mo_customer_validation-modal-content,
+.login.mo_customer_validation-modal-content {
+	background: var(--mo2f-surface, #fff) !important;
+	border-radius: var(--mo2f-radius-lg, 6px) !important;
+	box-shadow: var(--mo2f-shadow-lg, 0 8px 28px rgba(0,0,0,.16)) !important;
+	border: 1px solid var(--mo2f-border, #dcdcde) !important;
+	overflow: hidden;
+}
+
+/* ---------- header ---------- */
+.mo2f_modal-header {
+	padding: 20px 20px 14px !important;
+	text-align: center;
+	border-bottom: 1px solid var(--mo2f-border, #dcdcde) !important;
+	position: relative;
+	min-height: 0 !important;
+}
+.mo2f_modal-title {
+	font-size: 15px !important;
+	font-weight: 600 !important;
+	color: var(--mo2f-ink, #1d2327) !important;
+	margin: 0 !important;
+}
+.mo2f_close {
+	position: absolute;
+	top: 12px;
+	right: 14px;
+	background: none;
+	border: none;
+	color: var(--mo2f-ink-3, #787c82);
+	font-size: 18px;
+	line-height: 1;
+	cursor: pointer;
+	padding: 4px;
+}
+.mo2f_close:hover { color: var(--mo2f-ink, #1d2327); }
+
+/* ---------- body ---------- */
+.mo2f_modal-body {
+	padding: 20px !important;
+}
+.mo2fa_display_message_frontend {
+	color: var(--mo2f-ink-2, #50575e) !important;
+	font-size: 13px !important;
+	line-height: 1.6 !important;
+}
+.mo2f_middle_text {
+	font-size: 12px !important;
+	color: var(--mo2f-ink-3, #787c82) !important;
+}
+
+/* ---------- OTP digit boxes ---------- */
+.mo2f-otp-catchy-box {
+	gap: 8px;
+}
+.mo2f-otp-catchy {
+	width: 42px !important;
+	height: 48px !important;
+	margin: 0 !important;
+	border: 1.5px solid var(--mo2f-border-strong, #c3c4c7) !important;
+	border-radius: var(--mo2f-radius, 4px) !important;
+	background: var(--mo2f-surface, #fff) !important;
+	font-size: 18px !important;
+	font-weight: 600;
+	color: var(--mo2f-ink, #1d2327) !important;
+	text-align: center;
+}
+.mo2f-otp-catchy:focus {
+	border-color: var(--mo2f-blue, #2271b1) !important;
+	background: var(--mo2f-blue-tint, #f0f6fc) !important;
+	outline: 0;
+	box-shadow: 0 0 0 3px var(--mo2f-blue-tint, #f0f6fc);
+}
+.mo2f-otp-catchy:not(:placeholder-shown) {
+	border-color: var(--mo2f-blue, #2271b1) !important;
+	color: var(--mo2f-blue, #2271b1) !important;
+}
+
+/* ---------- buttons + footer links ---------- */
+.mo2f_modal-body .mo2f-save-settings-button,
+#mo2f_catchy_validate,
+#mo2f_save_kba,
+#mo2f_validate {
+	width: 100%;
+	background: var(--mo2f-blue, #2271b1) !important;
+	border: 1px solid var(--mo2f-blue, #2271b1) !important;
+	color: #fff !important;
+	border-radius: var(--mo2f-radius, 4px) !important;
+	padding: 10px !important;
+	font-weight: 600 !important;
+	box-shadow: none !important;
+}
+.mo2f_modal-body .mo2f-save-settings-button:hover,
+#mo2f_catchy_validate:hover {
+	background: var(--mo2f-blue-hover, #135e96) !important;
+	border-color: var(--mo2f-blue-hover, #135e96) !important;
+}
+.mo2f-gauth-link-icon { color: var(--mo2f-ink-3, #787c82); }
+.mo2f_login_form_border { border-color: var(--mo2f-border, #dcdcde) !important; }
+
+/* ---------- entrance: every variant of this popup (OTP entry, QR setup, KBA,
+ * backup codes) shares .mo_customer_validation-modal-dialog, so this applies
+ * everywhere at once. Respects reduced-motion. */
+.mo_customer_validation-modal-dialog {
+	animation: mo2f-modal-in .18s ease-out;
+}
+@keyframes mo2f-modal-in {
+	from { opacity: 0; transform: translateY(6px) scale(.98); }
+	to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+	.mo_customer_validation-modal-dialog { animation: none; }
+}
+
+/* ---------- backup codes + KBA: these two screens use their own plain gray boxes
+ * (#f3f4f6, #e6e6e6 borders) that never picked up the surrounding token system, so
+ * they read as a visibly older/plainer screen than the OTP-entry modal next to them. */
+.mo2f-backup-code-box {
+	border: 1px solid var(--mo2f-border, #dcdcde);
+	color: var(--mo2f-ink, #1d2327);
+}
+.mo2f-success-image {
+	filter: drop-shadow(0 2px 6px rgba(15,198,166,.25));
+}
+.mo2f_kba_configure_form,
+.mo2f_login_form_border,
+.mo2f_login_form_border_inline_popup {
+	border-color: var(--mo2f-border, #dcdcde) !important;
+	border-radius: var(--mo2f-radius-lg, 6px) !important;
+}
+.mo2f_kba_input_fields:focus {
+	border-color: var(--mo2f-blue, #2271b1) !important;
+	box-shadow: 0 0 0 3px var(--mo2f-blue-tint, #f0f6fc) !important;
+}
+
+/* ---------- responsive: the thing the old dedicated login stylesheet had none of ---------- */
+@media (max-width: 480px) {
+	.mo_customer_validation-modal-dialog {
+		margin: 0 !important;
+		max-width: 100% !important;
+		width: 100% !important;
+		height: 100%;
+		padding: 0;
+		display: flex;
+		align-items: center;
+	}
+	.mo_customer_validation-modal-content,
+	.login.mo_customer_validation-modal-content {
+		border-radius: 0 !important;
+		width: 100%;
+		box-shadow: none !important;
+		border: none !important;
+	}
+	.mo2f-otp-catchy {
+		width: 15vw !important;
+		max-width: 40px !important;
+		height: 44px !important;
+		font-size: 16px !important;
+	}
+	.mo2f_modal-header { padding: 18px 40px 12px !important; }
+	.mo2f_modal-body { padding: 16px !important; }
+}

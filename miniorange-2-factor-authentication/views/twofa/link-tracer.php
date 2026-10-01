@@ -42,8 +42,6 @@ $mo2f_two_factor_premium_doc = array(
 
 	'Login with Ajax'                        => MoWpnsConstants::MO2F_PLUGINS_PAGE_URL . '/two-factor-authentication-2fa-mfa-for-login-with-ajax-form',
 
-	'Setup SMTP'                             => MoWpnsConstants::MO2F_PLUGINS_PAGE_URL . '/setup-smtp-for-miniorange-two-factor-authentication',
-
 	'Remember Device'                        => MoWpnsConstants::MO2F_PLUGINS_PAGE_URL . '/how-to-set-remember-device-with-two-factor-authentication-2fa',
 
 	'Custom plugin logo'                     => MoWpnsConstants::MO2F_PLUGINS_PAGE_URL . '/how-to-customize-wordpress-login-screen-powered-by-logo-2fa-mfa',

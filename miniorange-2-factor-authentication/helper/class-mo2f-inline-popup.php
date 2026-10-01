@@ -386,7 +386,7 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 								</div>
 		
 								<div class="mo2f-backup-code-description">
-									<?php esc_html_e( 'Please keep these codes in a safe place. Each code can only be used once. If SMTP is configured, they have also been emailed to you.', 'miniorange-2-factor-authentication' ); ?>
+									<?php esc_html_e( 'Please keep these codes in a safe place. Each code can only be used once. They have also been emailed to you.', 'miniorange-2-factor-authentication' ); ?>
 								</div>
 							</div>
 		

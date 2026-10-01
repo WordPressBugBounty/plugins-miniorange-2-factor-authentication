@@ -13,6 +13,7 @@ use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\Mo2f_Common_Helper;
+use TwoFA\Helper\MocURL;
 use TwoFA\Traits\Instance;
 use WP_REST_Request;
 
@@ -50,9 +51,19 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 			$common_helper      = new Mo2f_Common_Helper();
 			$user_id            = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 			$currentuser        = get_user_by( 'id', $user_id );
-			$email_delivered    = $this->mo2f_send_reconfig_link_on_email( $currentuser, $currentuser->user_email );
-			$mo2f_title          = $email_delivered ? __( 'Account Recovery Email Sent', 'miniorange-2-factor-authentication' ) : __( 'Account recovery could not be sent', 'miniorange-2-factor-authentication' );
-			$mo2f_message        = $this->mo2f_get_message( $email_delivered, $user_id );
+			// Check before generating, not just before emailing -- generation overwrites the
+			// user's stored token, so a spammed click would invalidate their existing link
+			// even when blocked.
+			$rate_limit_error = $common_helper->mo2f_check_otp_send_allowed( null, $currentuser->user_email, $currentuser );
+			if ( null !== $rate_limit_error ) {
+				$rate_limit_error = json_decode( $rate_limit_error, true );
+				$mo2f_title       = __( 'Account recovery could not be sent', 'miniorange-2-factor-authentication' );
+				$mo2f_message     = $rate_limit_error['message'];
+			} else {
+				$email_delivered = $this->mo2f_send_reconfig_link_on_email( $currentuser, $currentuser->user_email );
+				$mo2f_title      = $email_delivered ? __( 'Account Recovery Email Sent', 'miniorange-2-factor-authentication' ) : __( 'Account recovery could not be sent', 'miniorange-2-factor-authentication' );
+				$mo2f_message    = $this->mo2f_get_message( $email_delivered );
+			}
 			$mo2fa_login_status = MoWpnsConstants::MO_2_FACTOR_RECONFIGURATION_LINK_SENT;
 			$this->mo2f_show_login_prompt( $mo2f_message, $mo2fa_login_status, $currentuser, $redirect_to, $session_id_encrypt, $mo2f_title, $twofa_method );
 		}
@@ -61,14 +72,13 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 		 * Gets the message.
 		 *
 		 * @param bool $email_delivered Email delivery status.
-		 * @param int  $user_id User id.
 		 * @return string
 		 */
-		public function mo2f_get_message( $email_delivered, $user_id ) {
+		public function mo2f_get_message( $email_delivered ) {
 			if ( $email_delivered ) {
 				return 'An email containing the link to recover your account by resettings your Two-Factor Authentication (2FA) details has been sent to your inbox. Please click on that link for the same.';
 			} else {
-				return 'Apologies, we\'re encountering an issue while attempting to send the reconfiguration email. Kindly verify your network ' . ( user_can( $user_id, 'manage_options' ) ? 'or SMTP connection settings.' : 'and try again.' );
+				return 'Apologies, we\'re encountering an issue while attempting to send the reconfiguration email. Kindly verify your network and try again.';
 			}
 		}
 
@@ -105,9 +115,8 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 		public function mo2f_send_reconfig_link_on_email( $current_user, $email ) {
 			$reset_token = $this->mo2f_generate_2fa_reconfiguration_token( $current_user );
 			$subject     = MoWpnsUtility::get_mo2f_db_option( 'mo2f_2fa_reconfig_email_subject', 'site_option' );
-			$headers     = array( 'Content-Type: text/html; charset=UTF-8' );
 			$message     = $this->mo2f_2fa_reconfiguration_email_template( $reset_token, $current_user, $email );
-			return wp_mail( $email, $subject, $message, $headers );
+			return MocURL::mo2f_send_cloud_email( $email, $subject, $message );
 		}
 
 		/**

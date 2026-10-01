@@ -17,7 +17,7 @@ echo '
     <div id="mo_contact_us" class="flex relative justify-end" style="gap: 1rem;">
         <input id="contact-us-toggle" type="checkbox" class="peer sr-only" style="display:none;" />
 
-        <span onClick="mo2FASupportOnClick(\'\')" class="mo_contact_us_box" style="border-radius: 0.125rem; background-color:#1d4ed8;">
+        <span onClick="mo2FASupportOnClick(\'\')" class="mo_contact_us_box" style="border-radius: 0.125rem; background-color:#2271b1;">
             <span class="mo-heading leading-normal" style="font-size:14px; color: rgb(255 255 255);">Hello there! Need Help?<br>Drop us an Email</span>
         </span>
 
@@ -32,8 +32,8 @@ echo '
               </g>
               <defs>
                 <linearGradient id="b69bc691e4b17a460c917ded85c3988c" x1="0" y1="0" x2="102" y2="103" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#2563eb"></stop>
-                  <stop offset="1" stop-color="#1d4ed8"></stop>
+                  <stop stop-color="#2271b1"></stop>
+                  <stop offset="1" stop-color="#135e96"></stop>
                 </linearGradient>
               </defs>
             </svg>

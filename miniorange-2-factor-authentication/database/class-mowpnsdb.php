@@ -79,9 +79,48 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 
 			$table_name = $this->transaction_table;
 			if ( $wpdb->get_var( $wpdb->prepare( 'show tables like %s', array( $table_name ) ) ) !== $table_name ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery -- Ignoring warning related to Schema change
-				$sql = 'CREATE TABLE ' . $table_name . ' ( `id` bigint NOT NULL AUTO_INCREMENT, `ip_address` mediumtext NOT NULL ,  `username` mediumtext NOT NULL , `type` mediumtext NOT NULL , `url` mediumtext NOT NULL , `status` mediumtext NOT NULL , `created_timestamp` int, UNIQUE KEY id (id) );'; // phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange -- Ignoring warning related to Schema change
+				$sql = 'CREATE TABLE ' . $table_name . ' ( `id` bigint NOT NULL AUTO_INCREMENT, `ip_address` mediumtext NOT NULL ,  `username` mediumtext NOT NULL , `type` mediumtext NOT NULL , `url` mediumtext NOT NULL , `status` mediumtext NOT NULL , `created_timestamp` int, `actor_id` bigint UNSIGNED DEFAULT NULL, `method` varchar(50) DEFAULT NULL, `meta` text DEFAULT NULL, UNIQUE KEY id (id) );'; // phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange -- Ignoring warning related to Schema change
 				dbDelta( $sql );
 			}
+
+			// Existing installs already had the table above; add the newer audit columns to them here.
+			$mo2f_new_columns = array(
+				'actor_id' => 'bigint UNSIGNED DEFAULT NULL',
+				'method'   => 'varchar(50) DEFAULT NULL',
+				'meta'     => 'text DEFAULT NULL',
+			);
+			foreach ( $mo2f_new_columns as $mo2f_column => $mo2f_definition ) {
+				if ( ! $this->mo2f_transaction_column_exists( $mo2f_column ) ) {
+					$this->mo2f_add_transaction_column( $mo2f_column, $mo2f_definition );
+				}
+			}
+		}
+
+		/**
+		 * Checks whether a column already exists on the transactions table.
+		 *
+		 * @param string $column_name Column to check.
+		 * @return bool
+		 */
+		private function mo2f_transaction_column_exists( $column_name ) {
+			global $wpdb;
+			$table_name = esc_sql( $this->transaction_table );
+			$found      = $wpdb->get_var( $wpdb->prepare( 'SHOW COLUMNS FROM ' . $table_name . ' LIKE %s', $column_name ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Table name sanitized above; column name is prepared.
+			return ! empty( $found );
+		}
+
+		/**
+		 * Adds a single nullable column to the transactions table.
+		 *
+		 * @param string $column_name Column to add.
+		 * @param string $definition  SQL type/definition for the column.
+		 * @return void
+		 */
+		private function mo2f_add_transaction_column( $column_name, $definition ) {
+			global $wpdb;
+			$table_name = esc_sql( $this->transaction_table );
+			$column     = esc_sql( $column_name );
+			$wpdb->query( "ALTER TABLE {$table_name} ADD COLUMN `{$column}` {$definition}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- DDL cannot use placeholders; identifiers are escaped above and $definition is always one of the hardcoded literals in mo2f_generate_tables(), never user input.
 		}
 
 		/**
@@ -278,10 +317,13 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 * @param string $username username.
 		 * @param string $type type.
 		 * @param string $status status.
-		 * @param string $url url.
+		 * @param string   $url url.
+		 * @param int|null $actor_id WP user ID who performed the action, when it differs from the subject (e.g. an admin resetting another user). Null for self-initiated events.
+		 * @param string|null $method 2FA method involved, when relevant.
+		 * @param string|null $meta Optional JSON-encoded extra detail.
 		 * @return void
 		 */
-		public function mo2f_insert_transaction_audit( $ip_address, $username, $type, $status, $url = null ) {
+		public function mo2f_insert_transaction_audit( $ip_address, $username, $type, $status, $url = null, $actor_id = null, $method = null, $meta = null ) {
 			global $wpdb;
 			$data        = array(
 				'ip_address'        => $ip_address,
@@ -289,10 +331,12 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 				'type'              => $type,
 				'status'            => $status,
 				'created_timestamp' => wp_date( 'U' ),
+				'actor_id'          => $actor_id,
+				'method'            => $method,
+				'meta'              => $meta,
 			);
-			$format      = array( '%s', '%s', '%s', '%s', '%d' );
-			$data['url'] = is_null( $url ) ? '' : $url;
-			$url         = esc_url_raw( $url );
+			$format      = array( '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s' );
+			$data['url'] = is_null( $url ) ? '' : esc_url_raw( $url );
 			$wpdb->insert( $this->transaction_table, $data, $format ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Insert uses $wpdb with prepared formats and cache is flushed below.
 			wp_cache_delete( 'mo2f_transaction_list', 'mo2f_transactions' );
 			wp_cache_delete( 'mo2f_login_transaction_report', 'mo2f_transactions' );
@@ -331,6 +375,142 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 			wp_cache_set( $cache_key, $transactions, $cache_group );
 
 			return $transactions;
+		}
+
+		/**
+		 * Server-side page of the login transaction report, for DataTables'
+		 * `serverSide` mode -- returns one page of rows plus the total and
+		 * filtered counts, instead of mo2f_get_login_transaction_report()'s
+		 * every-row-at-once (capped at 5000, still rendered into the DOM in
+		 * full so the browser can paginate client-side).
+		 *
+		 * @param int    $start        Row offset.
+		 * @param int    $length       Page size.
+		 * @param string $search       Search term (matched against ip_address, username, status).
+		 * @param int    $order_column DataTables column index (0=ip_address, 1=username, 2=status, 3=created_timestamp).
+		 * @param string $order_dir    'asc' or 'desc'.
+		 * @return array{total:int, filtered:int, rows:array}
+		 */
+		public function mo2f_get_login_transaction_report_page( $start, $length, $search = '', $order_column = 3, $order_dir = 'desc' ) {
+			global $wpdb;
+
+			$table_name = esc_sql( $this->transaction_table );
+			$order_map  = array(
+				0 => 'ip_address',
+				1 => 'username',
+				2 => 'status',
+				3 => 'created_timestamp',
+			);
+			$order_by   = isset( $order_map[ $order_column ] ) ? $order_map[ $order_column ] : 'created_timestamp';
+			$order_dir  = 'asc' === strtolower( $order_dir ) ? 'ASC' : 'DESC';
+			$start      = max( 0, (int) $start );
+			$length     = max( 1, min( 100, (int) $length ) );
+			$where      = 'WHERE type = %s';
+			$query_args = array( 'User Login' );
+			$search     = trim( (string) $search );
+
+			if ( '' !== $search ) {
+				$search_like  = '%' . $wpdb->esc_like( $search ) . '%';
+				$where       .= ' AND (ip_address LIKE %s OR username LIKE %s OR status LIKE %s)';
+				$query_args[] = $search_like;
+				$query_args[] = $search_like;
+				$query_args[] = $search_like;
+			}
+
+			$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Server-side report count.
+				$wpdb->prepare(
+					'SELECT COUNT(*) FROM ' . $table_name . ' WHERE type = %s', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Table name is escaped above.
+					'User Login'
+				)
+			);
+
+			$filtered = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Server-side report count; $where is assembled above from developer-controlled fragments only.
+				$wpdb->prepare(
+					'SELECT COUNT(*) FROM ' . $table_name . ' ' . $where, // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Table name and where clause are controlled above; $where's placeholder count always matches $query_args (its own %s aren't visible to the static scanner here).
+					$query_args
+				)
+			);
+
+			$query_args[] = $length;
+			$query_args[] = $start;
+
+			$transactions = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Server-side report page; $where is assembled above from developer-controlled fragments only.
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- $query_args' element count always matches $where's placeholder count.
+					'SELECT ip_address, username, status, created_timestamp FROM ' . $table_name . ' ' . $where . ' ORDER BY ' . $order_by . ' ' . $order_dir . ' LIMIT %d OFFSET %d', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Dynamic pieces are allow-listed above.
+					$query_args
+				)
+			);
+
+			return array(
+				'total'    => $total,
+				'filtered' => $filtered,
+				'rows'     => is_array( $transactions ) ? $transactions : array(),
+			);
+		}
+
+		/**
+		 * Get a user's own recent login attempts.
+		 *
+		 * @param string $username The account's username.
+		 * @param int    $limit    Max rows to return.
+		 * @return array
+		 */
+		public function mo2f_get_user_login_history( $username, $limit = 10 ) {
+			global $wpdb;
+
+			$cache_key   = 'mo2f_user_login_history_' . md5( $username ) . '_' . (int) $limit;
+			$cache_group = 'mo2f_transactions';
+
+			$transactions = wp_cache_get( $cache_key, $cache_group );
+			if ( false !== $transactions ) {
+				return $transactions;
+			}
+
+			$table_name   = esc_sql( $this->transaction_table );
+			$transactions = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Query requires direct database access and result is cached above.
+				$wpdb->prepare(
+					'SELECT ip_address, status, created_timestamp FROM ' . $table_name . ' WHERE type = %s AND username = %s ORDER BY id DESC LIMIT %d', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Table name sanitized above.
+					MoWpnsConstants::LOGIN_TRANSACTION,
+					$username,
+					$limit
+				)
+			);
+
+			if ( null === $transactions ) {
+				$transactions = array();
+			}
+
+			wp_cache_set( $cache_key, $transactions, $cache_group, 60 );
+
+			return $transactions;
+		}
+
+		/**
+		 * Get compliance log report.
+		 *
+		 * @param int $days How many days back to include.
+		 * @return array
+		 */
+		public function mo2f_get_compliance_log_report( $days = 30 ) {
+			global $wpdb;
+
+			$compliance_types = array(
+				MoWpnsConstants::ADMIN_2FA_RESET,
+			);
+
+			$table_name   = esc_sql( $this->transaction_table );
+			$placeholders = implode( ', ', array_fill( 0, count( $compliance_types ), '%s' ) );
+			$since        = time() - ( DAY_IN_SECONDS * absint( $days ) );
+			$query_args   = array_merge( $compliance_types, array( $since, 2000 ) );
+
+			$results = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct query required; not cached because it is date-range filtered.
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- $placeholders' %s count always matches count( $compliance_types ), so total placeholders match $query_args.
+					'SELECT id, ip_address, username, type, status, created_timestamp, actor_id, method FROM ' . $table_name . ' WHERE type IN (' . $placeholders . ') AND created_timestamp >= %d ORDER BY id DESC LIMIT %d', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Table name sanitized above.
+					$query_args
+				)
+			);
+
+			return $results ? $results : array();
 		}
 
 

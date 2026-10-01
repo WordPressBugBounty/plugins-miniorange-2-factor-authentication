@@ -24,6 +24,7 @@ use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Helper\Mo2f_Api;
 use TwoFA\Handler\Twofa\Miniorange_Authentication;
+use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Traits\Instance;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -37,6 +38,11 @@ if ( ! class_exists( 'MocURL' ) ) {
 	class MocURL {
 
 		use Instance;
+
+		/**
+		 * From-address used for emails relayed through the miniOrange cloud.
+		 */
+		const CLOUD_EMAIL_FROM_ADDRESS = 'no-reply@xecurify.com';
 
 		/**
 		 * Instantiation of Mo2f_Api class.
@@ -145,22 +151,6 @@ if ( ! class_exists( 'MocURL' ) ) {
 			return true;
 		}
 		/**
-		 * It will give the details of IP
-		 *
-		 * @param string $ip .
-		 * @return string .
-		 */
-		public function lookup_ip( $ip ) {
-			$url      = MO_HOST_NAME . '/moas/rest/security/iplookup';
-			$fields   = array(
-				'ip' => $ip,
-			);
-			$json     = wp_json_encode( $fields );
-			$response = self::call_api( $url, $json );
-			return $response;
-		}
-
-		/**
 		 * Sends OTP/verification link to users SMS/Email.
 		 *
 		 * @param string $auth_type Authnetication method.
@@ -198,39 +188,6 @@ if ( ! class_exists( 'MocURL' ) ) {
 				}
 			}
 			return $response;
-		}
-
-		/**
-		 * Miniorange authenticator challenge function.
-		 *
-		 * @param string $u_key It can be a phone number or email id to which the otp to be sent.
-		 * @param string $auth_type Authentication method of the user.
-		 * @param string $customer_key Customer key of the user.
-		 * @param string $api_key Api key of the user.
-		 * @param object $currentuser Contains details of current user.
-		 * @return string
-		 */
-		public function miniorange_auth_challenge( $u_key, $auth_type, $customer_key, $api_key, $currentuser = null ) {
-			$url      = MO_HOST_NAME . '/moas/api/auth/challenge';
-			$mo2f_api = new Mo2f_Api();
-
-			/* The customer API Key provided to you */
-			$api_key = $api_key;
-
-			$headers = $mo2f_api->get_http_header_array();
-
-			$fields = array(
-				'customerKey'     => $customer_key,
-				'username'        => $u_key,
-				'authType'        => $auth_type,
-				'transactionName' => 'WordPress 2 Factor Authentication Plugin',
-			);
-
-			$field_string = wp_json_encode( $fields );
-
-			$content = $mo2f_api->mo2f_http_request( $url, $field_string, $headers );
-
-			return $content;
 		}
 
 		/**
@@ -304,33 +261,6 @@ if ( ! class_exists( 'MocURL' ) ) {
 			return $response;
 		}
 		/**
-		 * This will use for notification
-		 *
-		 * @param string $to_email .
-		 * @param string $subject .
-		 * @param string $content .
-		 * @param string $from_email .
-		 * @param string $from_name .
-		 * @param string $to_name .
-		 * @return string
-		 */
-		public function send_notification( $to_email, $subject, $content, $from_email, $from_name, $to_name ) {
-			$headers  = 'MIME-Version: 1.0' . "\r\n";
-			$headers .= 'Content-type:text/html;charset=UTF-8' . "\r\n";
-
-			$headers .= 'From: ' . $from_name . '<' . $from_email . '>' . "\r\n";
-
-			mail( $to_email, $subject, $content, $headers );
-
-			return wp_json_encode(
-				array(
-					'status'        => 'SUCCESS',
-					'statusMessage' => 'SUCCESS',
-				)
-			);
-		}
-
-		/**
 		 * Send the email alert
 		 *
 		 * @param string $email email.
@@ -346,7 +276,7 @@ if ( ! class_exists( 'MocURL' ) ) {
 			$url          = MO_HOST_NAME . '/moas/api/notify/send';
 			$customer_key = MoWpnsConstants::DEFAULT_CUSTOMER_KEY;
 			$api_key      = MoWpnsConstants::DEFAULT_API_KEY;
-			$from_email   = 'no-reply@xecurify.com';
+			$from_email   = self::CLOUD_EMAIL_FROM_ADDRESS;
 			$di           = get_site_option( 'No_of_days_active_work' );
 			$di           = intval( $di );
 			if ( 'mo_wpns_skip_feedback' === $feedback_option ) {
@@ -396,6 +326,48 @@ if ( ! class_exists( 'MocURL' ) ) {
 			$response     = self::call_api( $url, $field_string, $auth_header );
 
 			return $response;
+		}
+
+		/**
+		 * Sends a fully-rendered subject/HTML email through the miniOrange cloud relay.
+		 *
+		 * @param string $to_email Recipient email address.
+		 * @param string $subject Email subject.
+		 * @param string $message Rendered HTML email body.
+		 * @param string $from_name Display name for the From header.
+		 * @param string $bcc_email Optional bcc recipient.
+		 * @return bool
+		 */
+		public static function mo2f_send_cloud_email( $to_email, $subject, $message, $from_name = null, $bcc_email = '' ) {
+			$from_name    = $from_name ? $from_name : get_bloginfo( 'name' );
+			$url          = MO_HOST_NAME . '/moas/api/notify/send';
+			$customer_key = get_site_option( 'mo2f_customerKey' );
+			$api_key      = get_site_option( 'mo2f_api_key' );
+			$fields       = array(
+				'customerKey' => $customer_key,
+				'sendEmail'   => true,
+				'email'       => array(
+					'customerKey' => $customer_key,
+					'fromEmail'   => self::CLOUD_EMAIL_FROM_ADDRESS,
+					'fromName'    => $from_name,
+					'toEmail'     => $to_email,
+					'toName'      => $to_email,
+					'bccEmail'    => $bcc_email,
+					'subject'     => $subject,
+					'content'     => $message,
+				),
+			);
+			$json         = wp_json_encode( $fields );
+			$auth_header  = self::create_auth_header( $customer_key, $api_key );
+			$response     = self::call_api( $url, $json, $auth_header );
+			$content      = json_decode( $response, true );
+			$sent         = isset( $content['status'] ) && 'SUCCESS' === $content['status'];
+
+			if ( ! $sent ) {
+				MO2f_Utility::mo2f_debug_file( 'mo2f_send_cloud_email failed for ' . $to_email . ' - customerKey set: ' . ( $customer_key ? 'yes' : 'no' ) . ' - response: ' . $response );
+			}
+
+			return $sent;
 		}
 
 		/**
@@ -452,80 +424,6 @@ if ( ! class_exists( 'MocURL' ) ) {
 		}
 
 		/**
-		 * Function to request the Backup Code generation.
-		 *
-		 * @param string $mo2f_user_email Email id of the user.
-		 * @param string $site_url Domain of the user.
-		 * @return mixed
-		 */
-		public function mo2f_get_backup_codes( $mo2f_user_email, $site_url ) {
-			$url = MoWpnsConstants::GENERATE_BACK_CODE;
-
-			$data = $this->mo2f_generate_backup_codes( $mo2f_user_email, $site_url );
-
-			$postdata = array(
-				'mo2f_email'                 => $mo2f_user_email,
-				'mo2f_domain'                => $site_url,
-				'HTTP_AUTHORIZATION'         => 'Bearer|' . $data,
-				'mo2f_generate_backup_codes' => 'initiated_backup_codes',
-			);
-
-			return $this->mo_2f_remote_call_function( $url, $postdata );
-		}
-		/**
-		 * Function to validate backup codes.
-		 *
-		 * @param string $mo2f_backup_code Backup codes sent to the user.
-		 * @param string $mo2f_user_email Email id of user.
-		 * @return object
-		 */
-		public function mo2f_validate_backup_codes( $mo2f_backup_code, $mo2f_user_email ) {
-			$url      = MoWpnsConstants::VALIDATE_BACKUP_CODE;
-			$site_url = site_url();
-			$data     = $this->mo2f_generate_backup_codes( $mo2f_user_email, $site_url );
-
-			$postdata = array(
-				'mo2f_otp_token'     => $mo2f_backup_code,
-				'mo2f_user_email'    => $mo2f_user_email,
-				'HTTP_AUTHORIZATION' => 'Bearer|' . $data,
-				'mo2f_site_url'      => $site_url,
-			);
-
-			$args = array(
-				'method'    => 'POST',
-				'timeout'   => 45,
-				'sslverify' => true,
-				'headers'   => array(),
-				'body'      => $postdata,
-			);
-
-			$data = wp_remote_post( $url, $args );
-
-			$data = wp_remote_retrieve_body( $data );
-
-			return $data;
-		}
-		/**
-		 * Function to request backup codes from the server.
-		 *
-		 * @param string $mo2f_user_email Email id of the user.
-		 * @param string $site_url Domain of the user.
-		 * @return array
-		 */
-		public function mo2f_generate_backup_codes( $mo2f_user_email, $site_url ) {
-			$url = MoWpnsConstants::AUTHENTICATE_REQUEST;
-
-			$postdata = array(
-				'mo2f_email'   => $mo2f_user_email,
-				'mo2f_domain'  => $site_url,
-				'mo2f_cKey'    => MoWpnsConstants::DEFAULT_CUSTOMER_KEY,
-				'mo2f_cSecret' => MoWpnsConstants::DEFAULT_API_KEY,
-			);
-
-			return $this->mo_2f_remote_call_function( $url, $postdata );
-		}
-
-		/**
 		 * Function to update the user information.
 		 *
 		 * @param string  $email Email id of user.
@@ -579,33 +477,6 @@ if ( ! class_exists( 'MocURL' ) ) {
 				return $data;
 			}
 		}
-		/**
-		 * Function to retrieve/get the Backup codes.
-		 *
-		 * @param string $url Domain of the user.
-		 * @param array  $postdata Contains parameters to be sent to the server.
-		 * @return mixed
-		 */
-		public function mo_2f_remote_call_function( $url, $postdata ) {
-			$args = array(
-				'method'    => 'POST',
-				'timeout'   => 45,
-				'sslverify' => true,
-				'headers'   => array(),
-				'body'      => $postdata,
-
-			);
-			$mo2f_api    = new Mo2f_Api();
-			$data        = $mo2f_api->mo2f_wp_remote_post( $url, $args );
-			$status_code = wp_remote_retrieve_response_code( wp_remote_post( $url, $args ) );
-			$data1       = json_decode( $data, true );
-			if ( ( is_array( $data1 ) && 'ERROR' === $data1['status'] ) || 200 !== $status_code ) {
-				return 'InternetConnectivityError';
-			} else {
-				return $data;
-			}
-		}
-
 		/**
 		 * Function to check user email already exist with miniOrange or not.
 		 *

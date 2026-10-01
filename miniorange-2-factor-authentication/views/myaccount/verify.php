@@ -31,7 +31,8 @@ echo '<div class="mo2f-settings-div"><div class="mo2f-settings-head">Verify Lice
         <div class="ml-mo-16"><b><font color="#FF0000">*</font>Please check this to confirm that you have read the below details: </b>&nbsp;&nbsp;
             <label class="mo2f_checkbox_container">
                 <input type="checkbox" id="license_conditions" name="license_conditions"/>
-            </label>		
+                <span class="mo2f-settings-checkmark"></span>
+            </label>
 		</div>
         <div class="ml-mo-20">  <ol>
             <li>' . esc_html__( 'License key you have entered here is associated with this site instance. In future, if you want to reinstall the plugin on your site for any reason, you should deactivate and delete the plugin from the WordPress dashboard ( not from the FTP/SFTP/cPanel ) so that you can reuse the same license key.', 'miniorange-2-factor-authentication' ) . '</li><br>

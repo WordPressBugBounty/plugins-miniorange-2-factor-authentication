@@ -40,6 +40,47 @@ if ( ! class_exists( 'Miniorange_Security_Notification' ) ) {
 		public function my_custom_dashboard_widgets() {
 
 			wp_add_dashboard_widget( 'custom_help_widget', 'MiniOrange Website Security', array( $this, 'custom_dashboard_help' ) );
+			wp_add_dashboard_widget( 'mo2f_2fa_adoption_widget', __( '2FA Adoption', 'miniorange-2-factor-authentication' ), array( $this, 'mo2f_2fa_adoption_dashboard_widget' ) );
+		}
+
+		/**
+		 * Renders the "2FA Adoption" dashboard widget.
+		 *
+		 * @return void
+		 */
+		public function mo2f_2fa_adoption_dashboard_widget() {
+			if ( ! current_user_can( 'manage_options' ) ) {
+				return;
+			}
+			global $mo2fdb_queries;
+			$total_users_data = count_users();
+			$total            = isset( $total_users_data['total_users'] ) ? (int) $total_users_data['total_users'] : 0;
+			$configured       = $mo2fdb_queries->mo2f_get_configured_2fa_users_count();
+			$not_configured   = max( 0, $total - $configured );
+			$percent        = $total > 0 ? round( ( $configured / $total ) * 100 ) : 0;
+			?>
+			<div style="text-align:center;padding:10px 0 16px;">
+				<span style="font-size:42px;font-weight:600;color:<?php echo esc_attr( $percent >= 80 ? '#00a32a' : ( $percent >= 40 ? '#dba617' : '#d63638' ) ); ?>;"><?php echo esc_html( $percent ); ?>%</span>
+				<p style="margin:4px 0 0;color:#646970;"><?php echo esc_html( sprintf(
+					/* Translators: 1: number of users with 2FA configured, 2: total number of users. */
+					__( '%1$d of %2$d users have 2FA configured', 'miniorange-2-factor-authentication' ),
+					$configured,
+					$total
+				) ); ?></p>
+			</div>
+			<?php if ( $not_configured > 0 ) : ?>
+				<p>
+					<?php echo esc_html( sprintf(
+						/* Translators: %d: number of users without 2FA configured. */
+						_n( '%d user still needs to set up 2FA.', '%d users still need to set up 2FA.', $not_configured, 'miniorange-2-factor-authentication' ),
+						$not_configured
+					) ); ?>
+					<a href="<?php echo esc_url( admin_url( 'users.php' ) ); ?>"><?php esc_html_e( 'View users', 'miniorange-2-factor-authentication' ); ?></a>
+				</p>
+			<?php else : ?>
+				<p><?php esc_html_e( 'Every user on this site has 2FA configured.', 'miniorange-2-factor-authentication' ); ?></p>
+			<?php endif; ?>
+			<?php
 		}
 		/**
 		 * It will help to custom dashboard

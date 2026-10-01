@@ -19,10 +19,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div id="mo2f_email_template_backupcode_btn" class="mo2f_toggle_button mo2f-active"><?php esc_html_e( 'Backup Codes', 'miniorange-2-factor-authentication' ); ?></div>
 	<div id="mo2f_email_template_new_ip_btn" class="mo2f_toggle_button mo2f-active"><?php esc_html_e( 'New IP Login', 'miniorange-2-factor-authentication' ); ?></div>
 </div>
-<div class="mo2f-settings-div">
-	<div class="mo2f-setup-two-factor-title mb-mo-4">
-		<span><?php esc_html_e( 'Setup Custom Email Templates', 'miniorange-2-factor-authentication' ); ?></span>
+<div class="mo2f-settings-div mo2f-section">
+	<div class="mo2f-section-head">
+		<h2><?php esc_html_e( 'Setup Custom Email Templates', 'miniorange-2-factor-authentication' ); ?></h2>
 	</div>
+	<div style="padding:0 18px 18px;">
 <?php
 $mo2f_email_templates = array(
 	MoWpnsConstants::mo2f_convert_method_name( MoWpnsConstants::OTP_OVER_EMAIL, 'cap_to_small' ) => array(
@@ -52,7 +53,9 @@ $mo2f_email_templates = array(
 	),
 
 );
+$mo2f_email_template_editor_ids = array();
 foreach ( $mo2f_email_templates as $mo2f_content ) {
+	$mo2f_email_template_editor_ids[] = 'mo2f_' . $mo2f_content['name'] . '_template_config_message';
 	?>
 
 	<div class="hidden" id="<?php echo esc_attr( $mo2f_content['subject'] ); ?>">
@@ -105,9 +108,26 @@ foreach ( $mo2f_email_templates as $mo2f_content ) {
 	<?php
 }
 ?>
+	</div>
 </div>
 <script>
-	jQuery('#emailtemplates').addClass('mo2f-subtab-active');
 	jQuery("#mo_2fa_white_labelling").addClass("side-nav-active");
+	// Visual/Code is one global per-user WP setting, not per-editor, so force these
+	// back to Visual via a real click on the tab button (switchEditors.go() didn't
+	// reliably stick) without touching that setting for editors elsewhere.
+	(function () {
+		var mo2fEmailTemplateEditorIds = <?php echo wp_json_encode( $mo2f_email_template_editor_ids ); ?>;
+		function mo2fForceVisual() {
+			mo2fEmailTemplateEditorIds.forEach(function (id) {
+				var $visualTab = jQuery("#" + id + "-tmce");
+				if ($visualTab.length && "true" !== $visualTab.attr("aria-pressed")) {
+					$visualTab.trigger("click");
+				}
+			});
+		}
+		jQuery(window).on("load", mo2fForceVisual);
+		setTimeout(mo2fForceVisual, 800);
+		setTimeout(mo2fForceVisual, 2000);
+	})();
 </script>
 

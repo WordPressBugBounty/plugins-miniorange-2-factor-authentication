@@ -4,7 +4,7 @@ Tags: 2fa, two-factor-authentication, mfa, authentication, security, wp 2fa
 Requires at least: 5.3.0
 Tested up to: 7.1
 Requires PHP: 5.3.0
-Stable tag: 6.3.2
+Stable tag: 6.4.0
 License: Expat
 License URI: https://plugins.miniorange.com/mit-license
 
@@ -16,7 +16,24 @@ Free 2FA plugin for unlimited users with Passkey, Google Authenticator, Email/SM
 
 WordPress websites are frequently targeted by brute force attacks, credential stuffing attacks, phishing attempts, and unauthorized login attempts. Passwords alone are no longer sufficient to protect administrator accounts, customer accounts, and sensitive website data. **Which is exactly why 2FA has become essential.**
 
-### What's New in 6.2.9
+### What's New in 6.4.0
+
+- **Magic Link Login** — a passwordless "email me a login link" option at wp-login.php, as an alternative to typing an OTP.
+- **Trusted Devices (free)** — a recognized browser skips repeat **2FA** prompts for 7 days after a successful challenge.
+- **Recent Logins panel** — each user can see their own last 10 login attempts (date, IP, success/failure) on their own profile, no admin access required.
+- **2FA Adoption dashboard widget** — see at a glance how many required users have **2FA** configured, right from wp-admin.
+- **2FA setup reminder emails** — an optional recurring nudge for users who are required to set up **2FA** but haven't yet.
+- **Security alert emails** — a user is notified whenever their **2FA** method is changed or reset by an admin, so they notice if it wasn't them.
+- **Cloud email relay** — plugin emails (OTP, verification links, backup codes, and more) now send through miniOrange's cloud relay, so delivery no longer depends on the site having SMTP configured.
+- **Redesigned admin UI** — the 2FA Configurations screen is now split into focused Access Rules, Login Experience, Methods, Notifications, and Advanced pages with WordPress-native styling.
+- **"Protect Staff, Not Shoppers" WooCommerce preset** — one click on the Quick Setup screen requires **2FA** for Administrator, Editor, Author, and Shop Manager, and leaves Customer unchecked so checkout stays frictionless.
+- **Per-role grace periods** — give specific roles a different grace period, and a different enforce-or-block action when it expires, than the site-wide default.
+- **Compliance Log report** — a Reports tab showing admin-initiated **2FA** changes (who did what, to whom, when), useful as MFA evidence for PCI DSS, GDPR, or cyber-insurance requirements.
+- **Security hardening** — see the full Changelog below for details, including brute-force protection on backup-code validation and closing a gap where premium-locked methods were still reachable on the backend.
+
+---
+
+### Also in recent releases
 
 - **Unlimited users on the free plan** — no user cap, no per-seat charge.
 - **Passkey (WebAuthn/FIDO2) — free** — passwordless **2FA** with Face ID, Touch ID, Windows Hello, or a hardware security key.
@@ -265,6 +282,24 @@ Yes. The plugin supports **passwordless login** for WordPress, including Magic L
 = What if I get locked out? =
 You can use backup codes, the email verification recovery option, or disable the plugin via FTP to regain access.
 
+= Is my 2FA data sent to miniOrange's servers? =
+Not for every method. **Passkey (WebAuthn/FIDO2)** and the **Authenticator app (TOTP)** are verified entirely on your own site — no data is sent to miniOrange for these two methods. SMS, WhatsApp, Telegram, and Push Notification (Premium methods) route through miniOrange's service, since delivering an SMS, chat message, or push notification requires it.
+
+= How do you handle security vulnerability reports? =
+Every fixed security issue is listed in this plugin's changelog, including the version it shipped in. If you believe you've found a vulnerability, please report it privately to mfasupport@xecurify.com (subject: "Security") rather than disclosing it publicly, so it can be investigated and patched first.
+
+= Can I require 2FA for my WooCommerce staff without slowing down checkout for customers? =
+Yes. The **Quick Setup** screen includes a one-click "Protect Staff, Not Shoppers" preset when WooCommerce is active — it selects Administrator, Editor, Author, and Shop Manager for **2FA**, and leaves the Customer role unchecked so checkout stays frictionless. You can still enable it for customers manually if your store needs that.
+
+= How does miniOrange 2FA compare to Wordfence's built-in two-factor authentication? =
+Wordfence bundles a basic TOTP/Passkey **2FA** option inside its full security suite (firewall, malware scanning, and more). miniOrange is a **2FA** specialist: it supports more methods out of the box (Passkey, Authenticator app, Email OTP, Security Questions free; SMS, WhatsApp, Telegram, Push Notification, and hardware tokens on Premium) without the overhead of a bundled firewall or scanner.
+
+= How does miniOrange 2FA compare to WP 2FA? =
+Both are focused, single-purpose **2FA** plugins. miniOrange supports a wider range of verification methods — including SMS, WhatsApp, Telegram, Push Notification, and hardware tokens on Premium — plus a dedicated WooCommerce "Protect Staff, Not Shoppers" role preset.
+
+= I'm moving away from Solid Security (formerly iThemes Security) or Kadence Security — will this cover what I need? =
+For **two-factor authentication** specifically, yes: role-based enforcement, per-role grace periods with per-role actions (enforce vs. block), backup codes, and account-recovery options are all available without bundling an unrelated site-builder or firewall suite.
+
 ---
 
 == Screenshots ==
@@ -279,6 +314,27 @@ You can use backup codes, the email verification recovery option, or disable the
 8. Test WP 2FA Plugin
 
 == Changelog ==
+
+= 6.4.0 =
+* New: Magic Link Login — a passwordless "email me a login link" option at wp-login.php, with Off / Optional / Mandatory modes.
+* New: Trusted Devices (free) — a recognized browser skips repeat 2FA prompts for 7 days after a successful challenge.
+* New: Recent Logins panel — self-service login history (date, IP, success/failure) on each user's own profile.
+* New: 2FA Adoption dashboard widget showing how many required users have 2FA configured.
+* New: Optional 2FA setup reminder emails for users who are required to set up 2FA but haven't yet.
+* New: Security alert email sent to a user when their 2FA method is changed, or reset by an admin.
+* New: "Protect Staff, Not Shoppers" one-click WooCommerce role preset on the Quick Setup screen (Administrator, Editor, Author, Shop Manager; Customer left unchecked).
+* New: Optional security note on the WooCommerce My Account dashboard, shown only when WooCommerce is active.
+* New: Per-role grace periods, and a per-role action (enforce vs. block) for when a role's grace period expires, in addition to the existing site-wide default.
+* New: Compliance Log report under Reports — records admin-initiated 2FA resets (who, whom, when) for PCI DSS / GDPR / cyber-insurance documentation. Export is a Premium feature.
+* Improvement: Plugin emails (OTP, verification links, backup codes, setup reminders, and more) now send through miniOrange's cloud relay instead of the site's local SMTP, so delivery no longer depends on the site having SMTP configured.
+* Improvement: Redesigned admin UI — the 2FA Configurations screen is now split into focused Access Rules, Login Experience, Methods, Notifications, and Advanced pages with WordPress-native styling.
+* Improvement: Backup codes are now generated and validated locally instead of via a remote service call.
+* Security: Closed a gap where the free plugin's SMS and Email-Verification-Link methods could be used on the backend despite being premium-locked in the UI.
+* Security: Fixed missing rate limiting on backup-code validation, which allowed unlimited guesses; it now uses the same account lockout as every other 2FA method.
+* Security: Added rate limiting (a short per-request cooldown, an hourly cap per user/IP/destination, and a site-wide daily cap) to every email the plugin sends on demand -- OTP over email, backup-code resends, and account-recovery link resends -- so none of them can be used to spam a user's inbox or exhaust the site's email quota.
+* Security: Fixed a sanitization-ordering bug where a request URL was written to the audit log before, not after, being passed through esc_url_raw().
+* Security: Added a missing capability check on the setup-wizard "skip" action, which was reachable by an unauthenticated visitor via the nonce embedded in the public login-challenge popup.
+* Security: Removed a minor information disclosure where the account-recovery email failure message differed depending on whether the target account could manage_options.
 
 = 6.3.2 =
 * Security fixes and improvements.
@@ -456,6 +512,9 @@ You can use backup codes, the email verification recovery option, or disable the
 For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/miniorange-2-factor-authentication/trunk/changelog.txt) provided with the plugin.
 
 == Upgrade Notice ==
+
+= 6.4.0 =
+* Adds Magic Link Login, Trusted Devices, Recent Logins, a 2FA Adoption widget, setup reminder emails, cloud-relay email delivery (no SMTP required), and a redesigned admin UI, plus several security fixes. Recommended update.
 
 = 6.3.2 =
 * Security fixes and improvements.

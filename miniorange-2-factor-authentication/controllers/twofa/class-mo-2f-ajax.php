@@ -10,7 +10,6 @@ namespace TwoFA\Controllers\Twofa;
 use TwoFA\Handler\Twofa\MO2f_Utility;
 use TwoFA\Helper\MoWpnsConstants;
 use TwoFA\Helper\MoWpnsUtility;
-use TwoFA\Onprem\Two_Factor_Setup_Onprem_Cloud;
 use TwoFA\Database\Mo2fDB;
 use TwoFA\Helper\MoWpnsMessages;
 use TwoFA\Helper\MocURL;
@@ -61,28 +60,32 @@ if ( ! class_exists( 'Mo_2f_Ajax' ) ) {
 		 */
 		public function mo_two_factor_ajax() {
 			$GLOBALS['mo2f_is_ajax_request'] = true;
-			if ( ! check_ajax_referer( 'mo-two-factor-ajax-nonce', 'nonce', false ) || ! current_user_can( 'manage_options' ) ) {
-				wp_send_json_error( 'class-mo2f-ajax' );
-			}
-			switch ( isset( $_POST['mo_2f_two_factor_ajax'] ) ? sanitize_text_field( wp_unslash( $_POST['mo_2f_two_factor_ajax'] ) ) : '' ) {
-				case 'mo2f_ajax_login_redirect':
-					$this->mo2f_ajax_login_redirect();
-					break;
-				case 'mo2f_set_otp_over_sms':
-					$this->mo2f_set_otp_over_sms();
-					break;
-				case 'mo2f_set_otp_over_whatsapp':
-					$this->mo2f_set_otp_over_whatsapp();
-					break;
-				case 'mo2f_enable_twofactor_userprofile':
-					$this->mo2f_enable_twofactor_userprofile( $_POST );
-					break;
-				case 'mo2f_set_GA':
-					$this->mo2f_set_ga();
-					break;
-				case 'mo2f_google_auth_set_transient':
-					$this->mo2f_google_auth_set_transient();
-					break;
+			// wp_ajax_mo_two_factor_ajax is shared with class-mo2f-main-handler.php and
+			// class-mo2f-admin-action-handler.php's own callbacks on the same hook -- an early
+			// wp_send_json_error() here calls wp_die() and stops those from ever running, so
+			// requests this class doesn't own must fall through silently instead, matching the
+			// wrap-the-switch pattern already used by class-mo2f-admin-action-handler.php.
+			if ( check_ajax_referer( 'mo-two-factor-ajax-nonce', 'nonce', false ) && current_user_can( 'manage_options' ) ) {
+				switch ( isset( $_POST['mo_2f_two_factor_ajax'] ) ? sanitize_text_field( wp_unslash( $_POST['mo_2f_two_factor_ajax'] ) ) : '' ) {
+					case 'mo2f_ajax_login_redirect':
+						$this->mo2f_ajax_login_redirect();
+						break;
+					case 'mo2f_set_otp_over_sms':
+						$this->mo2f_set_otp_over_sms();
+						break;
+					case 'mo2f_set_otp_over_whatsapp':
+						$this->mo2f_set_otp_over_whatsapp();
+						break;
+					case 'mo2f_enable_twofactor_userprofile':
+						$this->mo2f_enable_twofactor_userprofile( $_POST );
+						break;
+					case 'mo2f_set_GA':
+						$this->mo2f_set_ga();
+						break;
+					case 'mo2f_google_auth_set_transient':
+						$this->mo2f_google_auth_set_transient();
+						break;
+				}
 			}
 		}
 

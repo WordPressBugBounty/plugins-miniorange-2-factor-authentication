@@ -104,7 +104,9 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 					wp_send_json_success( $html );
 				}
 			}
-			$mo2fa_login_message = $this->mo2f_get_error_message( $current_user );
+			$mo2fa_login_message = ! empty( $response['status'] ) && 'ERROR' === $response['status'] && ! empty( $response['message'] )
+				? $response['message']
+				: $this->mo2f_get_error_message( $current_user );
 			wp_send_json_error( $mo2fa_login_message );
 		}
 
@@ -124,6 +126,9 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 					$content             = $this->mo2f_handle_success_login( $mo2f_user_email, $currentuser, $content, $session_id_encrypt );
 					$mo2fa_login_message = $content['login_message'];
 					$mo2fa_login_status  = $content['login_status'];
+			} elseif ( json_last_error() === JSON_ERROR_NONE && 'ERROR' === $content['status'] && ! empty( $content['message'] ) ) {
+				$mo2fa_login_message = $content['message'];
+				$mo2fa_login_status  = MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT;
 			} else {
 				$mo2fa_login_status  = MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT;
 				$mo2fa_login_message = $this->mo2f_get_error_message( $currentuser );
@@ -148,8 +153,11 @@ if ( ! class_exists( 'Mo2f_EMAIL_Handler' ) ) {
 				$content             = $this->mo2f_handle_success_login( $mo2f_user_email, $currentuser, $content, $session_id_encrypt );
 				$mo2fa_login_message = $content['login_message'];
 				$mo2fa_login_status  = $content['login_status'];
+			} elseif ( json_last_error() === JSON_ERROR_NONE && 'ERROR' === $content['status'] && ! empty( $content['message'] ) ) {
+				$mo2fa_login_message = $content['message'];
+				$mo2fa_login_status  = MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT;
 			} else {
-				$mo2fa_login_message = MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL;
+				$mo2fa_login_message = user_can( $currentuser->ID, 'manage_options' ) ? MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS_EMAIL ) : MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS );
 				$mo2fa_login_status  = MoWpnsConstants::MO2F_ERROR_MESSAGE_PROMPT;
 			}
 			$this->mo2f_show_login_prompt( $mo2fa_login_message, $mo2fa_login_status, $currentuser, $redirect_to, $session_id_encrypt );

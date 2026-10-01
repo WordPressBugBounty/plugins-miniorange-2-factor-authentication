@@ -461,14 +461,12 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 		 */
 		public static function mo2f_email_backup_codes( $codes, $mo2f_user_email ) {
 			$subject = MoWpnsUtility::get_mo2f_db_option( 'mo2f_2fa_backup_code_email_subject', 'site_option' );
-			$headers = array( 'Content-Type: text/html; charset=UTF-8' );
 			$message = MoWpnsUtility::get_mo2f_db_option( 'mo2f_backup_code_email_template', 'site_option' );
-			$message = str_replace( '##code1##', isset( $codes[0] ) ? $codes[0] : '', $message );
-			$message = str_replace( '##code2##', isset( $codes[1] ) ? $codes[1] : '', $message );
-			$message = str_replace( '##code3##', isset( $codes[2] ) ? $codes[2] : '', $message );
-			$message = str_replace( '##code4##', isset( $codes[3] ) ? $codes[3] : '', $message );
-			$message = str_replace( '##code5##', isset( $codes[4] ) ? $codes[4] : '', $message );
-			$result  = wp_mail( $mo2f_user_email, $subject, $message, $headers );
+			$codes   = is_array( $codes ) ? $codes : explode( ' ', $codes );
+			for ( $i = 0; $i < max( 8, count( $codes ) ); $i++ ) {
+				$message = str_replace( '##code' . ( $i + 1 ) . '##', isset( $codes[ $i ] ) ? $codes[ $i ] : '', $message );
+			}
+			$result  = MocURL::mo2f_send_cloud_email( $mo2f_user_email, $subject, $message );
 			return $result;
 		}
 		/**

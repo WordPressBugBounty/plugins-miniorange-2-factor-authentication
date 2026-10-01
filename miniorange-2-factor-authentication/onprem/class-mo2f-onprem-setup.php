@@ -97,13 +97,19 @@ if ( ! class_exists( 'Mo2f_Onprem_Setup' ) ) {
 				MoWpnsConstants::OTP_OVER_WHATSAPP    => array(
 					'doc'   => MoWpnsConstants::OTP_OVER_WA_DOCUMENT_LINK,
 					'video' => null,
-					'desc'  => 'Enter the One Time Passcode sent to your WhatsApp number. <a href="' . admin_url( 'admin.php?page=mo_2fa_whatsapp' ) . '" target="_blank" >[Configure your business account]</a>',
+					'desc'  => 'Enter the One Time Passcode sent to your WhatsApp number. Available with premium.',
 					'crown' => false,
 				),
 				MoWpnsConstants::PUSH_NOTIFICATIONS   => array(
 					'doc'   => MoWpnsConstants::MO_PUSHNOTIFICATION_DOCUMENT_LINK,
 					'video' => MoWpnsConstants::MO_PUSH_NOTIFICATION_YOUTUBE,
 					'desc'  => 'Approve a push notification sent to the miniOrange Authenticator App on your phone to login',
+					'crown' => true,
+				),
+				MoWpnsConstants::HARDWARE_TOKEN       => array(
+					'doc'   => MoWpnsConstants::DOCUMENT_LINK,
+					'video' => null,
+					'desc'  => 'Use a hardware security key for passwordless-grade 2FA. Available with premium.',
 					'crown' => true,
 				),
 			);

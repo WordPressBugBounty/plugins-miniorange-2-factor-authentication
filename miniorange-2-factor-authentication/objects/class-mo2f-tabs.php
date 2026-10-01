@@ -15,6 +15,7 @@ if ( ! class_exists( 'Mo2f_Tabs' ) ) {
 	 * This class is used to define the base url of tabs of plugin
 	 */
 	final class Mo2f_Tabs {
+		const DASHBOARD            = 'dashboard';
 		const TWO_FACTOR           = 'two_factor';
 		const WHITE_LABELLING      = 'white_labelling';
 		const REPORTS              = 'reports';
