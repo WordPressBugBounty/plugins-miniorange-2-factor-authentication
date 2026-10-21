@@ -46,6 +46,7 @@ if ( ! class_exists( 'MoWpnsConstants' ) ) {
 		const ACCESS_DENIED         = 'accessDenied';
 		const LOGIN_TRANSACTION     = 'User Login';
 		const ADMIN_2FA_RESET       = 'Admin Reset';
+		const SELF_SERVICE_2FA_RESET = 'Self-Service Reset';
 		const ERR_404               = '404';
 		const ERR_403               = '403';
 		const GRACE_PERIOD_UNIT_HOURS         = 'hours';

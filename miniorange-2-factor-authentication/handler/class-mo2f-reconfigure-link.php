@@ -51,6 +51,13 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 			$common_helper      = new Mo2f_Common_Helper();
 			$user_id            = $common_helper->mo2f_get_current_user_id( $session_id_encrypt );
 			$currentuser        = get_user_by( 'id', $user_id );
+			if ( ! Mo2f_Common_Helper::mo2f_user_role_allows_self_service_reset( $user_id ) ) {
+				$mo2f_title         = __( 'Account recovery could not be sent', 'miniorange-2-factor-authentication' );
+				$mo2f_message       = __( 'Self-service account recovery is not available for your account. Please contact your site administrator.', 'miniorange-2-factor-authentication' );
+				$mo2fa_login_status = MoWpnsConstants::MO_2_FACTOR_RECONFIGURATION_LINK_SENT;
+				$this->mo2f_show_login_prompt( $mo2f_message, $mo2fa_login_status, $currentuser, $redirect_to, $session_id_encrypt, $mo2f_title, $twofa_method );
+				return;
+			}
 			// Check before generating, not just before emailing -- generation overwrites the
 			// user's stored token, so a spammed click would invalidate their existing link
 			// even when blocked.
@@ -197,7 +204,7 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 					$previous_time = base64_decode( $data[0] ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Unobfuscation is neccessory here.
 					$current_time  = strtotime( current_datetime()->format( 'h:ia M d Y' ) );
 					delete_user_meta( $user_id, 'mo2f_reset_token' );
-					if ( $current_time < $previous_time + 24 * 60 * 60 ) {
+					if ( $current_time < $previous_time + 24 * 60 * 60 && Mo2f_Common_Helper::mo2f_user_role_allows_self_service_reset( $user_id ) ) {
 						$this->mo2f_reset_users_2fa_for_reconfiguration( $user_id );
 						wp_safe_redirect( get_site_url() . '/wp-login.php?reset_message=' . $reset_success );
 						exit;
@@ -209,13 +216,27 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 		}
 
 		/**
-		 * Resets user's 2FA.
+		 * Resets user's 2FA, and records + reports that it happened via self-service
+		 * recovery rather than an admin action.
 		 *
 		 * @param integer $user_id User id.
 		 * @return void
 		 */
 		public function mo2f_reset_users_2fa_for_reconfiguration( $user_id ) {
+			global $mo2fdb_queries, $mo2f_wpns_db_queries;
+			$current_user      = get_user_by( 'id', $user_id );
+			$mo2f_prior_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user_id );
 			self::mo2f_reset_2fa_after_verified_recovery( $user_id );
+			$mo2f_wpns_db_queries->mo2f_insert_transaction_audit(
+				MoWpnsUtility::get_client_ip(),
+				$current_user ? $current_user->user_login : $user_id,
+				MoWpnsConstants::SELF_SERVICE_2FA_RESET,
+				MoWpnsConstants::SUCCESS,
+				MoWpnsUtility::get_current_url(),
+				$user_id,
+				$mo2f_prior_method ? $mo2f_prior_method : null
+			);
+			Mo2f_Common_Helper::mo2f_notify_admin_self_service_reset( $user_id );
 		}
 
 		/**

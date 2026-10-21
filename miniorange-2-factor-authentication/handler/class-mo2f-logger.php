@@ -24,6 +24,20 @@ if ( ! class_exists( 'Mo2f_Logger' ) ) {
 		use Instance;
 
 		/**
+		 * This class is instantiated with `new` in several places across the codebase
+		 * (not only via the Instance trait), so each log event is guarded to avoid
+		 * writing duplicate audit rows for the same request.
+		 *
+		 * @var bool
+		 */
+		private static $logged_403 = false;
+
+		/**
+		 * @var bool
+		 */
+		private static $logged_404 = false;
+
+		/**
 		 * Cunstructor for Mo2f_Logger
 		 */
 		public function __construct() {
@@ -37,6 +51,10 @@ if ( ! class_exists( 'Mo2f_Logger' ) ) {
 		 * @return void
 		 */
 		public function log_403() {
+			if ( self::$logged_403 ) {
+				return;
+			}
+			self::$logged_403 = true;
 			global $mo2f_mo_wpns_utility;
 			$mo_wpns_config = new MoWpnsHandler();
 			$user_ip        = $mo2f_mo_wpns_utility->get_client_ip();
@@ -61,6 +79,10 @@ if ( ! class_exists( 'Mo2f_Logger' ) ) {
 			if ( ! is_404() ) {
 				return;
 			}
+			if ( self::$logged_404 ) {
+				return;
+			}
+			self::$logged_404 = true;
 			$mo_wpns_config = new MoWpnsHandler();
 			$user_ip        = $mo2f_mo_wpns_utility->get_client_ip();
 			$user_ip        = sanitize_text_field( $user_ip );

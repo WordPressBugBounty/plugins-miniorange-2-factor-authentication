@@ -9,7 +9,7 @@
  * Plugin Name: miniOrange 2FA – Two Factor Authentication for WordPress (OTP, SMS, Email, Google Authenticator)
  * Plugin URI: https://miniorange.com
  * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. Free plan: unlimited users with Google Authenticator, Email OTP, Security Questions (KBA), and Passkey; premium unlocks SMS/WhatsApp OTP, Authy/LastPass/Microsoft Authenticator, and advanced policies.
- * Version: 6.4.0
+ * Version: 6.5.0
  * Author: miniOrange
  * Author URI: https://miniorange.com
  * Text Domain: miniorange-2-factor-authentication
@@ -44,7 +44,7 @@ require __DIR__ . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'new-
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
 define( 'MO_HOST_NAME', 'https://login.xecurify.com' );
-define( 'MO2F_VERSION', '6.4.0' );
+define( 'MO2F_VERSION', '6.5.0' );
 define( 'MO2F_PLUGIN_URL', ( plugin_dir_url( __FILE__ ) ) );
 define( 'MO2F_TEST_MODE', false );
 define( 'MO2F_IS_ONPREM', get_option( 'is_onprem', 1 ) );
@@ -468,6 +468,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			delete_site_option( 'mo2f_wizard_selected_method' );
 			delete_site_option( 'mo2f_wizard_skipped' );
 			wp_clear_scheduled_hook( 'mo2f_daily_2fa_reminder_check' );
+			wp_clear_scheduled_hook( 'mo2f_digest_email_cron' );
 			$two_fa_settings = new Miniorange_Authentication();
 			$two_fa_settings->mo2f_auth_deactivate();
 		}

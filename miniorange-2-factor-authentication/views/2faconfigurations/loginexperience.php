@@ -121,9 +121,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="flex px-mo-4 text-mo-title">
 			<?php $mo2f_enabled_backup_methods = (array) get_site_option( 'mo2f_enabled_backup_methods' ); ?>
 			<div class="my-mo-3 mr-mo-4" style="display:inline-flex;align-items:center;white-space:nowrap;"><input type="checkbox" name="mo2f_enabled_backup_method" value="mo2f_back_up_codes" <?php echo in_array( 'mo2f_back_up_codes', $mo2f_enabled_backup_methods, true ) ? 'checked' : ''; ?>/><?php esc_html_e( 'Backup Codes', 'miniorange-2-factor-authentication' ); ?></div>
-			<div class="my-mo-3 mr-mo-4" style="display:inline-flex;align-items:center;white-space:nowrap;"><input type="checkbox" name="mo2f_enabled_backup_method" value="mo2f_reconfig_link_show" <?php echo in_array( 'mo2f_reconfig_link_show', $mo2f_enabled_backup_methods, true ) ? 'checked' : ''; ?>/><?php esc_html_e( 'Account Recovery Via Email Verification', 'miniorange-2-factor-authentication' ); ?></div>
+			<div class="my-mo-3 mr-mo-4" style="display:inline-flex;align-items:center;white-space:nowrap;"><input type="checkbox" name="mo2f_enabled_backup_method" value="mo2f_reconfig_link_show" onclick="mo2f_toggle_subsetting(this,'mo2f_reconfig_link_roles_settings')" <?php echo in_array( 'mo2f_reconfig_link_show', $mo2f_enabled_backup_methods, true ) ? 'checked' : ''; ?>/><?php esc_html_e( 'Account Recovery Via Email Verification', 'miniorange-2-factor-authentication' ); ?></div>
 			<div class="my-mo-3 mr-mo-4 mo2f-basic-plan" style="display:inline-flex;align-items:center;white-space:nowrap;"><input type="checkbox" name="mo2f_enabled_backup_method" value="backup_kba" <?php echo in_array( 'backup_kba', $mo2f_enabled_backup_methods, true ) ? 'checked' : ''; ?>/><?php esc_html_e( 'Security Questions (KBA)', 'miniorange-2-factor-authentication' ); ?>
 				<?php echo Mo2f_Common_Helper::mo2f_check_plan( 'basic', MoWpnsConstants::MO2F_PREMIUM_3PLAN_NAME ); //phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. ?>
+			</div>
+		</div>
+		<div class="mo2f-sub-settings-div mo2f-sub-panel <?php echo in_array( 'mo2f_reconfig_link_show', $mo2f_enabled_backup_methods, true ) ? 'flex' : 'hidden'; ?>" id="mo2f_reconfig_link_roles_settings">
+			<div class="my-mo-3"><?php esc_html_e( 'Allow "Account Recovery Via Email Verification" for these roles:', 'miniorange-2-factor-authentication' ); ?></div>
+			<div class="mo2f-settings-items">
+				<?php
+				$mo2f_reconfig_excluded_roles = (array) get_site_option( 'mo2f_reconfig_link_excluded_roles', array() );
+				foreach ( $wp_roles->role_names as $mo2f_rl_role_id => $mo2f_rl_role_name ) :
+					?>
+					<div class="my-mo-3 mr-mo-4" style="display:inline-flex;align-items:center;white-space:nowrap;"><input type="checkbox" name="mo2f_reconfig_link_allowed_role" value="<?php echo esc_attr( $mo2f_rl_role_id ); ?>" <?php echo ! in_array( $mo2f_rl_role_id, $mo2f_reconfig_excluded_roles, true ) ? 'checked' : ''; ?>/><?php echo esc_html( $mo2f_rl_role_name ); ?></div>
+					<?php
+				endforeach;
+				?>
+			</div>
+			<div class="my-mo-3" style="display:inline-flex;align-items:center;white-space:nowrap;">
+				<input type="checkbox" id="mo2f_enable_self_service_reset_admin_alert" <?php checked( get_site_option( 'mo2f_enable_self_service_reset_admin_alert', 1 ) ); ?>/>
+				<label for="mo2f_enable_self_service_reset_admin_alert"><?php esc_html_e( 'Email the site admin whenever a user resets their own 2FA this way', 'miniorange-2-factor-authentication' ); ?></label>
 			</div>
 		</div>
 	</div>

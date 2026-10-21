@@ -34,7 +34,7 @@ $GLOBALS['mo2f_number_of_transactions']                          = 1;
 $GLOBALS['mo2f_set_transactions']                                = 0;
 $GLOBALS['mo2f_enable_forgotphone']                              = 0;
 $GLOBALS['mo2f_enable_2fa_for_users']                            = 1;
-$GLOBALS['mo2f_enable_xmlrpc']                                   = 0;
+$GLOBALS['mo2f_enable_xmlrpc']                                   = 0; // Despite the name, true = XML-RPC protection is turned ON (xmlrpc.php blocked).
 $GLOBALS['mo2f_custom_plugin_name']                              = 'miniOrange 2-Factor';
 $GLOBALS['mo2f_show_sms_transaction_message']                    = 0;
 $GLOBALS['mo2f_enforce_strong_passswords_for_accounts']          = 'all';

@@ -221,7 +221,7 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 										<input class="mo2f-textbox" type="text" name="mo2f_backup_code" id="mo2f_backup_code" required="true" autofocus="true"  title="' . esc_attr__( 'Only alphanumeric letters with special characters(_@.$#&amp;+-) are allowed.', 'miniorange-2-factor-authentication' ) . '" autocomplete="off" ><br/>
 									</p>
 								</div>',
-				'send_reconfig_link'     => 'test_2fa' === $validation_flow || ! in_array( 'mo2f_reconfig_link_show', $backup_methods, true ) || ! get_site_option( 'mo2f_enable_backup_methods' ) ? '' : '<div> <a href="#mo2f_send_reconfig_link" class="mo2f_text_decoration">
+				'send_reconfig_link'     => 'test_2fa' === $validation_flow || ! in_array( 'mo2f_reconfig_link_show', $backup_methods, true ) || ! get_site_option( 'mo2f_enable_backup_methods' ) || ! Mo2f_Common_Helper::mo2f_user_role_allows_self_service_reset( $user_id ) ? '' : '<div> <a href="#mo2f_send_reconfig_link" class="mo2f_text_decoration">
 									<p class="mo2f_footer_text">' . esc_html__( 'Locked out? Click to recover your account using email verification', 'miniorange-2-factor-authentication' ) . ' ' . MoWpnsConstants::MO2F_SVG_ARROW_ICON . '</p>
 									</a>
 							   </div>',

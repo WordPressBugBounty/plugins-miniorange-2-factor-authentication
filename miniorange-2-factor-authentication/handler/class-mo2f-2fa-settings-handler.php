@@ -127,6 +127,20 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 					update_site_option( 'mo2f_enable_custom_redirect', 0 );
 					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 					break;
+				case 'mo2f_enable_digest_email_option':
+					$this->mo2f_enable_digest_email_save_settings( $_POST );
+					break;
+				case 'mo2f_enable_digest_email_disable':
+					update_site_option( 'mo2f_enable_digest_email', 0 );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+					break;
+				case 'mo2f_enable_captcha_option':
+					$this->mo2f_enable_captcha_save_settings( $_POST );
+					break;
+				case 'mo2f_enable_captcha_disable':
+					update_site_option( 'mo2f_enable_captcha', 0 );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+					break;
 				case 'mo2f_disable_inline_2fa_option':
 					$this->mo2f_disable_inline_2fa( $_POST );
 					break;
@@ -151,6 +165,9 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 					break;
 				case 'mo2f_new_ip_login_notification':
 					$this->mo2f_new_ip_login_notification( $_POST );
+					break;
+				case 'mo2f_enable_xmlrpc_option':
+					$this->mo2f_enable_xmlrpc_protection( $_POST );
 					break;
 				case 'mo2f_enable_shortcodes_option':
 					$this->mo2f_enable_shortcodes( $_POST );
@@ -403,6 +420,32 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 		}
 
 		/**
+		 * Saves the "Activity Digest Email" setting.
+		 *
+		 * @param array $post $_POST array.
+		 * @return void
+		 */
+		public function mo2f_enable_digest_email_save_settings( $post ) {
+			$enabled   = isset( $post['mo2f_enable_digest_email'] ) ? 'true' === sanitize_text_field( wp_unslash( $post['mo2f_enable_digest_email'] ) ) : false;
+			$frequency = isset( $post['mo2f_digest_email_frequency'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_digest_email_frequency'] ) ) : 'weekly';
+			if ( ! in_array( $frequency, array( 'daily', 'weekly' ), true ) ) {
+				$frequency = 'weekly';
+			}
+			$raw_recipients = isset( $post['mo2f_digest_email_recipients'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_digest_email_recipients'] ) ) : '';
+			$recipients     = array_filter( array_map( 'trim', explode( ',', $raw_recipients ) ) );
+			foreach ( $recipients as $recipient ) {
+				if ( ! is_email( $recipient ) ) {
+					/* translators: %s: the invalid recipient address as typed. */
+					wp_send_json_error( sprintf( __( '"%s" is not a valid email address.', 'miniorange-2-factor-authentication' ), $recipient ) );
+				}
+			}
+			update_site_option( 'mo2f_enable_digest_email', $enabled );
+			update_site_option( 'mo2f_digest_email_frequency', $frequency );
+			update_site_option( 'mo2f_digest_email_recipients', implode( ', ', $recipients ) );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+		}
+
+		/**
 		 * Saves the Email Magic Link Login setting: whether it is enabled, and
 		 * whether it runs alongside password login ('optional') or replaces it
 		 * ('mandatory').
@@ -500,11 +543,20 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 		 * @return void
 		 */
 		public function mo2f_enable_backup_methods( $post ) {
+			global $wp_roles;
 			$enable_backup_login    = isset( $post['mo2f_enable_backup_login'] ) ? 'true' === sanitize_text_field( wp_unslash( $post['mo2f_enable_backup_login'] ) ) : false;
 			$enabled_backup_methods = isset( $post['mo2f_enabled_backup_methods'] ) ? array_map( 'sanitize_text_field', wp_unslash( $post['mo2f_enabled_backup_methods'] ) ) : array();
 			$enabled_backup_methods = apply_filters( 'mo2f_basic_plan_settings_filter', array_diff( $enabled_backup_methods, array( 'backup_kba' ) ), 'get_backup_methods', $post );
 			update_site_option( 'mo2f_enable_backup_methods', $enable_backup_login );
 			update_site_option( 'mo2f_enabled_backup_methods', $enabled_backup_methods );
+			if ( in_array( 'mo2f_reconfig_link_show', $enabled_backup_methods, true ) ) {
+				$allowed_roles  = isset( $post['mo2f_reconfig_link_allowed_roles'] ) ? array_map( 'sanitize_text_field', wp_unslash( $post['mo2f_reconfig_link_allowed_roles'] ) ) : array();
+				$all_roles      = $wp_roles ? array_keys( $wp_roles->role_names ) : array();
+				$excluded_roles = array_values( array_diff( $all_roles, $allowed_roles ) );
+				update_site_option( 'mo2f_reconfig_link_excluded_roles', $excluded_roles );
+				$admin_alert_enabled = isset( $post['mo2f_enable_self_service_reset_admin_alert'] ) ? 'true' === sanitize_text_field( wp_unslash( $post['mo2f_enable_self_service_reset_admin_alert'] ) ) : false;
+				update_site_option( 'mo2f_enable_self_service_reset_admin_alert', $admin_alert_enabled );
+			}
 			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 		}
 
@@ -535,6 +587,43 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 		public function mo2f_new_ip_login_notification( $post ) {
 			$mo2f_mail_notifying_i_p = isset( $post['is_notification_enabled'] ) ? 'true' === sanitize_text_field( wp_unslash( $post['is_notification_enabled'] ) ) : false;
 			update_site_option( 'mo_wpns_enable_unusual_activity_email_to_user', $mo2f_mail_notifying_i_p );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+		}
+
+		/**
+		 * Saves the "Add CAPTCHA to the Login Screen" setting.
+		 *
+		 * @param array $post $_POST array.
+		 * @return void
+		 */
+		public function mo2f_enable_captcha_save_settings( $post ) {
+			$enabled  = isset( $post['mo2f_enable_captcha'] ) ? 'true' === sanitize_text_field( wp_unslash( $post['mo2f_enable_captcha'] ) ) : false;
+			$provider = isset( $post['mo2f_captcha_provider'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_captcha_provider'] ) ) : 'recaptcha';
+			if ( ! in_array( $provider, array( 'recaptcha', 'turnstile' ), true ) ) {
+				$provider = 'recaptcha';
+			}
+			$site_key   = isset( $post['mo2f_captcha_site_key'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_captcha_site_key'] ) ) : '';
+			$secret_key = isset( $post['mo2f_captcha_secret_key'] ) ? sanitize_text_field( wp_unslash( $post['mo2f_captcha_secret_key'] ) ) : '';
+			// Enabling with a missing key would silently fail open (no CAPTCHA actually enforced) -- stop that before it gives a false sense of security.
+			if ( $enabled && ( '' === $site_key || '' === $secret_key ) ) {
+				wp_send_json_error( __( 'Please enter both a Site Key and a Secret Key before enabling the CAPTCHA.', 'miniorange-2-factor-authentication' ) );
+			}
+			update_site_option( 'mo2f_enable_captcha', $enabled );
+			update_site_option( 'mo2f_captcha_provider', $provider );
+			update_site_option( 'mo2f_captcha_site_key', $site_key );
+			update_site_option( 'mo2f_captcha_secret_key', $secret_key );
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+		}
+
+		/**
+		 * Saves the "Disable XML-RPC" setting.
+		 *
+		 * @param array $post $_POST array.
+		 * @return void
+		 */
+		public function mo2f_enable_xmlrpc_protection( $post ) {
+			$enabled = isset( $post['mo2f_enable_xmlrpc'] ) ? 'true' === sanitize_text_field( wp_unslash( $post['mo2f_enable_xmlrpc'] ) ) : false;
+			update_site_option( 'mo2f_enable_xmlrpc', $enabled );
 			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 		}
 	}

@@ -15,6 +15,7 @@ use TwoFA\Database\Mo2fDB;
 use TwoFA\Helper\MoWpnsUtility;
 use TwoFA\Handler\Twofa\MO2f_Cloud_Onprem_Interface;
 use TwoFA\Helper\MoWpnsConstants;
+use TwoFA\Handler\Twofa\Miniorange_Authentication;
 use TwoFA\Handler\Twofa\Miniorange_Mobile_Login;
 use TwoFA\Handler\Twofa\Miniorange_Password_2Factor_Login;
 use TwoFA\Helper\Mo2f_Login_Popup;
@@ -72,12 +73,12 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 		 */
 		public function __construct() {
 			$this->mo2f_onprem_cloud_obj = MO2f_Cloud_Onprem_Interface::instance();
-			add_action( 'init', array( $this, 'miniorange_pass2login_redirect' ) );
-			add_action( 'wp_ajax_mo_two_factor_ajax', array( $this, 'mo_two_factor_ajax' ) );
-			add_action( 'wp_ajax_nopriv_mo_two_factor_ajax', array( $this, 'mo_two_factor_ajax' ) );
 
 			if ( ! self::$magic_link_hooks_registered ) {
 				self::$magic_link_hooks_registered = true;
+				add_action( 'init', array( $this, 'miniorange_pass2login_redirect' ) );
+				add_action( 'wp_ajax_mo_two_factor_ajax', array( $this, 'mo_two_factor_ajax' ) );
+				add_action( 'wp_ajax_nopriv_mo_two_factor_ajax', array( $this, 'mo_two_factor_ajax' ) );
 				add_filter( 'login_errors', array( $this, 'mo2f_show_error_on_wp_login_form' ) );
 				add_filter( 'login_message', array( $this, 'mo2f_show_on_wp_login_form' ) );
 				add_action( 'login_init', array( $this, 'mo2f_handle_magic_link_login' ) );
@@ -514,6 +515,15 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 					'user_id'      => $user->ID,
 					'login_status' => 'LOGGED_IN',
 				);
+			}
+			if ( in_array( $twofa_method, array( MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OUT_OF_BAND_EMAIL ), true )
+				&& ! Miniorange_Authentication::mo2f_is_customer_registered() ) {
+				wp_send_json_error(
+					user_can( $user_details['user_id'], 'manage_options' )
+						? MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ADD_MINIORANGE_ACCOUNT ) . ' <a href="' . esc_url( admin_url( 'admin.php?page=mo_2fa_my_account' ) ) . '">' . esc_html__( 'Go to My Account', 'miniorange-2-factor-authentication' ) . '</a>'
+						: MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS )
+				);
+				return;
 			}
 			// When the site hasn't explicitly allowed users to send email OTPs to a custom address,
 			// always deliver to the account's own WordPress email, regardless of what was posted.
@@ -1299,6 +1309,15 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 			$mo2f_plugin_root_fs     = dirname( __DIR__ );
 			$whatsapp_premium_locked = ! file_exists( $mo2f_plugin_root_fs . DIRECTORY_SEPARATOR . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-all-inclusive-premium-settings.php' );
 			if ( $whatsapp_premium_locked && MoWpnsConstants::OTP_OVER_WHATSAPP === $auth_method && ! current_user_can( 'manage_options' ) ) {
+				return;
+			}
+			if ( in_array( $auth_method, array( MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OUT_OF_BAND_EMAIL ), true )
+				&& ! Miniorange_Authentication::mo2f_is_customer_registered() ) {
+				wp_send_json_error(
+					current_user_can( 'manage_options' )
+						? MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ADD_MINIORANGE_ACCOUNT ) . ' <a href="' . esc_url( admin_url( 'admin.php?page=mo_2fa_my_account' ) ) . '">' . esc_html__( 'Go to My Account', 'miniorange-2-factor-authentication' ) . '</a>'
+						: MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ERROR_DURING_PROCESS )
+				);
 				return;
 			}
 			$method_handler   = $common_helper->mo2f_get_object( $auth_method );

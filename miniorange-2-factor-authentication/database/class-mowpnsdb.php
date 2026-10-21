@@ -496,6 +496,7 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 
 			$compliance_types = array(
 				MoWpnsConstants::ADMIN_2FA_RESET,
+				MoWpnsConstants::SELF_SERVICE_2FA_RESET,
 			);
 
 			$table_name   = esc_sql( $this->transaction_table );
@@ -513,6 +514,44 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 			return $results ? $results : array();
 		}
 
+		/**
+		 * @param int $since Unix timestamp; count events at or after this time.
+		 * @return array {
+		 *     @type int $new_logins          Successful logins.
+		 *     @type int $failed_attempts     Failed login attempts.
+		 *     @type int $admin_resets        Admin-initiated 2FA resets.
+		 *     @type int $self_service_resets Self-service 2FA resets.
+		 * }
+		 */
+		public function mo2f_get_digest_summary( $since ) {
+			global $wpdb;
+			$table_name = esc_sql( $this->transaction_table );
+			$results    = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct query required; not cached because it is date-range filtered.
+				$wpdb->prepare(
+					'SELECT type, status, COUNT(*) as event_count FROM ' . $table_name . ' WHERE created_timestamp >= %d GROUP BY type, status', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Table name is built from $wpdb->base_prefix plus a hardcoded suffix, never user input; esc_sql() is applied for consistency with the identical pattern used elsewhere in this file and to satisfy automated SQL-escaping scanners.
+					$since
+				)
+			);
+			$summary = array(
+				'new_logins'          => 0,
+				'failed_attempts'     => 0,
+				'admin_resets'        => 0,
+				'self_service_resets' => 0,
+			);
+			foreach ( (array) $results as $row ) {
+				$count = (int) $row->event_count;
+				if ( MoWpnsConstants::LOGIN_TRANSACTION === $row->type && MoWpnsConstants::SUCCESS === $row->status ) {
+					$summary['new_logins'] += $count;
+				} elseif ( MoWpnsConstants::LOGIN_TRANSACTION === $row->type && MoWpnsConstants::FAILED === $row->status ) {
+					$summary['failed_attempts'] += $count;
+				} elseif ( MoWpnsConstants::ADMIN_2FA_RESET === $row->type ) {
+					$summary['admin_resets'] += $count;
+				} elseif ( MoWpnsConstants::SELF_SERVICE_2FA_RESET === $row->type ) {
+					$summary['self_service_resets'] += $count;
+				}
+			}
+			return $summary;
+		}
 
 		/**
 		 * Get login old transaction.

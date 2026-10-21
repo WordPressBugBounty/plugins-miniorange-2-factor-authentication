@@ -48,6 +48,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</p>
 		</div>
 	</div>
+
+	<div class="mo2f-setting-row">
+		<div class="mo2f-setting-main">
+			<span class="mo2f-setting-title"><?php esc_html_e( 'Activity Digest Email', 'miniorange-2-factor-authentication' ); ?></span>
+		</div>
+		<div class="mo2f-setting-control">
+			<label class="mo2f_checkbox_container"><input type="checkbox" id="mo2f_enable_digest_email" onclick="mo2f_showSettings(this)" <?php checked( $mo2f_enable_digest_email ); ?>/><span class="mo2f-settings-checkmark"></span></label>
+			<p class="mo2f-setting-desc"><?php esc_html_e( 'Periodic summary of new logins, failed login attempts, and 2FA resets (admin-initiated and self-service) since the last digest. Off by default.', 'miniorange-2-factor-authentication' ); ?></p>
+		</div>
+	</div>
+	<div class="mo2f-sub-settings-div mo2f-sub-panel <?php echo esc_attr( $mo2f_enable_digest_email ? 'flex' : 'hidden' ); ?>" id="mo2f_enable_digest_email_settings">
+		<div class="mb-mo-3">
+			<div class="my-mo-3"><?php esc_html_e( 'Frequency', 'miniorange-2-factor-authentication' ); ?></div>
+			<div class="mo2f-settings-items">
+				<div class="mr-mo-4"><input type="radio" name="mo2f_digest_email_frequency" id="mo2f_digest_frequency_daily" value="daily" <?php checked( 'daily' === $mo2f_digest_email_frequency ); ?>/><?php esc_html_e( 'Daily', 'miniorange-2-factor-authentication' ); ?></div>
+				<div class="mr-mo-4"><input type="radio" name="mo2f_digest_email_frequency" id="mo2f_digest_frequency_weekly" value="weekly" <?php checked( 'weekly' === $mo2f_digest_email_frequency ); ?>/><?php esc_html_e( 'Weekly', 'miniorange-2-factor-authentication' ); ?></div>
+			</div>
+		</div>
+		<div class="mb-mo-3">
+			<label for="mo2f_digest_email_recipients"><?php esc_html_e( 'Recipients (comma-separated email addresses)', 'miniorange-2-factor-authentication' ); ?></label><br/>
+			<input type="text" id="mo2f_digest_email_recipients" class="mo2f-redirection-field" placeholder="<?php esc_attr_e( 'Leave blank to send to all administrators', 'miniorange-2-factor-authentication' ); ?>" value="<?php echo esc_attr( $mo2f_digest_email_recipients ); ?>"/>
+		</div>
+		<div class="justify-start flex" id="mo2f_enable_digest_email_save"><div><button id="mo2f_enable_digest_email_save_button" class="mo2f-save-settings-button"><?php esc_html_e( 'Save Settings', 'miniorange-2-factor-authentication' ); ?></button></div></div>
+	</div>
 </div>
 
 <div class="mo2f-settings-div mo2f-section">

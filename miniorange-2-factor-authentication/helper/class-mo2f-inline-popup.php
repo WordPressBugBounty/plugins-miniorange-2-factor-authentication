@@ -39,6 +39,9 @@ if ( ! class_exists( 'Mo2f_Inline_Popup' ) ) {
 			$common_helper    = new Mo2f_Common_Helper();
 			$selected_methods = $common_helper->fetch_methods( $current_user );
 			$selected_methods = apply_filters( 'mo2f_basic_plan_settings_filter', $selected_methods, 'fetch_twofa_methods', array( 'user' => $current_user ) );
+			if ( ! \TwoFA\Handler\Twofa\Miniorange_Authentication::mo2f_is_customer_registered() ) {
+				$selected_methods = array_values( array_diff( $selected_methods, array( MoWpnsConstants::OTP_OVER_EMAIL, MoWpnsConstants::OUT_OF_BAND_EMAIL ) ) );
+			}
 			if ( count( $selected_methods ) > 1 ) {
 				$this->mo2f_get_inline_select_method_form( $current_user, $login_message, $redirect_to, $session_id, $selected_methods );
 			} else {

@@ -18,9 +18,23 @@ if ( ! class_exists( 'RegistrationHandler' ) ) {
 	class RegistrationHandler {
 
 		/**
+		 * This class is instantiated with `new` in more than one place (its own
+		 * self-bootstrap below, plus miniorange_2_factor_settings.php needing an
+		 * instance to bind other hooks), so registration is guarded to avoid
+		 * duplicate registration-error messages on the same request.
+		 *
+		 * @var bool
+		 */
+		private static $hooks_registered = false;
+
+		/**
 		 * Constructor for RegistrationHandler.
 		 */
 		public function __construct() {
+			if ( self::$hooks_registered ) {
+				return;
+			}
+			self::$hooks_registered = true;
 			add_filter( 'registration_errors', array( $this, 'mo_wpns_registration_validations' ), 10, 3 );
 			if ( get_site_option( 'mo2f_custom_form_name' ) === '#wordpress-register' ) {
 				add_action( 'register_form', array( $this, 'mo2f_wp_verification' ) );

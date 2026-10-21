@@ -29,6 +29,8 @@ use TwoFA\Database\Mo2fDB;
 use TwoFA\Database\MoWpnsDB;
 use TwoFA\Traits\Instance;
 use TwoFA\Handler\LoginHandler;
+use TwoFA\Handler\Mo2f_Digest_Handler;
+use TwoFA\Handler\Mo2f_Captcha_Handler;
 use TwoFA\Controllers\Twofa\Mo_2f_Ajax;
 use TwoFA\Handler\Mo2f_Reconfigure_Link;
 use TwoFA\Handler\Twofa\Mo2fCustomRegFormShortcode;
@@ -68,6 +70,8 @@ if ( ! class_exists( 'Mo2fInit' ) ) {
 			Mo2f_Admin_Action_Handler::instance();
 			Mo2f_Advance_Settings_Handler::instance();
 			LoginHandler::instance();
+			Mo2f_Digest_Handler::instance();
+			Mo2f_Captcha_Handler::instance();
 			if ( file_exists( $mo2f_dir_name . 'handler' . DIRECTORY_SEPARATOR . 'class-mo2f-all-inclusive-premium-settings.php' ) ) {
 				Mo2f_All_Inclusive_Premium_Settings::instance();
 			}

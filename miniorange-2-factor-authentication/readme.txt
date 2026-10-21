@@ -4,7 +4,7 @@ Tags: 2fa, two-factor-authentication, mfa, authentication, security, wp 2fa
 Requires at least: 5.3.0
 Tested up to: 7.1
 Requires PHP: 5.3.0
-Stable tag: 6.4.0
+Stable tag: 6.5.0
 License: Expat
 License URI: https://plugins.miniorange.com/mit-license
 
@@ -16,20 +16,14 @@ Free 2FA plugin for unlimited users with Passkey, Google Authenticator, Email/SM
 
 WordPress websites are frequently targeted by brute force attacks, credential stuffing attacks, phishing attempts, and unauthorized login attempts. Passwords alone are no longer sufficient to protect administrator accounts, customer accounts, and sensitive website data. **Which is exactly why 2FA has become essential.**
 
-### What's New in 6.4.0
+### What's New in 6.5.0
 
-- **Magic Link Login** — a passwordless "email me a login link" option at wp-login.php, as an alternative to typing an OTP.
-- **Trusted Devices (free)** — a recognized browser skips repeat **2FA** prompts for 7 days after a successful challenge.
-- **Recent Logins panel** — each user can see their own last 10 login attempts (date, IP, success/failure) on their own profile, no admin access required.
-- **2FA Adoption dashboard widget** — see at a glance how many required users have **2FA** configured, right from wp-admin.
-- **2FA setup reminder emails** — an optional recurring nudge for users who are required to set up **2FA** but haven't yet.
-- **Security alert emails** — a user is notified whenever their **2FA** method is changed or reset by an admin, so they notice if it wasn't them.
-- **Cloud email relay** — plugin emails (OTP, verification links, backup codes, and more) now send through miniOrange's cloud relay, so delivery no longer depends on the site having SMTP configured.
-- **Redesigned admin UI** — the 2FA Configurations screen is now split into focused Access Rules, Login Experience, Methods, Notifications, and Advanced pages with WordPress-native styling.
-- **"Protect Staff, Not Shoppers" WooCommerce preset** — one click on the Quick Setup screen requires **2FA** for Administrator, Editor, Author, and Shop Manager, and leaves Customer unchecked so checkout stays frictionless.
-- **Per-role grace periods** — give specific roles a different grace period, and a different enforce-or-block action when it expires, than the site-wide default.
-- **Compliance Log report** — a Reports tab showing admin-initiated **2FA** changes (who did what, to whom, when), useful as MFA evidence for PCI DSS, GDPR, or cyber-insurance requirements.
-- **Security hardening** — see the full Changelog below for details, including brute-force protection on backup-code validation and closing a gap where premium-locked methods were still reachable on the backend.
+- **Disable XML-RPC** — close off xmlrpc.php, a common brute-force and DDoS-amplification target, on sites that don't need it. Off by default so existing Jetpack/mobile-app integrations keep working.
+- **CAPTCHA on the login screen** — add Google reCAPTCHA v2 or Cloudflare Turnstile to wp-login.php to slow down automated brute-force login attempts.
+- **Restrict self-service 2FA recovery by role** — limit which roles can use the self-service account-recovery link, with an optional admin alert email and a Compliance Log entry whenever it's used.
+- **Activity Digest email** — an optional daily/weekly summary of new logins, failed login attempts, and **2FA** resets, sent to configured recipients or all administrators by default.
+- **Clearer account-creation screen** — explains up front what the miniOrange account (used for SMS/WhatsApp delivery and plan management) is for, with a "Skip for now" option.
+- **Modernized admin sidebar** — refreshed icons and hover/active states across the 2FA Configurations navigation.
 
 ---
 
@@ -315,6 +309,14 @@ For **two-factor authentication** specifically, yes: role-based enforcement, per
 
 == Changelog ==
 
+= 6.5.0 =
+* New: Optional daily/weekly Activity Digest email summarizing new logins, failed login attempts, and 2FA resets, sent to configured recipients or all administrators by default.
+* New: Optional CAPTCHA (Google reCAPTCHA v2 or Cloudflare Turnstile) on the wp-login.php login form, to slow down automated brute-force login attempts.
+* Security: Added a "Disable XML-RPC" option under 2FA Configurations > Advanced Features, to close off xmlrpc.php as a brute-force and DDoS-amplification vector on sites that don't need it. Off by default so existing Jetpack/mobile-app integrations keep working after upgrade.
+* New: Self-service 2FA account recovery can now be restricted to specific roles, and the site admin can optionally get an email whenever a user resets their own 2FA this way. Also now recorded in the Compliance Log alongside admin-initiated resets.
+* Improvement: The miniOrange account creation screen now explains what the account is used for (SMS/WhatsApp delivery, plan management), with a "Skip for now" option.
+* Improvement: Modernized the admin sidebar navigation -- refreshed icons and hover/active states.
+
 = 6.4.0 =
 * New: Magic Link Login — a passwordless "email me a login link" option at wp-login.php, with Off / Optional / Mandatory modes.
 * New: Trusted Devices (free) — a recognized browser skips repeat 2FA prompts for 7 days after a successful challenge.
@@ -512,6 +514,9 @@ For **two-factor authentication** specifically, yes: role-based enforcement, per
 For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/miniorange-2-factor-authentication/trunk/changelog.txt) provided with the plugin.
 
 == Upgrade Notice ==
+
+= 6.5.0 =
+* Adds an optional XML-RPC disable switch, login-screen CAPTCHA, role-restricted self-service 2FA recovery, an Activity Digest email, and admin UI polish. Recommended update.
 
 = 6.4.0 =
 * Adds Magic Link Login, Trusted Devices, Recent Logins, a 2FA Adoption widget, setup reminder emails, cloud-relay email delivery (no SMTP required), and a redesigned admin UI, plus several security fixes. Recommended update.

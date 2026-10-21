@@ -35,6 +35,11 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 				add_action( 'rest_api_init', array( $this, 'mo_block_rest_api' ) );
 			}
 
+			if ( get_site_option( 'mo2f_enable_xmlrpc' ) ) {
+				add_filter( 'xmlrpc_enabled', '__return_false' );
+				add_action( 'init', array( $this, 'mo2f_block_xmlrpc_requests' ), 1 );
+			}
+
 			add_action( 'wp_login', array( $this, 'mo_wpns_login_success' ) );
 			add_action( 'wp_login_failed', array( $this, 'mo_wpns_login_failed' ) );
 
@@ -79,6 +84,23 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 		 */
 		public function mo_block_rest_api() {
 			if ( isset( $_SERVER['REQUEST_URI'] ) && strpos( esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ), '/wp-json/wp/v2/users' ) ) {
+				include_once 'mo-block.html';
+				exit;
+			}
+		}
+
+		/**
+		 * Hard-blocks any request to xmlrpc.php. The xmlrpc_enabled filter alone
+		 * only turns off a handful of methods (pingbacks, wp_xmlrpc_server::login)
+		 * -- it doesn't stop the endpoint from responding to system.listMethods,
+		 * wp.getUsersBlogs, and other calls still usable for credential stuffing
+		 * or pingback-based DDoS amplification.
+		 *
+		 * @return void
+		 */
+		public function mo2f_block_xmlrpc_requests() {
+			if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) {
+				status_header( 403 );
 				include_once 'mo-block.html';
 				exit;
 			}

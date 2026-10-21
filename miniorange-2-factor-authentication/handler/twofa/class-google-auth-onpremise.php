@@ -164,11 +164,13 @@ if ( ! class_exists( 'Google_Auth_Onpremise' ) ) {
 		 *
 		 * @param string  $secret Given secret.
 		 * @param string  $code The otp code entered by user.
-		 * @param integer $discrepancy The discrepancy.
+		 * @param integer $discrepancy Number of 30-second time steps to allow on either side of
+		 *                             the server's clock, to tolerate drift between the server
+		 *                             and the authenticator app.
 		 * @param string  $current_time_slice Current time.
 		 * @return string
 		 */
-		public function mo2f_verify_code( $secret, $code, $discrepancy = 1, $current_time_slice = null ) {
+		public function mo2f_verify_code( $secret, $code, $discrepancy = 2, $current_time_slice = null ) {
 			$response = array( 'status' => 'FAILURE' );
 			if ( empty( $secret ) ) {
 				return wp_json_encode( $response );

@@ -147,6 +147,50 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 		}
 
 		/**
+		 * @param int $user_id User ID.
+		 * @return bool
+		 */
+		public static function mo2f_user_role_allows_self_service_reset( $user_id ) {
+			$user = get_userdata( $user_id );
+			if ( ! $user ) {
+				return false;
+			}
+			$excluded_roles = (array) get_site_option( 'mo2f_reconfig_link_excluded_roles', array() );
+			if ( empty( $excluded_roles ) ) {
+				return true;
+			}
+			return empty( array_intersect( $user->roles, $excluded_roles ) );
+		}
+
+		/**
+		 * @param int $user_id User ID.
+		 * @return void
+		 */
+		public static function mo2f_notify_admin_self_service_reset( $user_id ) {
+			if ( ! get_site_option( 'mo2f_enable_self_service_reset_admin_alert', 1 ) ) {
+				return;
+			}
+			$user          = get_userdata( $user_id );
+			$admin_email   = get_option( 'admin_email' );
+			if ( ! $user || ! is_email( $admin_email ) ) {
+				return;
+			}
+			$subject = sprintf(
+				/* Translators: %s: site name. */
+				__( 'A user reset their own two-factor authentication on %s', 'miniorange-2-factor-authentication' ),
+				get_bloginfo( 'name' )
+			);
+			$message  = '<p>' . sprintf(
+				/* Translators: 1: user login, 2: site name. */
+				esc_html__( 'The user "%1$s" just reset their own two-factor authentication on %2$s using the self-service "Locked out?" email recovery link. They will be asked to set up a new 2FA method the next time they log in.', 'miniorange-2-factor-authentication' ),
+				esc_html( $user->user_login ),
+				esc_html( get_bloginfo( 'name' ) )
+			) . '</p>';
+			$message .= '<p>' . esc_html__( 'If this is unexpected, you may want to check in with the user and review the Compliance Log under Reports.', 'miniorange-2-factor-authentication' ) . '</p>';
+			MocURL::mo2f_send_cloud_email( $admin_email, $subject, $message );
+		}
+
+		/**
 		 * Small badge for paid-plan add-ons (crown mark).
 		 *
 		 * @return string
@@ -1464,6 +1508,7 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 						<input type="hidden" name="mo2f_inline_register_nonce" value="' . esc_attr( wp_create_nonce( 'mo2f-inline-register-nonce' ) ) . '"/>
 						<div class="mo2f-bg-white mo2f-rounded-xl flex flex-col">
 							<p class="mo2f-heading mo2f-mb-1_5">' . esc_html__( 'Create New Account', 'miniorange-2-factor-authentication' ) . '</p>
+							<p class="mo2f-setting-desc mo2f-mb-1_5">' . esc_html__( 'This creates a free account at miniOrange.com, separate from your WordPress login, used to deliver SMS/WhatsApp codes and manage your plan. The Authenticator app, Passkey, and Security Questions methods work without one.', 'miniorange-2-factor-authentication' ) . '</p>
 							<div class="w-full mo-input-wrapper group">
 								<label class="mo-input-label">Email</label>
 								<input class="w-full mo2f-input" type="email" name="email" required placeholder="person@example.com" />
@@ -1505,6 +1550,9 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 									<button class="mo2f-reset-settings-button">Already have an account?</button>
 								</a>
 							</div>
+							<div class="mo2f-mt-1">
+								<a href="' . esc_url( admin_url( 'admin.php?page=mo_2fa_dashboard' ) ) . '">' . esc_html__( 'Skip for now', 'miniorange-2-factor-authentication' ) . '</a>
+							</div>
 						</div>
 					  </form>';
 			$html .= '<form name="mo2f_inline_login_form" id="mo2f_inline_login_form" method="post" class="mo2f-padding-6 items-center">
@@ -1528,6 +1576,9 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 								<input type="button" id="mo2f_login" class="mo2f-save-settings-button" value="' . esc_attr__( 'Sign In', 'miniorange-2-factor-authentication' ) . '" />
 								&nbsp;&nbsp;&nbsp;&nbsp;
 								<input type="button" id="mo2f_cancel_link" class="mo2f-reset-settings-button" value="' . esc_attr__( 'Go Back To Registration', 'miniorange-2-factor-authentication' ) . '" />
+							</div>
+							<div class="mo2f-mt-1">
+								<a href="' . esc_url( admin_url( 'admin.php?page=mo_2fa_dashboard' ) ) . '">' . esc_html__( 'Skip for now', 'miniorange-2-factor-authentication' ) . '</a>
 							</div>
 						</div>
 					  </form>';
@@ -2335,6 +2386,15 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			return $html;
 		}
 		/**
+		 * Whether the setup-success modal has already been echoed for this request.
+		 * This class is instantiated with `new` in many places across the codebase,
+		 * so this guards against rendering the modal more than once per page load.
+		 *
+		 * @var bool
+		 */
+		private static $test_2fa_notification_shown = false;
+
+		/**
 		 * The method is used to display notification in the plugin .
 		 *
 		 * @param object $user used to get customer email and id.
@@ -2344,6 +2404,10 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 			global $mo2fdb_queries;
 			$user = wp_get_current_user();
 			if ( get_site_transient( 'mo2f_show_setup_success_prompt' . $user->ID ) ) {
+				if ( self::$test_2fa_notification_shown ) {
+					return;
+				}
+				self::$test_2fa_notification_shown = true;
 				$mo2f_configured_2_f_a_method = $mo2fdb_queries->mo2f_get_user_detail( 'mo2f_configured_2FA_method', $user->ID );
 				wp_print_scripts( 'jquery' );
 				echo '<div id="twoFAtestAlertModal" class="modal" role="dialog">
@@ -2518,10 +2582,10 @@ if ( ! class_exists( 'Mo2f_Common_Helper' ) ) {
 				$mo2f_actor = $mo2f_event->actor_id ? get_userdata( $mo2f_event->actor_id ) : false;
 				echo '<tr>';
 				echo '<td>' . esc_html( gmdate( 'M j, Y, g:i:s a', $mo2f_event->created_timestamp ) ) . '</td>';
-				echo '<td>' . esc_html( $mo2f_event->type ) . '</td>';
+				echo '<td><span class="mo2f-log-badge">' . esc_html( $mo2f_event->type ) . '</span></td>';
 				echo '<td>' . esc_html( $mo2f_event->username ) . '</td>';
 				echo '<td>' . esc_html( $mo2f_actor ? $mo2f_actor->user_login : '—' ) . '</td>';
-				echo '<td>' . esc_html( $mo2f_event->method ? $mo2f_event->method : '—' ) . '</td>';
+				echo '<td>' . ( $mo2f_event->method ? '<span class="mo2f-log-badge mo2f-log-badge-method">' . esc_html( $mo2f_event->method ) . '</span>' : esc_html( '—' ) ) . '</td>';
 				echo '<td>' . esc_html( $mo2f_event->ip_address ) . '</td>';
 				echo '</tr>';
 			}

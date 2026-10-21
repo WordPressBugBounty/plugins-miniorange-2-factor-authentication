@@ -20,7 +20,7 @@ echo '	<div class="mo2f-settings-head" style="display:flex;justify-content:space
 			<span>' . esc_html__( 'Compliance Log', 'miniorange-2-factor-authentication' ) . '</span>
 			<span>' . esc_html__( 'Export (CSV / PDF)', 'miniorange-2-factor-authentication' ) . ' ' . Mo2f_Common_Helper::mo2f_check_plan( 'enterprise', MoWpnsConstants::MO2F_PREMIUM_2PLAN_NAME ) /* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Only a SVG, doesn't require escaping. */ . '</span>
 		</div>
-		<p class="description">' . esc_html__( 'A record of admin-initiated 2FA resets for the last 30 days. Upgrade for full history and CSV/PDF export.', 'miniorange-2-factor-authentication' ) . '</p>
+		<p class="description">' . esc_html__( 'A record of admin-initiated and self-service 2FA resets for the last 30 days. Upgrade for full history and CSV/PDF export.', 'miniorange-2-factor-authentication' ) . '</p>
 		<br>';
 
 $mo2f_compliance_log_headers = array(
@@ -32,18 +32,20 @@ $mo2f_compliance_log_headers = array(
 	__( 'IP Address', 'miniorange-2-factor-authentication' ),
 );
 
-echo '	<table id="mo2f_compliance_log_table" class="display" cellspacing="0" width="100%">
-			<thead>
-				<tr>';
+echo '	<div class="mo2f-table-scroll">
+			<table id="mo2f_compliance_log_table" class="display" cellspacing="0" width="100%">
+				<thead>
+					<tr>';
 foreach ( $mo2f_compliance_log_headers as $mo2f_compliance_log_header ) {
 	echo '<th>' . esc_html( $mo2f_compliance_log_header ) . '</th>';
 }
-echo '			</tr>
-			</thead>
-			<tbody>';
-				$mo2f_common_helper->mo2f_show_compliance_log_report( $mo2f_compliance_events );
-echo '		</tbody>
-		</table>
+echo '				</tr>
+				</thead>
+				<tbody>';
+					$mo2f_common_helper->mo2f_show_compliance_log_report( $mo2f_compliance_events );
+echo '			</tbody>
+			</table>
+		</div>
 	</div>
 </div>
 <script>
