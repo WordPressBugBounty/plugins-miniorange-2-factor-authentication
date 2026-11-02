@@ -113,6 +113,10 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 			} else {
 
 				$ip_address     = filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : 'INVALID_IP_FORMAT';
+				if ( $ip_address === $mo2f_mo_wpns_utility->get_client_ip() ) {
+					echo( 'CANNOT_BLOCK_OWN_IP' );
+					exit;
+				}
 				$mo_wpns_config = new MoWpnsHandler();
 				$is_whitelisted = $mo_wpns_config->mo2f_is_whitelisted( $ip_address );
 				if ( ! $is_whitelisted ) {
@@ -123,7 +127,7 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 						$mo_wpns_config->mo_wpns_block_ip( $ip_address, MoWpnsConstants::BLOCKED_BY_ADMIN, true );
 						?>
 							<table id="blockedips_table1" class="display">
-						<thead><tr><th>IP Address&emsp;&emsp;</th><th>Reason&emsp;&emsp;</th><th>Blocked Until&emsp;&emsp;</th><th>Blocked Date&emsp;&emsp;</th><th>Action&emsp;&emsp;</th></tr></thead>
+						<thead><tr class="text-mo-caption"><th>IP Address</th><th>Reason</th><th>Blocked Until</th><th>Blocked Date</th><th>Action</th></tr></thead>
 						<tbody>
 						<?php
 						global $mo2f_wpns_db_queries;
@@ -131,9 +135,9 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 						$whitelisted_ips = $mo2f_wpns_db_queries->mo2f_get_whitelisted_ips_list();
 						global $mo2f_dir_name;
 						foreach ( $blockedips as $blockedip ) {
-							echo "<tr class='mo_wpns_not_bold'><td>" . esc_html( $blockedip->ip_address ) . '</td><td>' . esc_html( $blockedip->reason ) . '</td><td>';
+							echo '<tr class="text-mo-caption font-normal"><td>' . esc_html( $blockedip->ip_address ) . '</td><td>' . esc_html( $blockedip->reason ) . '</td><td>';
 							if ( empty( $blockedip->blocked_for_time ) ) {
-								echo '<span class=redtext>Permanently</span>';
+								echo '<span class="text-red-500">Permanently</span>';
 							} else {
 								echo esc_html( gmdate( 'M j, Y, g:i:s a', $blockedip->blocked_for_time ) );
 							}
@@ -186,11 +190,11 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 
 					?>
 				<table id="whitelistedips_table1" class="display">
-				<thead><tr><th >IP Address</th><th >Whitelisted Date</th><th >Remove from Whitelist</th></tr></thead>
+				<thead><tr class="text-mo-caption"><th>IP Address</th><th>Whitelisted Date</th><th>Remove from Whitelist</th></tr></thead>
 				<tbody>
 					<?php
 					foreach ( $whitelisted_ips as $whitelisted_ip ) {
-						echo "<tr class='mo_wpns_not_bold'><td>" . esc_html( $whitelisted_ip->ip_address ) . '</td><td>' . esc_html( gmdate( 'M j, Y, g:i:s a', $whitelisted_ip->created_timestamp ) ) . "</td><td><a  onclick=removefromwhitelist('" . esc_js( $whitelisted_ip->id ) . "')>Remove</a></td></tr>";
+						echo '<tr class="text-mo-caption font-normal"><td>' . esc_html( $whitelisted_ip->ip_address ) . '</td><td>' . esc_html( gmdate( 'M j, Y, g:i:s a', $whitelisted_ip->created_timestamp ) ) . "</td><td><a  onclick=removefromwhitelist('" . esc_js( $whitelisted_ip->id ) . "')>Remove</a></td></tr>";
 					}
 
 					?>
@@ -280,16 +284,16 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 				$mo2f_wpns_db_queries->mo2f_delete_blocked_ip( $entryid );
 				?>
 				<table id="blockedips_table1" class="display">
-				<thead><tr><th>IP Address&emsp;&emsp;</th><th>Reason&emsp;&emsp;</th><th>Blocked Until&emsp;&emsp;</th><th>Blocked Date&emsp;&emsp;</th><th>Action&emsp;&emsp;</th></tr></thead>
+				<thead><tr class="text-mo-caption"><th>IP Address</th><th>Reason</th><th>Blocked Until</th><th>Blocked Date</th><th>Action</th></tr></thead>
 				<tbody>
 				<?php
 				global $mo2f_wpns_db_queries;
 				$blockedips      = $mo2f_wpns_db_queries->mo2f_get_blocked_ip_list();
 				$whitelisted_ips = $mo2f_wpns_db_queries->mo2f_get_whitelisted_ips_list();
 				foreach ( $blockedips as $blockedip ) {
-					echo "<tr class='mo_wpns_not_bold'><td>" . esc_html( $blockedip->ip_address ) . '</td><td>' . esc_html( $blockedip->reason ) . '</td><td>';
+					echo '<tr class="text-mo-caption font-normal"><td>' . esc_html( $blockedip->ip_address ) . '</td><td>' . esc_html( $blockedip->reason ) . '</td><td>';
 					if ( empty( $blockedip->blocked_for_time ) ) {
-						echo '<span class=redtext>Permanently</span>';
+						echo '<span class="text-red-500">Permanently</span>';
 					} else {
 						echo esc_html( gmdate( 'M j, Y, g:i:s a', $blockedip->blocked_for_time ) );
 					}
@@ -329,11 +333,11 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 
 				?>
 				<table id="whitelistedips_table1" class="display">
-				<thead><tr><th >IP Address</th><th >Whitelisted Date</th><th >Remove from Whitelist</th></tr></thead>
+				<thead><tr class="text-mo-caption"><th>IP Address</th><th>Whitelisted Date</th><th>Remove from Whitelist</th></tr></thead>
 				<tbody>
 				<?php
 				foreach ( $whitelisted_ips as $whitelisted_ip ) {
-					echo "<tr class='mo_wpns_not_bold'><td>" . esc_html( $whitelisted_ip->ip_address ) . '</td><td>' . esc_html( gmdate( 'M j, Y, g:i:s a', $whitelisted_ip->created_timestamp ) ) . "</td><td><a onclick=removefromwhitelist('" . esc_js( $whitelisted_ip->id ) . "')>Remove</a></td></tr>";
+					echo '<tr class="text-mo-caption font-normal"><td>' . esc_html( $whitelisted_ip->ip_address ) . '</td><td>' . esc_html( gmdate( 'M j, Y, g:i:s a', $whitelisted_ip->created_timestamp ) ) . "</td><td><a onclick=removefromwhitelist('" . esc_js( $whitelisted_ip->id ) . "')>Remove</a></td></tr>";
 				}
 
 				?>
@@ -356,21 +360,50 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 		 * @return void
 		 */
 		public function wpns_handle_range_blocking( $posted_value ) {
+			global $mo2f_mo_wpns_utility;
 			$flag                  = 0;
 			$max_allowed_ranges    = 100;
 			$added_mappings_ranges = 0;
 			$show_message          = new MoWpnsMessages();
+			$mo_wpns_config        = new MoWpnsHandler();
+			$current_ip            = $mo2f_mo_wpns_utility->get_client_ip();
 			for ( $i = 1;$i <= $max_allowed_ranges;$i++ ) {
-				if ( isset( $posted_value[ 'start_' . $i ] ) && isset( $posted_value[ 'end_' . $i ] ) && ! empty( $posted_value[ 'start_' . $i ] ) && ! empty( $posted_value[ 'end_' . $i ] ) ) {
+				if ( isset( $posted_value[ 'start_' . $i ] ) && ! empty( $posted_value[ 'start_' . $i ] ) ) {
+					$start_value = sanitize_text_field( $posted_value[ 'start_' . $i ] );
 
-					$posted_value[ 'start_' . $i ] = sanitize_text_field( $posted_value[ 'start_' . $i ] );
-					$posted_value[ 'end_' . $i ]   = sanitize_text_field( $posted_value[ 'end_' . $i ] );
+					if ( false !== strpos( $start_value, '/' ) ) {
+						$cidr_parts = explode( '/', $start_value );
+						if ( 2 === count( $cidr_parts ) && filter_var( trim( $cidr_parts[0] ), FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) && is_numeric( trim( $cidr_parts[1] ) ) && (int) trim( $cidr_parts[1] ) >= 0 && (int) trim( $cidr_parts[1] ) <= 32 ) {
+							if ( $mo_wpns_config->mo2f_range_string_contains_ip( $start_value, $current_ip ) ) {
+								$flag = 1;
+								$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::CANNOT_BLOCK_OWN_IP ), 'ERROR' );
+								return;
+							}
+							++$added_mappings_ranges;
+							update_site_option( 'mo_wpns_iprange_range_' . $added_mappings_ranges, $start_value );
+						} else {
+							$flag = 1;
+							$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::INVALID_IP ), 'ERROR' );
+							return;
+						}
+						continue;
+					}
 
-					if ( filter_var( $posted_value[ 'start_' . $i ], FILTER_VALIDATE_IP ) && filter_var( $posted_value[ 'end_' . $i ], FILTER_VALIDATE_IP ) && ( ip2long( $posted_value[ 'end_' . $i ] ) > ip2long( $posted_value[ 'start_' . $i ] ) ) ) {
+					if ( ! isset( $posted_value[ 'end_' . $i ] ) || empty( $posted_value[ 'end_' . $i ] ) ) {
+						continue;
+					}
+					$posted_value[ 'end_' . $i ] = sanitize_text_field( $posted_value[ 'end_' . $i ] );
+
+					if ( filter_var( $start_value, FILTER_VALIDATE_IP ) && filter_var( $posted_value[ 'end_' . $i ], FILTER_VALIDATE_IP ) && ( ip2long( $posted_value[ 'end_' . $i ] ) > ip2long( $start_value ) ) ) {
 						$range  = '';
-						$range  = sanitize_text_field( $posted_value[ 'start_' . $i ] );
+						$range  = $start_value;
 						$range .= '-';
 						$range .= sanitize_text_field( $posted_value[ 'end_' . $i ] );
+						if ( $mo_wpns_config->mo2f_range_string_contains_ip( $range, $current_ip ) ) {
+							$flag = 1;
+							$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::CANNOT_BLOCK_OWN_IP ), 'ERROR' );
+							return;
+						}
 						++$added_mappings_ranges;
 						update_site_option( 'mo_wpns_iprange_range_' . $added_mappings_ranges, $range );
 
@@ -432,5 +465,5 @@ if ( ! class_exists( 'Mo2f_IP_Blocking_Handler' ) ) {
 			);
 		}
 	}
-	new Mo2f_IP_Blocking_Handler();
+	Mo2f_IP_Blocking_Handler::instance();
 }

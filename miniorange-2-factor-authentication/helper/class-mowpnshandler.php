@@ -65,9 +65,10 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 		 * @param string $ip_address .
 		 * @param string $reason .
 		 * @param string $permenently .
+		 * @param int    $duration_seconds Optional explicit block duration in seconds, takes precedence over mo2f_time_of_blocking_type/_val when given.
 		 * @return void
 		 */
-		public function mo_wpns_block_ip( $ip_address, $reason, $permenently ) {
+		public function mo_wpns_block_ip( $ip_address, $reason, $permenently, $duration_seconds = null ) {
 			global $mo2f_wpns_db_queries;
 			if ( empty( $ip_address ) ) {
 				return;
@@ -76,7 +77,9 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 				return;
 			}
 			$blocked_for_time = null;
-			if ( ! $permenently && get_site_option( 'mo2f_time_of_blocking_type' ) ) {
+			if ( ! $permenently && null !== $duration_seconds ) {
+				$blocked_for_time = time() + (int) $duration_seconds;
+			} elseif ( ! $permenently && get_site_option( 'mo2f_time_of_blocking_type' ) ) {
 				$blocking_type        = get_site_option( 'mo2f_time_of_blocking_type' );
 				$time_of_blocking_val = 3;
 				if ( get_site_option( 'mo2f_time_of_blocking_val' ) ) {
@@ -92,11 +95,6 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 			}
 
 			$mo2f_wpns_db_queries->mo2f_insert_blocked_ip( $ip_address, $reason, $blocked_for_time );
-			// send notification.
-			global $mo2f_mo_wpns_utility;
-			if ( MoWpnsUtility::get_mo2f_db_option( 'mo_wpns_enable_ip_blocked_email_to_admin', 'site_option' ) ) {
-				$mo2f_mo_wpns_utility->sendIpBlockedNotification( $ip_address, MoWpnsConstants::LOGIN_ATTEMPTS_EXCEEDED );
-			}
 		}
 
 		/**
@@ -188,18 +186,58 @@ if ( ! class_exists( 'MoWpnsHandler' ) ) {
 			}
 			for ( $i = 1; $i <= $range_count; $i++ ) {
 				$blockedrange = get_site_option( 'mo_wpns_iprange_range_' . $i );
-				$rangearray   = explode( '-', $blockedrange );
-				if ( 2 === count( $rangearray ) ) {
-					$lowip  = ip2long( trim( $rangearray[0] ) );
-					$highip = ip2long( trim( $rangearray[1] ) );
-					if ( ip2long( $user_ip ) >= $lowip && ip2long( $user_ip ) <= $highip ) {
-						$mo_wpns_config = new MoWpnsHandler();
-						$mo_wpns_config->mo_wpns_block_ip( $user_ip, MoWpnsConstants::IP_RANGE_BLOCKING, true );
-						return true;
-					}
+				if ( $this->mo2f_range_string_contains_ip( $blockedrange, $user_ip ) ) {
+					$mo_wpns_config = new MoWpnsHandler();
+					$mo_wpns_config->mo_wpns_block_ip( $user_ip, MoWpnsConstants::IP_RANGE_BLOCKING, true );
+					return true;
 				}
 			}
 			return false;
+		}
+
+		/**
+		 * Checks whether an IP falls within a stored range string, which is either
+		 * CIDR notation ("192.168.1.0/24") or a "start-end" pair. Shared between
+		 * is_ip_range_blocked() and the save-time self-lockout guard in
+		 * Mo2f_IP_Blocking_Handler::wpns_handle_range_blocking(), so both use the
+		 * exact same matching rules.
+		 *
+		 * @param string $range_string Stored or candidate range value.
+		 * @param string $user_ip      IP address to test.
+		 * @return boolean
+		 */
+		public function mo2f_range_string_contains_ip( $range_string, $user_ip ) {
+			if ( false !== strpos( $range_string, '/' ) ) {
+				return $this->mo2f_ip_matches_cidr( $user_ip, $range_string );
+			}
+			$rangearray = explode( '-', $range_string );
+			if ( 2 === count( $rangearray ) ) {
+				$lowip  = ip2long( trim( $rangearray[0] ) );
+				$highip = ip2long( trim( $rangearray[1] ) );
+				return ip2long( $user_ip ) >= $lowip && ip2long( $user_ip ) <= $highip;
+			}
+			return false;
+		}
+
+		/**
+		 * Checks whether an IP falls within a CIDR block, e.g. "192.168.1.0/24".
+		 *
+		 * @param string $user_ip IP address to test.
+		 * @param string $cidr    CIDR notation string.
+		 * @return boolean
+		 */
+		private function mo2f_ip_matches_cidr( $user_ip, $cidr ) {
+			$parts = explode( '/', $cidr );
+			if ( 2 !== count( $parts ) ) {
+				return false;
+			}
+			$network = trim( $parts[0] );
+			$prefix  = (int) trim( $parts[1] );
+			if ( ! filter_var( $network, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) || $prefix < 0 || $prefix > 32 ) {
+				return false;
+			}
+			$mask = 0 === $prefix ? 0 : ( ( ~0 << ( 32 - $prefix ) ) & 0xFFFFFFFF );
+			return ( ( ip2long( $user_ip ) & $mask ) & 0xFFFFFFFF ) === ( ( ip2long( $network ) & $mask ) & 0xFFFFFFFF );
 		}
 
 		/**

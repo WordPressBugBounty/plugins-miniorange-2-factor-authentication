@@ -198,7 +198,11 @@ if ( ! class_exists( 'Mo2f_Reconfigure_Link' ) ) {
 			$user_id       = $mo2fdb_queries->mo2f_get_userid_from_reset_token( $reset_token );
 			if ( isset( $user_id ) ) {
 				$current_user = get_user_by( 'id', $user_id );
-				$username     = base64_encode( $current_user->user_login ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Obfuscation is neccessory here.
+				if ( ! $current_user ) {
+					wp_safe_redirect( get_site_url() . '/wp-login.php?' );
+					exit;
+				}
+				$username = base64_encode( $current_user->user_login ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Obfuscation is neccessory here.
 				if ( strpos( $reset_token, $username ) ) {
 					$data          = explode( $username, $reset_token );
 					$previous_time = base64_decode( $data[0] ); //phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Unobfuscation is neccessory here.

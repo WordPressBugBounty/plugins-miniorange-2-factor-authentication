@@ -169,6 +169,9 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 				case 'mo2f_enable_xmlrpc_option':
 					$this->mo2f_enable_xmlrpc_protection( $_POST );
 					break;
+				case 'mo2f_save_brute_force_lockout_settings':
+					$this->mo2f_save_brute_force_lockout_settings( $_POST );
+					break;
 				case 'mo2f_enable_shortcodes_option':
 					$this->mo2f_enable_shortcodes( $_POST );
 					break;
@@ -198,12 +201,24 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 					do_action( 'mo2f_all_inclusive_plan_settings_action', 'mo2f_enable_disable_login_form', $_POST );
 					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
 					break;
+				case 'mo2f_save_slack_alert_settings':
+					do_action( 'mo2f_all_inclusive_plan_settings_action', 'mo2f_save_slack_alert_settings', $_POST );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					break;
+				case 'mo2f_send_test_slack_message':
+					do_action( 'mo2f_all_inclusive_plan_settings_action', 'mo2f_send_test_slack_message', $_POST );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					break;
 				case 'mo2f_save_selected_2fa_methods':
 					do_action( 'mo2f_basic_plan_settings_action', 'save_selected_2fa_methods', $_POST );
 					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
 					break;
 				case 'mo2f_custom_registration_form':
 					do_action( 'mo2f_basic_plan_settings_action', 'mo2f_enable_custom_registration_form_shortcodes', $_POST );
+					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
+					break;
+				case 'mo2f_save_geo_blocking_settings':
+					do_action( 'mo2f_basic_plan_settings_action', 'mo2f_save_geo_blocking_settings', $_POST );
 					wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::GET_YOUR_PLAN_UPGRADED ) );
 					break;
 				case 'mo2f_debug_log_disable':
@@ -626,6 +641,35 @@ if ( ! class_exists( 'Mo2f_2fa_Settings_Handler' ) ) {
 			update_site_option( 'mo2f_enable_xmlrpc', $enabled );
 			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
 		}
+
+		/**
+		 * Saves the automatic brute-force lockout settings.
+		 *
+		 * @param array $post $_POST array.
+		 * @return void
+		 */
+		public function mo2f_save_brute_force_lockout_settings( $post ) {
+			$enabled      = isset( $post['mo2f_enable_auto_lockout'] ) && 'true' === sanitize_text_field( wp_unslash( $post['mo2f_enable_auto_lockout'] ) );
+			$max_attempts = isset( $post['mo2f_lockout_max_attempts'] ) ? (int) sanitize_text_field( wp_unslash( $post['mo2f_lockout_max_attempts'] ) ) : 5;
+			$time_window  = isset( $post['mo2f_lockout_time_window'] ) ? (int) sanitize_text_field( wp_unslash( $post['mo2f_lockout_time_window'] ) ) : 300;
+			$lockout_time = isset( $post['mo2f_lockout_duration'] ) ? (int) sanitize_text_field( wp_unslash( $post['mo2f_lockout_duration'] ) ) : 1800;
+			if ( $enabled && ( $max_attempts < 1 || $time_window < 10 || $lockout_time < 10 ) ) {
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ) );
+			}
+			if ( $enabled && $lockout_time <= $time_window ) {
+				wp_send_json_error( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ) );
+			}
+			update_site_option(
+				'mo2f_brute_force_lockout_settings',
+				array(
+					'enabled'      => $enabled,
+					'max_attempts' => $max_attempts,
+					'time_window'  => $time_window,
+					'lockout_time' => $lockout_time,
+				)
+			);
+			wp_send_json_success( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SETTINGS_SAVED_SUCCESSFULLY ) );
+		}
 	}
-	new Mo2f_2fa_Settings_Handler();
+	Mo2f_2fa_Settings_Handler::instance();
 }

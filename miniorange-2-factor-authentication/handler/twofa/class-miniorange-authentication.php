@@ -1103,5 +1103,5 @@ if ( ! class_exists( 'Miniorange_Authentication' ) ) {
 			}
 		}
 	}
-	new Miniorange_Authentication();
+	Miniorange_Authentication::instance();
 }

@@ -225,17 +225,26 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 		public function mo_wpns_login_failed( $username ) {
 			global $mo2f_mo_wpns_utility, $mo2fdb_queries;
 			$user_ip = $mo2f_mo_wpns_utility->get_client_ip();
-			if ( empty( $user_ip ) || empty( $username ) || ! MoWpnsUtility::get_mo2f_db_option( 'mo2f_enable_brute_force', 'site_option' ) ) {
+			if ( empty( $user_ip ) || empty( $username ) ) {
 				return;
 			}
 			$mo_wpns_config = new MoWpnsHandler();
 			$is_whitelisted = $mo_wpns_config->mo2f_is_whitelisted( $user_ip );
+			if ( ! $is_whitelisted ) {
+				$this->mo2f_track_failed_login_for_lockout( $user_ip );
+			}
+			if ( ! MoWpnsUtility::get_mo2f_db_option( 'mo2f_enable_brute_force', 'site_option' ) ) {
+				return;
+			}
 			if ( 'true' === get_site_option( 'mo2f_enable_login_report' ) ) {
 				global $mo2f_wpns_db_queries;
 				$mo2f_wpns_db_queries->mo2f_insert_transaction_audit( $user_ip, $username, MoWpnsConstants::LOGIN_TRANSACTION, MoWpnsConstants::FAILED );
 			}
 			if ( ! $is_whitelisted ) {
-				$user              = get_user_by( 'login', $username );
+				$user = get_user_by( 'login', $username );
+				if ( ! $user ) {
+					return;
+				}
 				$user_roles        = get_userdata( $user->ID )->roles;
 				$user_role_enabled = 0;
 				foreach ( $user_roles as $user_role ) {
@@ -249,6 +258,40 @@ if ( ! class_exists( 'LoginHandler' ) ) {
 					$mo2f_mo_wpns_utility->send_notification_to_user_for_unusual_activities( $username, $user_ip, MoWpnsConstants::FAILED_LOGIN_ATTEMPTS_FROM_NEW_IP );
 				}
 			}
+		}
+
+		/**
+		 * Counts failed logins per IP in a fixed window and auto-blocks the IP
+		 * once the configured threshold is reached. Caller already excludes
+		 * whitelisted IPs.
+		 *
+		 * @param string $user_ip IP address of the failed login attempt.
+		 * @return void
+		 */
+		private function mo2f_track_failed_login_for_lockout( $user_ip ) {
+			$settings = get_site_option( 'mo2f_brute_force_lockout_settings', array() );
+			if ( empty( $settings['enabled'] ) ) {
+				return;
+			}
+			$max_attempts = isset( $settings['max_attempts'] ) ? (int) $settings['max_attempts'] : 5;
+			$time_window  = isset( $settings['time_window'] ) ? (int) $settings['time_window'] : 300;
+			$lockout_time = isset( $settings['lockout_time'] ) ? (int) $settings['lockout_time'] : 1800;
+
+			$transient_key = 'mo2f_bf_attempts_' . md5( 'ip_' . $user_ip );
+			$attempts       = (int) get_transient( $transient_key );
+			++$attempts;
+			if ( $attempts >= $max_attempts ) {
+				delete_transient( $transient_key );
+				$mo_wpns_config = new MoWpnsHandler();
+				$mo_wpns_config->mo_wpns_block_ip(
+					$user_ip,
+					sprintf( 'Brute-force: %d failed login attempts within %d seconds', $max_attempts, $time_window ),
+					false,
+					$lockout_time
+				);
+				return;
+			}
+			set_transient( $transient_key, $attempts, $time_window );
 		}
 	}
 }

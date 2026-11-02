@@ -201,9 +201,9 @@ if ( ! class_exists( 'Mo2f_TabDetails' ) ) {
 				$this->tab_details     = array_slice( $this->tab_details, 0, $troubleshooting_index, true ) + $setup_wizard_tab + array_slice( $this->tab_details, $troubleshooting_index, null, true );
 			}
 			if ( MoWpnsUtility::get_mo2f_db_option( 'mo_wpns_2fa_with_network_security', 'site_option' ) ) {
-				array_push(
-					$this->tab_details,
-					new Mo2f_PluginPageDetails(
+				$ip_blocking_index = array_search( Mo2f_Tabs::REPORTS, array_keys( $this->tab_details ), true );
+				$ip_blocking_tab   = array(
+					Mo2f_Tabs::IP_BLOCKING => new Mo2f_PluginPageDetails(
 						'IP Blocking',
 						'mo_2fa_advancedblocking',
 						'manage_options',
@@ -211,8 +211,9 @@ if ( ! class_exists( 'Mo2f_TabDetails' ) ) {
 						'ipblocking' . DIRECTORY_SEPARATOR . 'advancedblocking.php',
 						$can_user_manage_options && MoWpnsUtility::get_mo2f_db_option( 'mo_wpns_2fa_with_network_security', 'site_option' ),
 						$this->ip_blocking_tab_details,
-					)
+					),
 				);
+				$this->tab_details = array_slice( $this->tab_details, 0, $ip_blocking_index, true ) + $ip_blocking_tab + array_slice( $this->tab_details, $ip_blocking_index, null, true );
 			}
 		}
 	}

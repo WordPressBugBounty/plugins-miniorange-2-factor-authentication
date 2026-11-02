@@ -73,9 +73,35 @@ if ( $mo2f_current_date_timestamp <= $mo2f_banner_start_timestamp && ( $mo2f_use
 				echo ' <div class="mo2f-header-main-col" style="display:flex;flex-direction:column;flex:1;min-width:0;row-gap:10px;align-self:stretch;"><div class="mo2f-admin-options" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%;min-width:0;"> <div class="mx-mo-3" style="flex:0 0 auto;"> <img width="30" height="30" src="' . esc_url( $mo2f_logo_url ) . '"></div>';
 
 	echo '<span class="mo2f-plugin-name" style="flex:1 1 240px;min-width:220px;">Two-Factor Authentication</span>';
+	echo '</div>';
+	echo '</div>';
+if ( ( current_user_can( 'manage_options' ) && get_site_option( 'mo_wpns_2fa_with_network_security' ) ) || get_site_option( 'mo2f_is_old_customer' ) ) {
+			update_site_option( 'mo2f_is_old_customer', 1 );
+
+			echo '	<form id="mo_wpns_2fa_with_network_security" method="post" action="">
+								<div class="mo2f-security-toggle" style="margin-left:16px;">
+
+
+								<input type="hidden" name="mo_security_features_nonce" value="' . esc_attr( $mo2f_security_features_nonce ) . '"/>
+
+									<input type="hidden" name="option" value="mo_wpns_2fa_with_network_security">
+									<div style="display:flex;align-items:center;gap:10px;">
+									<span>
+										<label class="mo_wpns_switch_small">
+										<input type="checkbox" name="mo_wpns_2fa_with_network_security" ' . esc_html( $mo2f_network_security_features ) . '  onchange="document.getElementById(\'mo_wpns_2fa_with_network_security\').submit();">
+										<span class="mo_wpns_slider_small mo_wpns_round_small"></span>
+										</label>
+									</span>
+									2FA + Website Security
+									</div>
+
+
+									</div>
+									</form>';
+}
 if ( current_user_can( 'manage_options' ) ) {
 	echo '
-		<div class="mo2f-header-actions" style="display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:0 1 auto;flex-wrap:wrap;margin-left:auto;min-width:0;">
+		<div class="mo2f-header-actions" style="display:flex;align-items:center;gap:8px;flex:0 0 auto;flex-wrap:wrap;margin-left:16px;min-width:0;">
     		<div id="mo2f_check_transactions" class="mo2f-transaction-show">
 				<div id="mo2f_remaining_transactions_sms_email">
         			Email: ' . esc_attr( $mo2f_remaining_transaction['email_transactions'] ) . '
@@ -90,35 +116,10 @@ if ( current_user_can( 'manage_options' ) ) {
             		<span id="mo2f_transaction_loader" class="mo2f_transaction_loader mo2f-full-size hidden"></span>
         		</div>
     		</div>
-    		<div style="flex:0 0 auto;"> 
+    		<div style="flex:0 0 auto;">
         		<a href=' . esc_url( MoWpnsConstants::RECHARGELINK ) . ' target="_blank" class="mo2f-button" style="width:auto;white-space:nowrap;">' . esc_html__( 'Recharge', 'miniorange-2-factor-authentication' ) . '</a>
     		</div>
 		</div>';
-}
-	echo '</div>';
-	echo '</div>';
-if ( ( current_user_can( 'manage_options' ) && get_site_option( 'mo_wpns_2fa_with_network_security' ) ) || get_site_option( 'mo2f_is_old_customer' ) ) {
-			update_site_option( 'mo2f_is_old_customer', 1 );
-
-			echo '	<form id="mo_wpns_2fa_with_network_security" method="post" action="">
-								<div class="mo2f-security-toggle"> 
-
-
-								<input type="hidden" name="mo_security_features_nonce" value="' . esc_attr( $mo2f_security_features_nonce ) . '"/>
-
-									<input type="hidden" name="option" value="mo_wpns_2fa_with_network_security">
-									<div>2FA + Website Security
-									<span>
-										<label class="mo_wpns_switch">
-										<input type="checkbox" name="mo_wpns_2fa_with_network_security" ' . esc_html( $mo2f_network_security_features ) . '  onchange="document.getElementById(\'mo_wpns_2fa_with_network_security\').submit();"> 
-										<span class="mo_wpns_slider mo_wpns_round"></span>
-										</label>
-									</span>
-									</div>
-									
-									
-									</div>
-									</form>';
 }
 
 

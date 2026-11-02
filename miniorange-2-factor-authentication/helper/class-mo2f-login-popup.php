@@ -105,9 +105,6 @@ if ( ! class_exists( 'Mo2f_Login_Popup' ) ) {
 		 * @return string
 		 */
 		public function mo2f_get_admin_bypass_recovery_link_html( $user_id, $login_status = '' ) {
-			if ( MoWpnsConstants::MO2F_USER_BLOCKED_PROMPT === $login_status ) {
-				return '';
-			}
 			if ( ! (int) get_site_option( 'mo2f_admin_login_bypass_2fa' ) ) {
 				return '';
 			}

@@ -130,7 +130,7 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 * @return string
 		 */
 		public function mo2f_get_ip_blocked_count( $ip_address ) {
-			$blocked_ips = get_site_option( 'mo2f_blocked_ips_data', array() );
+			$blocked_ips = $this->mo2f_prune_expired_blocked_ips();
 			$count       = 0;
 			foreach ( $blocked_ips as $blocked_ip ) {
 				if ( $blocked_ip['ip_address'] === $ip_address ) {
@@ -138,6 +138,33 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 				}
 			}
 			return $count;
+		}
+
+		/**
+		 * Removes any block whose blocked_for_time has passed, persists the
+		 * pruned list, and returns it. Blocks with no blocked_for_time (manual/
+		 * permanent blocks) are never pruned.
+		 *
+		 * @return array
+		 */
+		private function mo2f_prune_expired_blocked_ips() {
+			$blocked_ips = get_site_option( 'mo2f_blocked_ips_data', array() );
+			if ( ! is_array( $blocked_ips ) ) {
+				return array();
+			}
+			$now    = time();
+			$active = array_values(
+				array_filter(
+					$blocked_ips,
+					function ( $entry ) use ( $now ) {
+						return empty( $entry['blocked_for_time'] ) || $entry['blocked_for_time'] > $now;
+					}
+				)
+			);
+			if ( count( $active ) !== count( $blocked_ips ) ) {
+				update_site_option( 'mo2f_blocked_ips_data', $active );
+			}
+			return $active;
 		}
 
 
@@ -193,7 +220,7 @@ if ( ! class_exists( 'MoWpnsDB' ) ) {
 		 * @return object
 		 */
 		public function mo2f_get_blocked_ip_list() {
-			$blocked_ips = get_site_option( 'mo2f_blocked_ips_data', array() );
+			$blocked_ips = $this->mo2f_prune_expired_blocked_ips();
 			$ip_list     = array();
 			if ( is_array( $blocked_ips ) ) {
 				foreach ( $blocked_ips as $ip_entry ) {

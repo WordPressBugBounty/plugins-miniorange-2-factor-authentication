@@ -25,17 +25,27 @@ $mo2f_captcha_provider      = get_site_option( 'mo2f_captcha_provider', 'recaptc
 $mo2f_captcha_site_key      = get_site_option( 'mo2f_captcha_site_key' );
 $mo2f_captcha_secret_key    = get_site_option( 'mo2f_captcha_secret_key' );
 $mo2f_enable_xmlrpc         = get_site_option( 'mo2f_enable_xmlrpc' );
+$mo2f_lockout_settings      = get_site_option(
+	'mo2f_brute_force_lockout_settings',
+	array(
+		'enabled'      => false,
+		'max_attempts' => 5,
+		'time_window'  => 300,
+		'lockout_time' => 1800,
+	)
+);
 ?>
 <div class="mo2f-settings-div mo2f-section">
 	<div class="mo2f-section-head">
 		<h2><?php esc_html_e( 'Advanced', 'miniorange-2-factor-authentication' ); ?></h2>
-		<p><?php esc_html_e( 'Reduce login friction with trusted devices and IPs, cap concurrent sessions, or drop the password entirely.', 'miniorange-2-factor-authentication' ); ?></p>
+		<p><?php esc_html_e( 'Disable XML-RPC, add CAPTCHA, auto-lock brute-force IPs, trust known devices, block logins by country, whitelist IPs, cap concurrent sessions, use a custom login URL, drop the password entirely, or send Slack alerts.', 'miniorange-2-factor-authentication' ); ?></p>
 	</div>
-	<div class="mo2f-advfeature-group">
 	<?php require_once $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'advancedfeatures' . DIRECTORY_SEPARATOR . 'hardening.php'; ?>
-	</div>
 	<div class="mo2f-advfeature-group">
 	<?php require_once $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'advancedfeatures' . DIRECTORY_SEPARATOR . 'rememberdevice.php'; ?>
+	</div>
+	<div class="mo2f-advfeature-group">
+	<?php require_once $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'advancedfeatures' . DIRECTORY_SEPARATOR . 'geoblocking.php'; ?>
 	</div>
 	<div class="mo2f-advfeature-group mo2f-advfeature-group--label-lg">
 	<?php require_once $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'advancedfeatures' . DIRECTORY_SEPARATOR . 'rememberip.php'; ?>
@@ -43,8 +53,14 @@ $mo2f_enable_xmlrpc         = get_site_option( 'mo2f_enable_xmlrpc' );
 	<div class="mo2f-advfeature-group mo2f-advfeature-group--label-sm">
 	<?php require_once $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'advancedfeatures' . DIRECTORY_SEPARATOR . 'sessionmanagement.php'; ?>
 	</div>
+	<div class="mo2f-advfeature-group">
+	<?php require_once $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'advancedfeatures' . DIRECTORY_SEPARATOR . 'customloginurl.php'; ?>
+	</div>
 	<div class="mo2f-advfeature-group mo2f-advfeature-group--label-md">
 	<?php require_once $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'advancedfeatures' . DIRECTORY_SEPARATOR . 'passwordlesslogin.php'; ?>
+	</div>
+	<div class="mo2f-advfeature-group">
+	<?php require_once $mo2f_dir_name . 'views' . DIRECTORY_SEPARATOR . '2faconfigurations' . DIRECTORY_SEPARATOR . 'advancedfeatures' . DIRECTORY_SEPARATOR . 'slackalerts.php'; ?>
 	</div>
 </div>
 <script>

@@ -14,24 +14,26 @@ use TwoFA\Helper\MoWpnsHandler;
 		<div class="mo2f-settings-div" id="mo2f_manual_ip_blocking">
 		<div class="mo2f-settings-head justify-between -ml-mo-9">
 			<span><?php esc_html_e( 'Manual IP Blocking', 'miniorange-2-factor-authentication' ); ?></span>
-			<a href='<?php echo esc_url( $mo2f_two_factor_premium_doc['Manual IP Blocking'] ); ?>' target="_blank"><span class="dashicons dashicons-text-page mo2f-dash-icons-doc"></span></a>
 		</div>
-			<div class="mo2f-sub-settings-div">
-				<div class="my-mo-3 mb-mo-3 flex">
-					<div class="py-mo-2 pr-mo-2"><?php esc_html_e( 'Manually block an IP address here:', 'miniorange-2-factor-authentication' ); ?></div>
-					<div class="pr-mo-2"><input type="text" name="ManuallyBlockIP" id="ManuallyBlockIP" required placeholder='IP address' pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}"/></div>
-					<div><input type="button" name="BlockIP" id="BlockIP" value="Manual Block IP" class="mo2f-save-settings-button" /></div>
+		<p class="mo2f-setting-desc mt-mo-2"><?php esc_html_e( 'Block a specific IP address from accessing your entire site, either permanently or for a set duration.', 'miniorange-2-factor-authentication' ); ?></p>
+			<div class="mo2f-sub-settings-div" style="border-left:none;">
+				<div class="my-mo-3 mb-mo-3" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+					<div class="mo-input-wrapper" style="width:260px;">
+						<label class="mo-input-label"><?php esc_html_e( 'Manually block an IP address here:', 'miniorange-2-factor-authentication' ); ?></label>
+						<input type="text" class="mo-input w-full" name="ManuallyBlockIP" id="ManuallyBlockIP" required placeholder='IP address' pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}"/>
+					</div>
+					<input type="button" name="BlockIP" id="BlockIP" value="<?php esc_attr_e( 'Manual Block IP', 'miniorange-2-factor-authentication' ); ?>" class="mo2f-save-settings-button" style="margin-bottom:0;" />
 				</div>
-				<div class="mt-mo-3"><?php esc_html_e( 'Blocked IPs', 'miniorange-2-factor-authentication' ); ?></div>
-				<div class="m-mo-3" id="blockIPtable">
+				<div class="mt-mo-3 mb-mo-2" style="font-weight:600;"><?php esc_html_e( 'Blocked IPs', 'miniorange-2-factor-authentication' ); ?></div>
+				<div id="blockIPtable">
 					<table id="blockedips_table" class="display">
-						<thead class="">
+						<thead>
 							<tr class="text-mo-caption">
-								<th>IP Address</th>
-								<th>Reason</th>
-								<th>Blocked Until</th>
-								<th>Blocked Date</th>
-								<th>Action</th>
+								<th><?php esc_html_e( 'IP Address', 'miniorange-2-factor-authentication' ); ?></th>
+								<th><?php esc_html_e( 'Reason', 'miniorange-2-factor-authentication' ); ?></th>
+								<th><?php esc_html_e( 'Blocked Until', 'miniorange-2-factor-authentication' ); ?></th>
+								<th><?php esc_html_e( 'Blocked Date', 'miniorange-2-factor-authentication' ); ?></th>
+								<th><?php esc_html_e( 'Action', 'miniorange-2-factor-authentication' ); ?></th>
 							</tr>
 						</thead>
 						<tbody>
@@ -61,22 +63,24 @@ use TwoFA\Helper\MoWpnsHandler;
 		<div class="mo2f-settings-div" id="mo2f_ip_whitelisting">
 			<div class="mo2f-settings-head justify-between -ml-mo-9">
 				<span><?php esc_html_e( 'IP Whitelisting', 'miniorange-2-factor-authentication' ); ?></span>
-				<a href="https://developers.miniorange.com/docs/security/wordpress/wp-security/IP-blocking-whitelisting-lookup#wp-ip-whitelisting" target="_blank"><span class="dashicons dashicons-text-page mo2f-dash-icons-doc"></span></a>
 			</div>
-			<div class="mo2f-sub-settings-div">
-				<div class="my-mo-3 mb-mo-3 flex">
-					<div class="py-mo-2 pr-mo-2"><?php esc_html_e( 'Add new IP address to whitelist:', 'miniorange-2-factor-authentication' ); ?></div>
-					<div class="pr-mo-2"><input type="text" name="IPWhitelist" id="IPWhitelist" required placeholder='IP address' pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}"/></div>
-					<div><input type="button" name="WhiteListIP" id="WhiteListIP" value="WhiteList IP" class="mo2f-save-settings-button" /></div>
+			<p class="mo2f-setting-desc mt-mo-2"><?php esc_html_e( 'Exempt a trusted IP address from all blocking and lockout checks on this page, so it is never auto-blocked or locked out after failed login attempts. This does not bypass 2FA.', 'miniorange-2-factor-authentication' ); ?></p>
+			<div class="mo2f-sub-settings-div" style="border-left:none;">
+				<div class="my-mo-3 mb-mo-3" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+					<div class="mo-input-wrapper" style="width:260px;">
+						<label class="mo-input-label"><?php esc_html_e( 'Add new IP address to whitelist:', 'miniorange-2-factor-authentication' ); ?></label>
+						<input type="text" class="mo-input w-full" name="IPWhitelist" id="IPWhitelist" required placeholder='IP address' pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}"/>
+					</div>
+					<input type="button" name="WhiteListIP" id="WhiteListIP" value="<?php esc_attr_e( 'WhiteList IP', 'miniorange-2-factor-authentication' ); ?>" class="mo2f-save-settings-button" style="margin-bottom:0;" />
 				</div>
-				<div class="mt-mo-3"><?php esc_html_e( 'Whitelisted IPs', 'miniorange-2-factor-authentication' ); ?></div>
-				<div class="m-mo-3" id="WhiteListIPtable">
+				<div class="mt-mo-3 mb-mo-2" style="font-weight:600;"><?php esc_html_e( 'Whitelisted IPs', 'miniorange-2-factor-authentication' ); ?></div>
+				<div id="WhiteListIPtable">
 					<table id="whitelistedips_table" class="display">
 						<thead>
 							<tr class="text-mo-caption">
-								<th>IP Address</th>
-								<th>Whitelisted Date</th>
-								<th>Remove from Whitelist</th>
+								<th><?php esc_html_e( 'IP Address', 'miniorange-2-factor-authentication' ); ?></th>
+								<th><?php esc_html_e( 'Whitelisted Date', 'miniorange-2-factor-authentication' ); ?></th>
+								<th><?php esc_html_e( 'Remove from Whitelist', 'miniorange-2-factor-authentication' ); ?></th>
 							</tr>
 						</thead>
 						<tbody>
@@ -97,13 +101,15 @@ use TwoFA\Helper\MoWpnsHandler;
 		<div class="mo2f-settings-div" id="mo2f_ip_lookup">
 			<div class="mo2f-settings-head justify-between -ml-mo-9">
 				<span><?php esc_html_e( 'IP LookUp', 'miniorange-2-factor-authentication' ); ?></span>
-				<a href='<?php echo esc_url( $mo2f_two_factor_premium_doc['IP LookUp'] ); ?>' target="_blank"><span class="dashicons dashicons-text-page mo2f-dash-icons-doc"></span></a>
 			</div>
-			<div class="mo2f-sub-settings-div">
-				<div class="my-mo-3 mb-mo-3 flex">
-					<div class="py-mo-2 pr-mo-2"><?php esc_html_e( 'Enter IP address you Want to check:', 'miniorange-2-factor-authentication' ); ?></div>
-					<div class="pr-mo-2"><input type="text" name="ipAddresslookup" id="ipAddresslookup" required placeholder='IP address' pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}"/></div>
-					<div><input type="button" name="LookupIP" id="LookupIP" value="Lookup IP" class="mo2f-save-settings-button" /></div>
+			<p class="mo2f-setting-desc mt-mo-2"><?php esc_html_e( 'Look up the location, ISP and ownership details of an IP address before deciding whether to block it.', 'miniorange-2-factor-authentication' ); ?></p>
+			<div class="mo2f-sub-settings-div" style="border-left:none;">
+				<div class="my-mo-3 mb-mo-3" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+					<div class="mo-input-wrapper" style="width:260px;">
+						<label class="mo-input-label"><?php esc_html_e( 'Enter IP address you want to check:', 'miniorange-2-factor-authentication' ); ?></label>
+						<input type="text" class="mo-input w-full" name="ipAddresslookup" id="ipAddresslookup" required placeholder='IP address' pattern="((^|\.)((25[0-5])|(2[0-4]\d)|(1\d\d)|([1-9]?\d))){4}"/>
+					</div>
+					<input type="button" name="LookupIP" id="LookupIP" value="<?php esc_attr_e( 'Lookup IP', 'miniorange-2-factor-authentication' ); ?>" class="mo2f-save-settings-button" style="margin-bottom:0;" />
 				</div>
 				<div class="m-mo-3" id="resultsIPLookup">
 				</div>
@@ -137,6 +143,8 @@ use TwoFA\Helper\MoWpnsHandler;
 				error_msg("IP does not match required format.");
 			} else if (response == "IP_IN_WHITELISTED") {
 				error_msg("IP is whitelisted can not be blocked.");
+			} else if (response == "CANNOT_BLOCK_OWN_IP") {
+				error_msg("That is your own current IP address. Blocking it would lock you out of the entire site, so it was not saved.");
 			} else {
 				refreshblocktable(response);
 				success_msg("IP Blocked Sucessfully.");
@@ -179,7 +187,7 @@ use TwoFA\Helper\MoWpnsHandler;
 					refreshWhiteListTable(response);
 					success_msg("IP whitelisted Sucessfully.");
 				}
-			});		
+			});
 		}
 	});
 	jQuery('#LookupIP').click(function() {
@@ -243,7 +251,7 @@ use TwoFA\Helper\MoWpnsHandler;
 					refreshblocktable(response);
 					success_msg("IP unblocked Sucessfully.");
 				}
-			});				
+			});
 		}
 	}
 	function removefromwhitelist(id) {

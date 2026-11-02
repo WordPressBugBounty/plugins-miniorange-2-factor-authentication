@@ -325,5 +325,5 @@ if ( ! class_exists( 'Mo2f_Admin_Action_Handler' ) ) {
 			}
 		}
 	}
-	new Mo2f_Admin_Action_Handler();
+	Mo2f_Admin_Action_Handler::instance();
 }

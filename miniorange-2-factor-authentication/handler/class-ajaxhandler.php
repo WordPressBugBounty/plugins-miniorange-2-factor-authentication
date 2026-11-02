@@ -182,5 +182,5 @@ if ( ! class_exists( 'AjaxHandler' ) ) {
 			wp_send_json_success();
 		}
 	}
-	new AjaxHandler();
+	AjaxHandler::instance();
 }

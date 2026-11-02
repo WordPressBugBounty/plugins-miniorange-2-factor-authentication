@@ -90,6 +90,7 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 		const PASS_LENGTH                                = 'PASS_LENGTH';
 		const REQUIRED_FIELDS                            = 'REQUIRED_FIELDS';
 		const INVALID_IP                                 = 'INVALID_IP';
+		const CANNOT_BLOCK_OWN_IP                        = 'CANNOT_BLOCK_OWN_IP';
 		const PASS_MISMATCH                              = 'PASS_MISMATCH';
 		const RESET_PASS                                 = 'RESET_PASS';
 		const SUPPORT_FORM_VALUES                        = 'SUPPORT_FORM_VALUES';
@@ -307,6 +308,7 @@ if ( ! class_exists( 'MoWpnsMessages' ) ) {
 						self::PASS_LENGTH                 => __( 'Please Choose a password with minimum length 6.', 'miniorange-2-factor-authentication' ),
 						self::REQUIRED_FIELDS             => __( 'Please enter all the required fields.', 'miniorange-2-factor-authentication' ),
 						self::INVALID_IP                  => __( 'The IP address you entered is not valid or the IP Range is not valid.', 'miniorange-2-factor-authentication' ),
+						self::CANNOT_BLOCK_OWN_IP         => __( 'That IP address (or range) includes your own current IP address. Blocking it would lock you out of the entire site with no way back in, so it was not saved.', 'miniorange-2-factor-authentication' ),
 						self::PASS_MISMATCH               => __( 'Password and Confirm Password do not match.', 'miniorange-2-factor-authentication' ),
 						self::RESET_PASS                  => __( 'You password has been reset successfully and sent to your registered email. Please check your mailbox.', 'miniorange-2-factor-authentication' ),
 						self::SUPPORT_FORM_VALUES         => __( 'Please submit your query along with email.', 'miniorange-2-factor-authentication' ),

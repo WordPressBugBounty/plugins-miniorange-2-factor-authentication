@@ -53,6 +53,10 @@ $mo2f_registration_forms = array(
 		'form_logo' => 'RegistrationMagic_Custom_Registration_Forms_and_User_Login',
 		'form_link' => 'RegistrationMagic',
 	),
+	'Gravity Forms Registration'   => array(
+		'form_logo' => 'gravity-forms',
+		'form_link' => 'Gravity Forms',
+	),
 );
 
 ?>

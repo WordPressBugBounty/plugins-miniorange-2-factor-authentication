@@ -26,6 +26,7 @@ if ( ! wp_verify_nonce( $mo2f_nonce, 'mo_2fa_security_features_nonce' ) ) {
 			case 'mo_wpns_2fa_with_network_security':
 				$mo2f_security_features = new Mo2fa_Security_Features();
 				$mo2f_security_features->wpns_2fa_with_network_security( $_POST );
+				echo '<script>window.location.href="admin.php?page=mo_2fa_two_fa";</script>';
 				break;
 		}
 	}

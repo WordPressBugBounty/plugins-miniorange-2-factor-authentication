@@ -190,6 +190,10 @@ if ( ! class_exists( 'Google_Auth_Onpremise' ) ) {
 				$calculated_code = $this->mo2f_get_code( $secret, $current_time_slice + $i );
 				if ( $this->mo2f_timing_safe_equals( $calculated_code, $code ) ) {
 					update_site_option( 'mo2f_time_slice', $i );
+					$used_codes[] = $code;
+					// TTL covers the full (2*discrepancy+1)*30s acceptance window plus a margin,
+					// so the "already used" check above can't expire before the code itself does.
+					set_transient( 'mo2f_google_auth_used_otp_' . $secret, $used_codes, ( 2 * $discrepancy + 1 ) * 30 + 30 );
 					$response['status'] = 'SUCCESS';
 					return wp_json_encode( $response );
 				}

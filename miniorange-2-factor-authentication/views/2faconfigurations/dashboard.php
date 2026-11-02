@@ -27,6 +27,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 </div>
 
+<div style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start;">
 <div class="mo2f-settings-div mo2f-section mo2f-dash-card">
 	<div class="mo2f-section-head">
 		<h2><?php esc_html_e( 'Setup checklist', 'miniorange-2-factor-authentication' ); ?></h2>
@@ -113,6 +114,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 		<?php endif; ?>
 	</div>
+</div>
+<div class="mo2f-settings-div mo2f-section mo2f-dash-card" style="box-sizing:border-box;">
+	<div class="mo2f-section-head">
+		<h2><?php esc_html_e( 'Our Other WordPress Integrations', 'miniorange-2-factor-authentication' ); ?></h2>
+	</div>
+	<img src="<?php echo esc_url( plugins_url( 'includes/images/mcp-server-promo.jpg', dirname( __DIR__ ) ) ); ?>" alt="<?php esc_attr_e( 'Make your website AI-ready -- miniOrange Secure MCP Server plugin', 'miniorange-2-factor-authentication' ); ?>" style="display:block;width:100%;height:auto;border-radius:8px;" />
+	<a href="<?php echo esc_url( 'https://wordpress.org/plugins/miniorange-secure-mcp-server/' ); ?>" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;background-color:#0a2e52 !important;color:#ffffff !important;font-weight:700;font-size:14px;line-height:20px;padding:12px 14px;border:none;border-radius:8px;text-decoration:none !important;margin-top:12px;box-shadow:0 2px 6px rgba(10,46,82,.45);">
+		<span style="color:#ffffff !important;font-weight:700;"><?php esc_html_e( 'Connect WordPress to AI', 'miniorange-2-factor-authentication' ); ?> &rarr;</span>
+	</a>
+</div>
 </div>
 
 <div class="mo2f-dash-two-col">

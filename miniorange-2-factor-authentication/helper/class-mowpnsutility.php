@@ -465,6 +465,40 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 			}
 
 			$plugin_configuration = $plugin_configuration . $space . 'PHP_version:' . phpversion();
+			$plugin_configuration = $plugin_configuration . $space . 'WP_version:' . get_bloginfo( 'version' );
+			$plugin_configuration = $plugin_configuration . $space . 'HTTPS:' . ( is_ssl() ? 'Yes' : 'No' );
+
+			if ( ! function_exists( 'is_plugin_active' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/plugin.php';
+			}
+			$mo2f_conflict_prone_plugins = array(
+				'wordfence/wordfence.php'                            => 'Wordfence',
+				'wps-hide-login/wps-hide-login.php'                  => 'WPS Hide Login',
+				'all-in-one-wp-security-and-firewall/wp-security.php' => 'All In One WP Security',
+				'better-wp-security/better-wp-security.php'          => 'Solid Security (iThemes Security)',
+				'wp-rocket/wp-rocket.php'                            => 'WP Rocket',
+				'w3-total-cache/w3-total-cache.php'                  => 'W3 Total Cache',
+				'wp-super-cache/wp-cache.php'                        => 'WP Super Cache',
+				'litespeed-cache/litespeed-cache.php'                => 'LiteSpeed Cache',
+				'wp-fastest-cache/wpFastestCache.php'                => 'WP Fastest Cache',
+				'breeze/breeze.php'                                  => 'Breeze',
+			);
+			$mo2f_active_conflict_prone_plugins = array();
+			foreach ( $mo2f_conflict_prone_plugins as $mo2f_plugin_file => $mo2f_plugin_label ) {
+				if ( is_plugin_active( $mo2f_plugin_file ) ) {
+					$mo2f_active_conflict_prone_plugins[] = $mo2f_plugin_label;
+				}
+			}
+			if ( ! empty( $mo2f_active_conflict_prone_plugins ) ) {
+				$plugin_configuration = $plugin_configuration . $space . 'Security/Cache Plugins:' . implode( ', ', $mo2f_active_conflict_prone_plugins );
+			}
+
+			$mo2f_lockout_settings = get_site_option( 'mo2f_brute_force_lockout_settings' );
+			$mo2f_iprange_count    = (int) get_site_option( 'mo_wpns_iprange_count', 0 );
+			if ( ( is_array( $mo2f_lockout_settings ) && ! empty( $mo2f_lockout_settings['enabled'] ) ) || $mo2f_iprange_count > 0 ) {
+				$plugin_configuration = $plugin_configuration . $space . 'IP Blocking/Lockout Enabled:Yes';
+			}
+
 			if ( get_site_option( 'mo2f_grace_period' ) ) {
 				$plugin_configuration = $plugin_configuration . $space . 'Grace Period: ' . esc_html( get_site_option( 'mo2f_grace_period_value' ) ) . '<span>&nbsp;</span>' . esc_html( get_site_option( 'mo2f_grace_period_type' ) );
 			}
@@ -682,7 +716,7 @@ if ( ! class_exists( 'MoWpnsUtility' ) ) {
 			$attempts_key = 'mo2f_attempts_before_redirect_' . $user_id;
 			$attempts     = get_transient( $attempts_key );
 			if ( is_numeric( $attempts ) && $attempts > 1 ) {
-				set_transient( $attempts_key, $attempts - 1, 300 );
+				set_transient( $attempts_key, $attempts - 1 );
 				wp_send_json_error( $error_type );
 			} else {
 				delete_transient( $attempts_key );

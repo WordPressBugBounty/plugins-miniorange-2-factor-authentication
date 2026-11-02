@@ -61,7 +61,6 @@ if ( ! class_exists( 'Mo2fa_Security_Features' ) ) {
 					$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::ALL_DISABLED ), 'ERROR' );
 				}
 				update_site_option( 'mo_wpns_2fa_with_network_security_popup_visible', 0 );
-				wp_add_inline_script( 'mo_wpns_admin_settings_script', 'window.location.href="admin.php?page=mo_2fa_two_fa";' );
 			} else {
 				$show_message->mo2f_show_message( MoWpnsMessages::mo2f_get_message( MoWpnsMessages::SOMETHING_WENT_WRONG ), 'ERROR' );
 			}

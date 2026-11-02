@@ -1,10 +1,10 @@
-=== miniOrange 2FA – Two Factor Authentication for WordPress (OTP, SMS, Email, Google Authenticator) ===
+=== miniOrange 2FA – Two Factor Authentication for WordPress (Passkey, OTP, SMS, Email, Google Authenticator) ===
 Contributors: twofactor, twofactorauthentication, hsn97, cyberlord92
-Tags: 2fa, two-factor-authentication, mfa, authentication, security, wp 2fa
+Tags: 2fa, two-factor-authentication, mfa, passkey, security
 Requires at least: 5.3.0
 Tested up to: 7.1
 Requires PHP: 5.3.0
-Stable tag: 6.5.0
+Stable tag: 6.6.0
 License: Expat
 License URI: https://plugins.miniorange.com/mit-license
 
@@ -16,19 +16,23 @@ Free 2FA plugin for unlimited users with Passkey, Google Authenticator, Email/SM
 
 WordPress websites are frequently targeted by brute force attacks, credential stuffing attacks, phishing attempts, and unauthorized login attempts. Passwords alone are no longer sufficient to protect administrator accounts, customer accounts, and sensitive website data. **Which is exactly why 2FA has become essential.**
 
-### What's New in 6.5.0
+### What's New in 6.6.0
 
-- **Disable XML-RPC** — close off xmlrpc.php, a common brute-force and DDoS-amplification target, on sites that don't need it. Off by default so existing Jetpack/mobile-app integrations keep working.
-- **CAPTCHA on the login screen** — add Google reCAPTCHA v2 or Cloudflare Turnstile to wp-login.php to slow down automated brute-force login attempts.
-- **Restrict self-service 2FA recovery by role** — limit which roles can use the self-service account-recovery link, with an optional admin alert email and a Compliance Log entry whenever it's used.
-- **Activity Digest email** — an optional daily/weekly summary of new logins, failed login attempts, and **2FA** resets, sent to configured recipients or all administrators by default.
-- **Clearer account-creation screen** — explains up front what the miniOrange account (used for SMS/WhatsApp delivery and plan management) is for, with a "Skip for now" option.
-- **Modernized admin sidebar** — refreshed icons and hover/active states across the 2FA Configurations navigation.
+- **Custom Login URL (Premium)** — change wp-login.php to a custom slug, with a built-in check so a bad slug can't lock you out.
+- **Country/Region (Geo) Blocking (Premium)** — block or allow logins by visitor country.
+- **Slack Alerts (Premium)** — webhook notifications on successful/failed logins, IP blocks, geo-blocked visitors, and 2FA resets.
+- **Automatic brute-force lockout** — blocks an IP after too many failed login attempts in a configurable window, for a configurable duration.
+- **CIDR notation for IP Range Blocking** — block whole network ranges (e.g. 192.168.1.0/24), alongside the existing start-end format.
+- **Gravity Forms registration integration**, alongside WooCommerce, User Registration, Ultimate Member, and Registration Magic.
+- Multiple security hardening fixes: corrected session-expiry and clock-drift handling, added missing rate limiting on self-service account recovery, and closed a TOTP replay gap.
 
 ---
 
 ### Also in recent releases
 
+- **Disable XML-RPC** — close off xmlrpc.php, a common brute-force and DDoS-amplification target, on sites that don't need it.
+- **CAPTCHA on the login screen** — add Google reCAPTCHA v2 or Cloudflare Turnstile to wp-login.php to slow down automated brute-force login attempts.
+- **Activity Digest email** — an optional daily/weekly summary of new logins, failed login attempts, and **2FA** resets.
 - **Unlimited users on the free plan** — no user cap, no per-seat charge.
 - **Passkey (WebAuthn/FIDO2) — free** — passwordless **2FA** with Face ID, Touch ID, Windows Hello, or a hardware security key.
 - **Push Notification 2FA (Premium)** — approve the login from your phone with one tap, no code to type.
@@ -202,6 +206,12 @@ Service links:
 
 ---
 
+### Other Plugins by miniOrange
+
+**[Secure MCP Server](https://wordpress.org/plugins/miniorange-secure-mcp-server/)** — Turn your WordPress site into a secured MCP (Model Context Protocol) server, so AI agents and assistants can connect to it with proper authentication and access control instead of standing wide open.
+
+---
+
 == Installation ==
 
 = Install and Configure WordPress Two-Factor Authentication =
@@ -308,6 +318,32 @@ For **two-factor authentication** specifically, yes: role-based enforcement, per
 8. Test WP 2FA Plugin
 
 == Changelog ==
+
+= 6.6.0 =
+* New: Custom Login URL -- change wp-login.php to a custom slug, with a loopback check before saving so a bad slug can't lock you out. (Premium)
+* New: Country/Region (Geo) Blocking -- block or allow logins by visitor country. (Premium, Starter plan+)
+* New: Slack Alerts -- webhook notifications on successful/failed logins, IP blocks, geo-blocked visitors, and 2FA resets. (Premium, All-Inclusive plan)
+* New: Gravity Forms registration integration, alongside the existing WooCommerce/User Registration/Ultimate Member/Registration Magic tiles.
+* New: Automatic brute-force lockout -- blocks an IP after a configurable number of failed login attempts within a time window, for a configurable duration, extending the existing IP Blocking feature.
+* New: CIDR notation support (e.g. 192.168.1.0/24) for IP Address Range Blocking, alongside the existing start-end range format.
+* Security: Fixed a regression where the Enterprise build's "Disable XML-RPC" setting didn't actually block XML-RPC requests the way the free build did.
+* Security: Fixed missing replay protection for Google Authenticator codes -- a valid TOTP code could be reused multiple times within its 30-second window.
+* Security: Added rate limiting to the Enterprise build's self-service 2FA account-recovery email, matching the limits already applied elsewhere.
+* Security: The Enterprise build's session-expiry toggle didn't actually gate anything -- disabling it had no effect, and an unconfigured install got a flat 14-day login cookie regardless of Remember Me. Fixed to respect the toggle and fall back to WordPress's own default.
+* Security: Removed a dead, crash-prone admin-notification option left over from an older product line; enabling it (possible via a migrated database) fataled the next time an IP was blocked.
+* Fixes: Corrected an Enterprise build outbound API call timeout that was set to ~2.8 hours instead of 10 seconds.
+* Improvement: Widened Google Authenticator's clock-drift tolerance to +/-60 seconds in the Enterprise build, matching the free build.
+* Fixes: Removed stray PHP warnings logged by the self-service 2FA reset endpoint when handling a stale/orphaned reset token.
+* Fixes: Several internal classes (settings handlers, IP blocking, AJAX handling, and the 2FA reconfiguration-link handler) were being constructed twice per request due to a duplicate-initialization pattern, causing some of their actions to run twice; corrected across 8 classes.
+* Fixes: Corrected a UI spacing issue between the Geo Blocking "Countries" field and the row above it, and between the navbar's "2FA + Website Security" toggle and the elements before it.
+* Fixes: Moved the "IP Blocking" sidebar menu item to sit above Reports instead of always appearing at the very end of the menu.
+* Fixes: Restyled the IP Blocking tab (Advanced Blocking / IP Blacklist) to match the rest of the redesigned admin UI, and fixed the AJAX-refreshed tables reverting to legacy styling immediately after blocking, unblocking, whitelisting, or removing an IP.
+* Fixes: The "2FA + Website Security" toggle in the admin header required a manual page refresh before the change (e.g. the IP Blocking menu item appearing/disappearing) was reflected.
+* Improvement: Visually separated the Advanced Features tab's heading from its settings list, and grouped related settings -- including the new automatic brute-force lockout setting -- so each renders as its own distinct, separated block instead of blending together.
+* Security: Fixed a timing issue in the per-attempt 2FA lockout counter where it could silently expire mid-challenge -- most noticeable with Passkey, since a fingerprint/security-key prompt often takes longer than the window allowed -- locking an account out after only 2-3 tries instead of the intended budget.
+* Security: Neither the IP Blacklist nor the IP Range/CIDR blocking tools stopped you from blocking your own current IP, which locks you out of the entire site with no way back in. Both now refuse to save an entry that matches your own current IP.
+* Fixes: A missing user lookup during a failed login attempt could log a confusing error and silently skip the failed-login notification email.
+* Improvement: Passkey now appears directly after Authenticator App in the 2FA method list during setup, ahead of the OTP-based methods.
 
 = 6.5.0 =
 * New: Optional daily/weekly Activity Digest email summarizing new logins, failed login attempts, and 2FA resets, sent to configured recipients or all administrators by default.

@@ -6,10 +6,10 @@
  */
 
 /**
- * Plugin Name: miniOrange 2FA – Two Factor Authentication for WordPress (OTP, SMS, Email, Google Authenticator)
+ * Plugin Name: miniOrange 2FA – Two Factor Authentication for WordPress (Passkey, OTP, SMS, Email, Google Authenticator)
  * Plugin URI: https://miniorange.com
  * Description: This TFA plugin provides various two-factor authentication methods as an additional layer of security after the default WordPress login. Free plan: unlimited users with Google Authenticator, Email OTP, Security Questions (KBA), and Passkey; premium unlocks SMS/WhatsApp OTP, Authy/LastPass/Microsoft Authenticator, and advanced policies.
- * Version: 6.5.0
+ * Version: 6.6.0
  * Author: miniOrange
  * Author URI: https://miniorange.com
  * Text Domain: miniorange-2-factor-authentication
@@ -44,7 +44,7 @@ require __DIR__ . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'new-
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'traits' . DIRECTORY_SEPARATOR . 'class-instance.php';
 
 define( 'MO_HOST_NAME', 'https://login.xecurify.com' );
-define( 'MO2F_VERSION', '6.5.0' );
+define( 'MO2F_VERSION', '6.6.0' );
 define( 'MO2F_PLUGIN_URL', ( plugin_dir_url( __FILE__ ) ) );
 define( 'MO2F_TEST_MODE', false );
 define( 'MO2F_IS_ONPREM', get_option( 'is_onprem', 1 ) );
@@ -433,6 +433,7 @@ if ( ! class_exists( 'Miniorange_TwoFactor' ) ) {
 			add_option( 'mo2f_enable_backup_methods', true );
 			add_option( 'mo2f_enabled_backup_methods', array( 'mo2f_reconfig_link_show', 'mo2f_back_up_codes' ) );
 			add_option( 'mo_wpns_last_scan_time', time() );
+			add_site_option( 'mo_wpns_2fa_with_network_security', 1 );
 			update_site_option( 'mo2f_mail_notify_new_release', 'on' );
 			add_site_option( 'mo2f_mail_notify', 'on' );
 			update_site_option( 'mo2f_redirect_url_for_users', 'redirect_all' );

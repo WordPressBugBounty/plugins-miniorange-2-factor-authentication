@@ -33,6 +33,7 @@ use TwoFA\Handler\Mo2f_Digest_Handler;
 use TwoFA\Handler\Mo2f_Captcha_Handler;
 use TwoFA\Controllers\Twofa\Mo_2f_Ajax;
 use TwoFA\Handler\Mo2f_Reconfigure_Link;
+use TwoFA\Handler\Mo2f_Review_Notice;
 use TwoFA\Handler\Twofa\Mo2fCustomRegFormShortcode;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -93,6 +94,7 @@ if ( ! class_exists( 'Mo2fInit' ) ) {
 			MoWpnsHandler::instance();
 			Mo2f_Main_Handler::instance();
 			Mo2f_Reconfigure_Link::instance();
+			Mo2f_Review_Notice::instance();
 		}
 
 		/**
