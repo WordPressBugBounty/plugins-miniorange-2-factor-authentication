@@ -261,7 +261,6 @@ if ( ! class_exists( 'MO2f_Utility' ) ) {
 			} else {
 				delete_transient( $session_id . $variables );
 			}
-			delete_site_option( $session_id );
 		}
 
 		/**

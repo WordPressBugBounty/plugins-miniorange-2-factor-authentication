@@ -377,6 +377,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 				'session_id'   => $session_id_encrypt,
 				'user_id'      => $user_id,
 				'login_status' => 'MFA_COMPLETED',
+				'remember'     => ! empty( $user_details['remember'] ),
 			);
 			set_transient( $session_id_encrypt . 'mo2f_user_transaction_details', $completed, 600 );
 			$this->mo2fa_pass2login( $redirect_to, $completed );
@@ -717,11 +718,10 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 				wp_set_current_user( $user_id, $currentuser->user_login );
 				$common_helper->mo2f_remove_current_activity( $session_id_encrypted );
 				delete_expired_transients( true );
-				delete_site_option( $session_id_encrypted );
 				if ( 'MFA_COMPLETED' === $mo2f_1stfactor_status && get_site_option( 'mo2f_enable_trusted_device' ) ) {
 					$this->mo2f_set_trusted_device_cookie( $user_id );
 				}
-				wp_set_auth_cookie( $user_id, true );
+				wp_set_auth_cookie( $user_id, ! empty( $user_details['remember'] ) );
 				do_action( 'wp_login', $currentuser->user_login, $currentuser ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core hook.
 				$common_helper->mo2f_redirect_user_to( $currentuser, $redirect_to );
 				exit;
@@ -894,7 +894,7 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 				}
 				$pass2login = new Miniorange_Password_2Factor_Login();
 				MO2f_Utility::mo2f_debug_file( 'Username and password  validate successfully User_IP-' . $mo2f_mo_wpns_utility->get_client_ip() . ' User_Id-' . $currentuser->ID . ' Email-' . $currentuser->user_email );
-				$session_id  = isset( $_POST['session_id'] ) ? sanitize_text_field( wp_unslash( $_POST['session_id'] ) ) : $pass2login->create_session();//phpcs:ignore WordPress.Security.NonceVerification.Missing -- Request is coming from Wordpres login form.
+				$session_id  = $pass2login->create_session();
 				$redirect_to = $pass2login->mo2f_get_redirect_url();
 				$error       = $this->miniorange_initiate_2nd_factor( $currentuser, $redirect_to, $session_id );
 				return $error;
@@ -918,12 +918,14 @@ if ( ! class_exists( 'Mo2f_Main_Handler' ) ) {
 				$session_id_encrypt = $pass2login->create_session();
 			}
 			$redirect_to = class_exists( 'UM_Functions' ) ? $pass2login->mo2f_redirect_url_for_um( $currentuser ) : $redirect_to;
+			$remember_me = ! empty( $_POST['rememberme'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Value read from the WordPress login form submission.
 			set_transient(
 				$session_id_encrypt . 'mo2f_user_transaction_details',
 				array(
 					'session_id'   => $session_id_encrypt,
 					'user_id'      => $currentuser->ID,
 					'login_status' => 'PASSWORD_VALIDATED',
+					'remember'     => $remember_me,
 				),
 				600
 			);

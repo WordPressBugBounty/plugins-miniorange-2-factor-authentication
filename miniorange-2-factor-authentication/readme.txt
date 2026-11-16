@@ -4,7 +4,7 @@ Tags: 2fa, two-factor-authentication, mfa, passkey, security
 Requires at least: 5.3.0
 Tested up to: 7.1
 Requires PHP: 5.3.0
-Stable tag: 6.6.0
+Stable tag: 6.6.1
 License: Expat
 License URI: https://plugins.miniorange.com/mit-license
 
@@ -16,8 +16,9 @@ Free 2FA plugin for unlimited users with Passkey, Google Authenticator, Email/SM
 
 WordPress websites are frequently targeted by brute force attacks, credential stuffing attacks, phishing attempts, and unauthorized login attempts. Passwords alone are no longer sufficient to protect administrator accounts, customer accounts, and sensitive website data. **Which is exactly why 2FA has become essential.**
 
-### What's New in 6.6.0
+### What's New in 6.6.1
 
+- **Minor security fixes.**
 - **Custom Login URL (Premium)** — change wp-login.php to a custom slug, with a built-in check so a bad slug can't lock you out.
 - **Country/Region (Geo) Blocking (Premium)** — block or allow logins by visitor country.
 - **Slack Alerts (Premium)** — webhook notifications on successful/failed logins, IP blocks, geo-blocked visitors, and 2FA resets.
@@ -319,6 +320,9 @@ For **two-factor authentication** specifically, yes: role-based enforcement, per
 
 == Changelog ==
 
+= 6.6.1 =
+* Minor security fixes.
+
 = 6.6.0 =
 * New: Custom Login URL -- change wp-login.php to a custom slug, with a loopback check before saving so a bad slug can't lock you out. (Premium)
 * New: Country/Region (Geo) Blocking -- block or allow logins by visitor country. (Premium, Starter plan+)
@@ -550,6 +554,9 @@ For **two-factor authentication** specifically, yes: role-based enforcement, per
 For older changelog entries, please see the [additional changelog.txt file](https://plugins.svn.wordpress.org/miniorange-2-factor-authentication/trunk/changelog.txt) provided with the plugin.
 
 == Upgrade Notice ==
+
+= 6.6.1 =
+* Minor security fixes. Recommended update.
 
 = 6.5.0 =
 * Adds an optional XML-RPC disable switch, login-screen CAPTCHA, role-restricted self-service 2FA recovery, an Activity Digest email, and admin UI polish. Recommended update.
